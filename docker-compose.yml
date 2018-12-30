@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  injector:
+    build: ./injector
+    volumes:
+      - ./:/to
+    ports:
+      - "8124"
+
+  gateway:
+    build: .
+    volumes:
+      - ./:/to
+    ports:
+      - "7000"
+    stdin_open: true
+    tty: true
+    depends_on:
+      - injector

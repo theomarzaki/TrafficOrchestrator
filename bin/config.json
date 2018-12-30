@@ -1,0 +1,9 @@
+{
+  "startTime": 1521631164238,
+  "ports": {
+    "dataFusionUdp": 4001,
+    "dataFusionTcp": 4002,
+    "trafficOrchestratorTcp": 8124,
+    "webServer": 8080
+  }
+}
