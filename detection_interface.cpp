@@ -268,6 +268,7 @@ int filterInput(Document document) {
   }
 
   else if(document["type"] == TRAJECTORY_FEEDBACK) {
+    cout << "\n\n\n\n\n\n\n *********************************** Received Trajectory Feedback *********************************** \n\n\n\n\n\n\n";
     return 3;
   }
 
@@ -306,7 +307,6 @@ string listenDataTCP(int socket_c) {
             auto startingB = string(toReturn).find("{");
             if(startingB != std::string::npos && startingB == 0) {
               cout << toReturn << endl;
-              cout << "!!" << endl;
               return toReturn;
             }else incomplete_message = "";
             // return toReturn;

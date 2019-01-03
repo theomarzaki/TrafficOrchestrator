@@ -182,7 +182,7 @@ int filterExecution(string data) {
 	int filterNum = filterInput(parse(data));
 
 	if(filterNum == -1) {
-		cout << "Error: Refer to switch(filter).";
+		cout << "Error: Incomplete Message.";
 		return -1;
 	}
 	else if(filterNum == 0) {
@@ -298,10 +298,11 @@ int main() {
 			vector<ManeuverRecommendation*> recommendations = calculateTrajectories(database,distanceRadius,uuidTo,mergingLongitude,mergingLatitude);
 			database->deleteAll();
 			if(recommendations.size() > 0) {
-				cout << "Sending " << recommendations.size() << " trajectory recommendations.\n";
-				cout << recommendations[0];
+				cout << "\n\n\n\n\n\n\n" << "***********************************"<< "Sending " << recommendations.size() << " trajectory recommendations." << "***********************************" << "\n\n\n\n\n\n\n" << endl;
 				sendTrajectoryRecommendations(recommendations,socket);
 				}
+
+			cout << "<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>" << endl;
 
 			std::vector<torch::jit::IValue> inputs;
 		  inputs.push_back(torch::rand({1, 2, 19}));

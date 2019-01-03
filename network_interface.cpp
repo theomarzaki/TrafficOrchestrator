@@ -212,10 +212,10 @@ int sendDataTCP(int pre_socket,string connectionAdress, int port,string receiveA
 	/* Connect to the remote server. */
 	validator = connect(socket_connect, (struct sockaddr *)&address, sizeof(address));
 
-	if(validator < 0)
-		printf("Send: Connection Error.\n");
-	else
-		printf("Send: Connected!\n");
+	// if(validator < 0)
+	// 	printf("Send: Connection Error.\n");
+	// else
+	printf("Send: Connected!\n");
 
 	validator = send(socket_connect,jsonString.c_str(),jsonString.size(),0);
 
