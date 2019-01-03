@@ -125,7 +125,8 @@ struct Detected_Unsubscription_Response {
 
 Document parse(string readFromServer) {
   Document document;
-  document.Parse(readFromServer.c_str());
+  ParseResult result = document.Parse(readFromServer.c_str());
+  if(!result) return NULL;
   return document;
 }
 
@@ -249,6 +250,11 @@ Detected_Unsubscription_Response assignUnsubResponseVals(Document document) {
 }
 
 int filterInput(Document document) {
+
+  if(!(document.IsObject()) || !(document.HasMember("type"))){
+    return -1;
+  }
+
   if(document["type"] == NOTIFY_ADD) {
     return 0;
   }
@@ -297,8 +303,13 @@ string listenDataTCP(int socket_c) {
             string copy_of_return = incomplete_message;
             incomplete_message = string(dataReceived).substr(found,i);
             string toReturn = copy_of_return + string(dataReceived).substr(0,found);
-            cout << toReturn << endl;
-            return toReturn;
+            auto startingB = string(toReturn).find("{");
+            if(startingB != std::string::npos && startingB == 0) {
+              cout << toReturn << endl;
+              cout << "!!" << endl;
+              return toReturn;
+            }else incomplete_message = "";
+            // return toReturn;
           }else{
             auto startingBracket = string(incomplete_message).find("{");
             if((startingBracket!=std::string::npos)){

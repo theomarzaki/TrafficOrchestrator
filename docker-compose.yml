@@ -3,6 +3,8 @@ version: '3'
 services:
   injector:
     build: ./injector
+    stdin_open: true
+    tty: true
     volumes:
       - ./:/to
     ports:

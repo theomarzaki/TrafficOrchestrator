@@ -165,7 +165,7 @@ int initiateSubscription(string sendAddress, int sendPort,string receiveAddress,
 	subscriptionReq->setSignature("TEMPLATE");
 	subscriptionReq->setRequestId(generateReqID());
 	subscriptionReq->setTimestamp(timeSub.count());
-	auto socket = sendDataTCP(sendAddress,sendPort,receiveAddress,receivePort,createSubscriptionRequestJSON(subscriptionReq));
+	auto socket = sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createSubscriptionRequestJSON(subscriptionReq));
 	return socket;
 }
 
@@ -175,7 +175,7 @@ void initiateUnsubscription(string sendAddress, int sendPort, SubscriptionRespon
 	UnsubscriptionRequest * unsubscriptionReq = new UnsubscriptionRequest();
 	unsubscriptionReq->setSubscriptionId(subscriptionResp->getSubscriptionId());
 	unsubscriptionReq->setTimestamp(timeUnsub.count());
-	sendDataTCP(sendAddress,sendPort,receiveAddress,receivePort,createUnsubscriptionRequestJSON(unsubscriptionReq));
+	sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createUnsubscriptionRequestJSON(unsubscriptionReq));
 }
 
 int filterExecution(string data) {
@@ -240,10 +240,10 @@ void inputDistanceRadius(int radius) {
 	distanceRadius = radius;
 }
 
-void sendTrajectoryRecommendations(vector<ManeuverRecommendation*> v) {
+void sendTrajectoryRecommendations(vector<ManeuverRecommendation*> v,int socket) {
 	for(ManeuverRecommendation * m : v) {
 		cout << createManeuverJSON(m) << endl;
-		sendDataTCP(sendAddress, sendPort,receiveAddress,receivePort, createManeuverJSON(m));
+		sendDataTCP(socket,sendAddress, sendPort,receiveAddress,receivePort, createManeuverJSON(m));
 	}
 }
 
@@ -300,7 +300,7 @@ int main() {
 			if(recommendations.size() > 0) {
 				cout << "Sending " << recommendations.size() << " trajectory recommendations.\n";
 				cout << recommendations[0];
-				sendTrajectoryRecommendations(recommendations);
+				sendTrajectoryRecommendations(recommendations,socket);
 				}
 
 			std::vector<torch::jit::IValue> inputs;

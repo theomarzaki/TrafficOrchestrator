@@ -165,7 +165,7 @@ string createManeuverJSON(ManeuverRecommendation * maneuverRec) {
 	//
 	// action_position.AddMember("latitude", Value().SetInt(maneuverRec->getLatitudeAction()),allocator)
 	// .AddMember("longitude",Value().SetInt(maneuverRec->getLongitudeAction()),allocator);
-	// 
+	//
 	// action.AddMember("position", action_position, allocator)
 	// .AddMember("speed", Value().SetUint(maneuverRec->getSpeedAction()), allocator)
 	// .AddMember("lane_position", Value().SetUint(maneuverRec->getLanePositionAction()), allocator);
@@ -183,13 +183,15 @@ string createManeuverJSON(ManeuverRecommendation * maneuverRec) {
 
 }
 
-int sendDataTCP(string connectionAdress, int port,string receiveAddress,int receivePort, string jsonString) {
+int sendDataTCP(int pre_socket,string connectionAdress, int port,string receiveAddress,int receivePort, string jsonString) {
 	int socket_connect;
 	int validator;
 	struct sockaddr_in address,client_addr;
 
 	/* Create a socket. */
-	socket_connect = socket(AF_INET, SOCK_STREAM,0);
+	if(pre_socket == -999) socket_connect = socket(AF_INET, SOCK_STREAM,0);
+	else socket_connect = pre_socket;
+
 
 	if(socket_connect == -1)
 		printf("Send: Socket was not created.");
@@ -203,7 +205,9 @@ int sendDataTCP(string connectionAdress, int port,string receiveAddress,int rece
 	client_addr.sin_port = htons(receivePort);
 	client_addr.sin_addr.s_addr = inet_addr(receiveAddress.c_str());
 
-	// ::bind(socket_connect, (struct sockaddr *) &client_addr, sizeof(client_addr));
+	// SEND ERROR HERE FOR TR (NEW VERSION) --> remove int pre_socket
+
+	::bind(socket_connect, (struct sockaddr *) &client_addr, sizeof(client_addr));
 
 	/* Connect to the remote server. */
 	validator = connect(socket_connect, (struct sockaddr *)&address, sizeof(address));
