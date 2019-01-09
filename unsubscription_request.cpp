@@ -16,11 +16,12 @@ private:
 	int request_id;
 	int subscriptionId;
 	string signature;
+	string source_uuid;
 
 public:
 
 	UnsubscriptionRequest(string type, string context, string origin, string version,
-	uint64_t timestamp, int subscriptionId,int request_id, string signature):
+	uint64_t timestamp, int subscriptionId,int request_id, string signature, string source_uuid):
 	type(type),
 	context(context),
 	origin(origin),
@@ -28,17 +29,21 @@ public:
 	timestamp(timestamp),
 	subscriptionId(subscriptionId),
 	signature(signature),
-	request_id(request_id)
+	request_id(request_id),
+	source_uuid(source_uuid)
 	{
 		type = "unsubscription_request";
 		context = "subscriptions";
 		origin = "traffic_orchestrator";
+		source_uuid = "OB19D";
 	}
+
 
 	UnsubscriptionRequest() {
 		type = "unsubscription_request";
 		context = "subscriptions";
 		origin = "traffic_orchestrator";
+		source_uuid = "OB19D";
 	}
 
 	friend std::ostream& operator<< (ostream& os, UnsubscriptionRequest * unsubscriptionReq);
@@ -51,6 +56,7 @@ public:
 	int getSubscriptionId();
 	string getSignature();
 	int getRequestId();
+	string getSourceUUID();
 
 	void setType(string);
 	void setContext(string);
@@ -60,6 +66,7 @@ public:
 	void setSubscriptionId(int);
 	void setSignature(string);
 	void setRequestId(int);
+	void setSourceUUID(string);
 
 };
 
@@ -71,6 +78,7 @@ uint64_t UnsubscriptionRequest::getTimestamp(){return timestamp;}
 int UnsubscriptionRequest::getSubscriptionId(){return subscriptionId;}
 string UnsubscriptionRequest::getSignature(){return signature;}
 int UnsubscriptionRequest::getRequestId(){return request_id;}
+string UnsubscriptionRequest::getSourceUUID(){return source_uuid;}
 
 void UnsubscriptionRequest::setType(string parameter){type = parameter;}
 void UnsubscriptionRequest::setContext(string parameter){context = parameter;}
@@ -80,6 +88,7 @@ void UnsubscriptionRequest::setTimestamp(uint64_t parameter){timestamp = paramet
 void UnsubscriptionRequest::setSubscriptionId(int parameter){subscriptionId = parameter;}
 void UnsubscriptionRequest::setSignature(string parameter){signature = parameter;}
 void UnsubscriptionRequest::setRequestId(int parameter){request_id=parameter;}
+void UnsubscriptionRequest::setSourceUUID(string parameter){source_uuid = parameter;}
 
 std::ostream& operator<<(std::ostream& os, UnsubscriptionRequest * unsubscriptionReq) {
 
@@ -94,6 +103,8 @@ std::ostream& operator<<(std::ostream& os, UnsubscriptionRequest * unsubscriptio
   << unsubscriptionReq->getVersion()
   << ","
   << unsubscriptionReq->getTimestamp()
+	<< ","
+	<< unsubscriptionReq->getSourceUUID()
 	<< ","
 	<< unsubscriptionReq->getRequestId()
   << ","

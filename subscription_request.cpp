@@ -18,11 +18,13 @@ class SubscriptionRequest {
 		double latitude;
 		double radius;
 		string signature;
+		string source_uuid;
+		string destination_uuid;
 		int request_id;  // added later TODO
 
 	public:
 		SubscriptionRequest(string type, string context,string origin, string version, uint64_t timestamp,
-		bool filter,int request_id,string shape, double longitude, double latitude, double radius, string signature) :
+		bool filter,int request_id,string shape, double longitude, double latitude, double radius, string signature,string source_uuid) :
 		type(type),
 		context(context),
 		origin(origin),
@@ -33,17 +35,20 @@ class SubscriptionRequest {
 		latitude(latitude),
 		radius(radius),
 		signature(signature),
-		request_id(request_id) //TODO CHANGED
+		request_id(request_id), //TODO CHANGED
+		source_uuid(source_uuid)
 		{
 			type = "subscription_request";
 			context = "subscriptions"; //changed from subscription_mechanism
 			origin = "traffic_orchestrator";
+			source_uuid = "OB19D";
 		}
 
 		SubscriptionRequest() {
 			type = "subscription_request";
 			context = "subscriptions"; // same as above
 			origin = "traffic_orchestrator";
+			source_uuid = "OB19D"; // add to json format properly
 		}
 
 	~SubscriptionRequest();
@@ -62,6 +67,8 @@ class SubscriptionRequest {
 	double getRadius();
 	string getSignature();
 	int getRequestId();
+	string getSourceUUID();
+
 
 	void setType(string);
 	void setContext(string);
@@ -75,6 +82,7 @@ class SubscriptionRequest {
 	void setRadius(double);
 	void setSignature(string);
 	void setRequestId(int);
+	void setSourceUUID(string);
 
 };
 
@@ -92,6 +100,7 @@ double SubscriptionRequest::getLatitude(){return latitude;}
 double SubscriptionRequest::getRadius(){return radius;}
 string SubscriptionRequest::getSignature(){return signature;}
 int SubscriptionRequest::getRequestId(){return request_id;}
+string SubscriptionRequest::getSourceUUID(){return source_uuid;}
 
 void SubscriptionRequest::setType(string parameter){type = parameter;}
 void SubscriptionRequest::setContext(string parameter){context = parameter;}
@@ -105,6 +114,7 @@ void SubscriptionRequest::setLatitude(double parameter){latitude = parameter;}
 void SubscriptionRequest::setRadius(double parameter){radius = parameter;}
 void SubscriptionRequest::setSignature(string parameter){signature = parameter;}
 void SubscriptionRequest::setRequestId(int parameter){request_id = parameter;}
+void SubscriptionRequest::setSourceUUID(string parameter){source_uuid = parameter;}
 
 std::ostream& operator<<(std::ostream& os, SubscriptionRequest * subscriptionReq) {
 
@@ -119,6 +129,8 @@ std::ostream& operator<<(std::ostream& os, SubscriptionRequest * subscriptionReq
   << subscriptionReq->getVersion()
   << ","
   << subscriptionReq->getTimestamp()
+	<< ","
+	<< subscriptionReq->getSourceUUID()
   << ","
   << subscriptionReq->getFilter()
   << ","

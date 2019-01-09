@@ -49,7 +49,8 @@ string createSubscriptionRequestJSON(SubscriptionRequest * subscriptionReq) {
 		.AddMember("context",Value().SetString(subscriptionReq->getContext().c_str(),allocator),allocator)
 		.AddMember("origin",Value().SetString(subscriptionReq->getOrigin().c_str(),allocator),allocator)
 		.AddMember("version",Value().SetString(subscriptionReq->getVersion().c_str(),allocator),allocator)
-		.AddMember("timestamp",timestamp,allocator);
+		.AddMember("timestamp",timestamp,allocator)
+		.AddMember("source_uuid",Value().SetString(subscriptionReq->getSourceUUID().c_str(),allocator),allocator);
 
 		Value object(kObjectType);
 		Value objectTwo(kObjectType);
@@ -92,7 +93,8 @@ string createUnsubscriptionRequestJSON(UnsubscriptionRequest * unsubscriptionReq
 	.AddMember("context",Value().SetString(unsubscriptionReq->getContext().c_str(),allocator),allocator)
 	.AddMember("origin",Value().SetString(unsubscriptionReq->getOrigin().c_str(),allocator),allocator)
 	.AddMember("version",Value().SetString(unsubscriptionReq->getVersion().c_str(),allocator),allocator)
-	.AddMember("timestamp",timestamp,allocator);
+	.AddMember("timestamp",timestamp,allocator)
+	.AddMember("source_uuid",Value().SetString(unsubscriptionReq->getSourceUUID().c_str(),allocator),allocator);
 
 	Value object(kObjectType);
 
@@ -187,6 +189,8 @@ int sendDataTCP(int pre_socket,string connectionAdress, int port,string receiveA
 	int socket_connect;
 	int validator;
 	struct sockaddr_in address,client_addr;
+
+	jsonString = jsonString + "\n";
 
 	/* Create a socket. */
 	if(pre_socket == -999) socket_connect = socket(AF_INET, SOCK_STREAM,0);

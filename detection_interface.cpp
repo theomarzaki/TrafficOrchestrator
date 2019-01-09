@@ -295,7 +295,7 @@ string listenDataTCP(int socket_c) {
       break;
     }
     else if(i > 0) {
-      // if(i>1) printf("Received %d bytes of data. Data received: %s\n",i,dataReceived);
+      if(i>1) printf("Received %d bytes of data. Data received: %s\n",i,dataReceived);
       auto found = string(dataReceived).find("\n");
       auto ending = string(dataReceived).find_last_of("}");
       auto start = string(dataReceived).find("{");
