@@ -310,6 +310,10 @@ int filterInput(Document document) {
     return 3;
   }
 
+  else if(document["type"] == NOTIFY_DELETE) {
+      return 4;
+  }
+
   else {
     return -1;
   }

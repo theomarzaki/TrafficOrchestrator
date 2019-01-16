@@ -197,6 +197,14 @@ int filterExecution(string data) {
 		}
 		return 0;
 	}
+	else if(filterNum == 4) {
+		int size = assignNotificationVals(parse(data)).ru_description_list.size();
+		RoadUser * road_users = detectedToRoadUserList(assignNotificationVals(parse(data)).ru_description_list);
+		for(int j = 0; j < size; j++) {
+			database->deleteRoadUser(road_users[j].getUuid());
+		}
+		return 0;
+	}
 	else if(filterNum == 1) {
 		subscriptionResp = detectedToSubscription(assignSubResponseVals(parse(data)));
 		return 1;
