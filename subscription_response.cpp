@@ -17,6 +17,8 @@ class SubscriptionResponse {
 		int subscriptionId;
 		string signature;
 		int request_id;
+		string source_uuid;
+		string destination_uuid;
 
 	public:
 
@@ -36,6 +38,7 @@ class SubscriptionResponse {
 			context = "subscriptions";
 			origin = "injector";
 			version = "0.1.0";
+			source_uuid = "TO";
 		}
 
 		SubscriptionResponse() {
@@ -56,6 +59,8 @@ class SubscriptionResponse {
 		int getSubscriptionId();
 		string getSignature();
 		int getRequestId();
+		string getSourceUUID();
+		string getDestinationUUID();
 
 		void setType(string);
 		void setContext(string);
@@ -66,6 +71,9 @@ class SubscriptionResponse {
 		void setSubscriptionId(int);
 		void setSignature(string);
 		void setRequestId(int);
+		void setSourceUUID(string);
+		void setDestinationUUID(string);
+
 };
 
 
@@ -78,6 +86,8 @@ string SubscriptionResponse::getResult(){return result;}
 int SubscriptionResponse::getSubscriptionId(){return subscriptionId;}
 string SubscriptionResponse::getSignature(){return signature;}
 int SubscriptionResponse::getRequestId(){return request_id;}
+string SubscriptionResponse::getSourceUUID(){return source_uuid;}
+string SubscriptionResponse::getDestinationUUID(){return destination_uuid;}
 
 void SubscriptionResponse::setType(string parameter){type = parameter;}
 void SubscriptionResponse::setContext(string parameter){context = parameter;}
@@ -88,6 +98,9 @@ void SubscriptionResponse::setResult(string parameter){result = parameter;}
 void SubscriptionResponse::setSubscriptionId(int parameter){subscriptionId = parameter;}
 void SubscriptionResponse::setSignature(string parameter){signature = parameter;}
 void SubscriptionResponse::setRequestId(int parameter){request_id = parameter;}
+void SubscriptionResponse::setSourceUUID(string parameter){source_uuid = parameter;}
+void SubscriptionResponse::setDestinationUUID(string parameter){destination_uuid = parameter;}
+
 
 std::ostream& operator<<(std::ostream& os, SubscriptionResponse * subscriptionResp) {
 
@@ -101,6 +114,10 @@ std::ostream& operator<<(std::ostream& os, SubscriptionResponse * subscriptionRe
   << ","
   << subscriptionResp->getVersion()
   << ","
+	<< subscriptionResp->getSourceUUID()
+	<< ","
+	<< subscriptionResp->getDestinationUUID()
+	<< ","
   << subscriptionResp->getTimestamp()
   << ","
   << subscriptionResp->getResult()

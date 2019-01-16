@@ -122,6 +122,8 @@ SubscriptionResponse * detectedToSubscription(Detected_Subscription_Response d) 
 	subscriptionResp->setRequestId(d.request_id);
 	subscriptionResp->setSubscriptionId(d.subscriptionId);
 	subscriptionResp->setSignature(d.signature);
+	subscriptionResp->setSourceUUID(d.source_uuid);
+	subscriptionResp->setDestinationUUID(d.destination_uuid);
 
 	return subscriptionResp;
 }
@@ -137,6 +139,8 @@ UnsubscriptionResponse * detectedToUnsubscription(Detected_Unsubscription_Respon
 	unsubscriptionResp->setRequestId(d.request_id);
 	unsubscriptionResp->setResult(d.result);
 	unsubscriptionResp->setSignature(d.signature);
+	unsubscriptionResp->setSourceUUID(d.source_uuid);
+	unsubscriptionResp->setDestinationUUID(d.destination_uuid);
 
 	return unsubscriptionResp;
 }

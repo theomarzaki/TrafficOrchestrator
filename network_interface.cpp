@@ -50,7 +50,8 @@ string createSubscriptionRequestJSON(SubscriptionRequest * subscriptionReq) {
 		.AddMember("origin",Value().SetString(subscriptionReq->getOrigin().c_str(),allocator),allocator)
 		.AddMember("version",Value().SetString(subscriptionReq->getVersion().c_str(),allocator),allocator)
 		.AddMember("timestamp",timestamp,allocator)
-		.AddMember("source_uuid",Value().SetString(subscriptionReq->getSourceUUID().c_str(),allocator),allocator);
+		.AddMember("source_uuid",Value().SetString(subscriptionReq->getSourceUUID().c_str(),allocator),allocator)
+		.AddMember("destination_uuid",Value().SetString(subscriptionReq->getDestinationUUID().c_str(),allocator),allocator);
 
 		Value object(kObjectType);
 		Value objectTwo(kObjectType);
@@ -94,7 +95,8 @@ string createUnsubscriptionRequestJSON(UnsubscriptionRequest * unsubscriptionReq
 	.AddMember("origin",Value().SetString(unsubscriptionReq->getOrigin().c_str(),allocator),allocator)
 	.AddMember("version",Value().SetString(unsubscriptionReq->getVersion().c_str(),allocator),allocator)
 	.AddMember("timestamp",timestamp,allocator)
-	.AddMember("source_uuid",Value().SetString(unsubscriptionReq->getSourceUUID().c_str(),allocator),allocator);
+	.AddMember("source_uuid",Value().SetString(unsubscriptionReq->getSourceUUID().c_str(),allocator),allocator)
+	.AddMember("destination_uuid",Value().SetString(unsubscriptionReq->getSourceUUID().c_str(),allocator),allocator);;
 
 	Value object(kObjectType);
 

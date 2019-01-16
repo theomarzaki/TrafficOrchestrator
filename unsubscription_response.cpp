@@ -15,11 +15,13 @@ private:
 	string result;
 	string signature;
 	int request_id;
+	string source_uuid;
+	string destination_uuid;
 
 public:
 
 	UnsubscriptionResponse(string type, string context, string origin, string version,
-	uint64_t timestamp, string result,int request_id,string signature):
+	uint64_t timestamp, string result,int request_id,string signature) :
 	type(type),
 	context(context),
 	origin(origin),
@@ -50,6 +52,8 @@ public:
 	string getResult();
 	string getSignature();
 	int getRequestId();
+	string getSouceUUID();
+	string getDestinationUUID();
 
 	void setType(string);
 	void setContext(string);
@@ -59,6 +63,8 @@ public:
 	void setResult(string);
 	void setSignature(string);
 	void setRequestId(int);
+	void setSourceUUID(string);
+	void setDestinationUUID(string);
 
 };
 
@@ -70,6 +76,9 @@ uint64_t UnsubscriptionResponse::getTimestamp(){return timestamp;}
 string UnsubscriptionResponse::getResult(){return result;}
 string UnsubscriptionResponse::getSignature(){return signature;}
 int UnsubscriptionResponse::getRequestId(){return request_id;}
+string UnsubscriptionResponse::getSouceUUID(){return source_uuid;}
+string UnsubscriptionResponse::getDestinationUUID(){return destination_uuid;}
+
 
 void UnsubscriptionResponse::setType(string parameter){type = parameter;}
 void UnsubscriptionResponse::setContext(string parameter){context = parameter;}
@@ -79,6 +88,8 @@ void UnsubscriptionResponse::setTimestamp(uint64_t parameter){timestamp = parame
 void UnsubscriptionResponse::setResult(string parameter){result = parameter;}
 void UnsubscriptionResponse::setSignature(string parameter){signature = parameter;}
 void UnsubscriptionResponse::setRequestId(int parameter){request_id = parameter;}
+void UnsubscriptionResponse::setSourceUUID(string parameter){source_uuid = parameter;}
+void UnsubscriptionResponse::setDestinationUUID(string parameter){destination_uuid = parameter;}
 
 std::ostream& operator<<(std::ostream& os, UnsubscriptionResponse * unsubscriptionResp) {
 
@@ -92,6 +103,10 @@ std::ostream& operator<<(std::ostream& os, UnsubscriptionResponse * unsubscripti
   << ","
   << unsubscriptionResp->getVersion()
   << ","
+	<< unsubscriptionResp->getSouceUUID()
+	<< ","
+	<< unsubscriptionResp->getDestinationUUID()
+	<< ","
   << unsubscriptionResp->getTimestamp()
   << ","
   << unsubscriptionResp->getResult()

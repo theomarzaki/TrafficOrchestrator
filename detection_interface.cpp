@@ -28,6 +28,7 @@ using std::vector;
 typedef uint32_t uint4;
 
 #define NOTIFY_ADD "notify_add"
+#define NOTIFY_DELETE "notify_delete"
 #define SUBSCRIPTION_RESPONSE "subscription_response"
 #define UNSUBSCRIPTION_RESPONSE "unsubscription_response"
 #define TRAJECTORY_FEEDBACK "maneuver_feedback"
@@ -107,6 +108,8 @@ struct Detected_Subscription_Response {
   uint64_t timestamp;
   string result;
   int request_id;
+  string source_uuid;
+  string destination_uuid;
   int subscriptionId;
   string signature;
 
@@ -119,6 +122,8 @@ struct Detected_Unsubscription_Response {
   string version;
   uint64_t timestamp;
   string result;
+  string source_uuid;
+  string destination_uuid;
   int request_id;
   string signature;
 };
@@ -164,7 +169,12 @@ Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notificatio
   values.length_c = document["message"]["confidence"]["size"]["length"].GetDouble();
   values.width_c = document["message"]["confidence"]["size"]["width"].GetDouble();
   values.height_c = document["message"]["confidence"]["size"]["height"].GetDouble();
-  values.signature = document["signature"].GetString();
+
+  if(document.HasMember("signature") == true){
+      values.signature = document["signature"].GetString();
+  }
+  else values.signature = "placeholder";
+
 
 
   return values;
@@ -179,7 +189,10 @@ Detected_To_Notification assignNotificationVals(Document document) {
   values.version = document["version"].GetString();
   values.timestamp = document["timestamp"].GetUint64();
   values.subscriptionId = document["message"]["subscription_id"].GetInt();
-  values.signature = document["signature"].GetString();
+  if(document.HasMember("signature") == true){
+      values.signature = document["signature"].GetString();
+  }
+  else values.signature = "placeholder";
 
   for(auto& v : document["message"]["ru_description_list"].GetArray()) {
     StringBuffer sb;
@@ -207,7 +220,10 @@ Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document document) {
   values.timestamp_message = document["message"]["timestamp"].GetUint64();
   values.feedback = document["message"]["feedback"].GetString();
   values.reason = document["message"]["reason"].GetString();
-  values.signature = document["signature"].GetString();
+  if(document.HasMember("signature") == true){
+      values.signature = document["signature"].GetString();
+  }
+  else values.signature = "placeholder";
 
   return values;
 
@@ -226,7 +242,18 @@ Detected_Subscription_Response assignSubResponseVals(Document document) {
   values.result = document["message"]["result"].GetString();
   values.request_id = document["message"]["request_id"].GetInt();
   values.subscriptionId = document["message"]["subscription_id"].GetInt();
-  values.signature = document["signature"].GetString();
+  if(document.HasMember("signature") == true){
+      values.signature = document["signature"].GetString();
+  }
+  else values.signature = "placeholder";
+  if(document.HasMember("source_uuid") == true){
+      values.source_uuid = document["source_uuid"].GetString();
+  }
+  else values.signature = "placeholder";
+  if(document.HasMember("destination_uuid") == true){
+      values.destination_uuid = document["destination_uuid"].GetString();
+  }
+  else values.signature = "placeholder";
 
   return values;
 
@@ -243,7 +270,18 @@ Detected_Unsubscription_Response assignUnsubResponseVals(Document document) {
   values.timestamp = document["timestamp"].GetUint64();
   values.result = document["message"]["result"].GetInt();
   values.request_id = document["message"]["request_id"].GetInt();
-  values.signature = document["signature"].GetString();
+  if(document.HasMember("source_uuid") == true){
+      values.source_uuid = document["source_uuid"].GetString();
+  }
+  else values.signature = "placeholder";
+  if(document.HasMember("destination_uuid") == true){
+      values.destination_uuid = document["destination_uuid"].GetString();
+  }
+  else values.signature = "placeholder";
+  if(document.HasMember("signature") == true){
+      values.signature = document["signature"].GetString();
+  }
+  else values.signature = "placeholder";
 
   return values;
 

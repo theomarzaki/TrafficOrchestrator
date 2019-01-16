@@ -17,8 +17,9 @@ from sklearn.model_selection import cross_val_score, train_test_split
 import sklearn.neural_network
 from sklearn.ensemble import RandomForestRegressor
 import logging
-
-
+from scipy.spatial import distance
+import random
+from torch.autograd import Variable
 
 class RandomForestPredictor():
 
@@ -85,13 +86,14 @@ class DeepQLearning(nn.Module):
         self.number_of_iterations = 2000000
         self.replay_memory_size = 10000
         self.minibatch_size = 32 #TODO may need to change this
+        self.EPSILON_DECAY = 100000
 
         self.fc1 = nn.Linear(1, 19)
         self.relu1 = nn.ReLU(inplace=True)
         self.fc2 = nn.Linear(19, self.number_of_actions)
 
     def forward(self, x):
-        out = self.fc1(out)
+        out = self.fc1(x.view(x.size()[0], -1))
         out = self.relu1(out)
         out = self.fc2(out)
 
@@ -99,39 +101,78 @@ class DeepQLearning(nn.Module):
 
 
 
-# ['globalXmerging' 'globalYmerging' 'lenghtMerging' 'widthMerging' 'velocityMerging' 'accelarationMerging' 'spacingMerging'
-#  'globalXPreceding' 'globalYPreceding' 'lengthPreceding' 'widthPreceding' 'velocityPreceding' 'accelarationPreceding' 'globalXfollowing'
-#  'globalYfollowing' 'widthFollowing' 'velocityFollowing''accelerationFollowing' 'spacingFollowing'] removed ['recommendation' 'heading'
-#  'recommendedAcceleration']
+# ['globalXmerging', 'globalYmerging', 'lenghtMerging',
+#        'widthMerging', 'velocityMerging', 'accelarationMerging',
+#        'spacingMerging', 'globalXPreceding', 'globalYPreceding',
+#        'lengthPreceding', 'widthPreceding', 'velocityPreceding',
+#        'accelarationPreceding', 'globalXfollowing', 'globalYfollowing',
+#        'widthFollowing', 'velocityFollowing', 'accelerationFollowing',
+#        'spacingFollowing', 'recommendation', 'heading',
+#        'recommendedAcceleration'],
+
+def isCarTerminal(state):
+    y_diff = state[14] - state[8]
+    x_diff = state[13] - state[7]
+    slope = round(y_diff,2) / round(x_diff,2)
+    plus_c = state[8] - (slope * state[7])
+
+    if ((round(state[1]) + 2 == round(slope * state[0] + plus_c) or round(state[1]) - 2 == round(slope * state[0]))  and state[6] <= state[18]):
+        return True; # C is on the line.
+    return False;
+
 
 def CalculateReward(state,predictor):
-    if predictor.predict_possible_merge(state) == True:
-        print("well")
+    reward = 0,False
+    if predictor.predict_possible_merge(state) == False:
+        reward = -1,False
+    elif isCarTerminal(state) == True:
+        reward = 1,True
     else:
-        print("damn")
+        reward = 0.1,False
 
+    return reward
 
 class Agent():
     def __init__(self):
-        pass
+        self.accelerate_tensor = torch.Tensor([1,0,0,0,0])
+        self.deccelerate_tensor = torch.Tensor([0,1,0,0,0])
+        self.left_tensor = torch.Tensor([0,0,1,0,0])
+        self.right_tensor = torch.Tensor([0,0,0,1,0])
+        self.doNothing_tensor = torch.Tensor([0,0,0,0,1])
+
+    def calculateActionComputed(self,action_tensor,state):
+        if torch.equal(action_tensor,self.accelerate_tensor):
+            return self.accelerate_move(state)
+        elif torch.equal(action_tensor,self.deccelerate_tensor):
+            return self.deccelerate_move(state)
+        elif torch.equal(action_tensor,self.left_tensor):
+            return self.left_move(state)
+        elif torch.equal(action_tensor,self.right_tensor):
+            return self.right_move(state)
+        elif torch.equal(action_tensor,self.doNothing_tensor):
+            return self.passive_move(state)
+        else:
+            logging.warning('inappropriate action -- SEE ME')
 
     def left_move(self,state):
-        new_state = state
-
-        return new_state
+        return state
 
     def right_move(self,state):
-        pass
+        return state
 
     def accelerate_move(self,state):
-        pass
+        return state
 
     def deccelerate_move(self,state):
-        pass
+        return state
+
+    def passive_move(self,state):
+        return state
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 data = pd.read_csv("csv/lineMergeDataWithHeading.csv")
+
 
 num_epochs = 1
 agent = Agent()
@@ -161,6 +202,8 @@ model = DeepQLearning()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-6)
 criterion = nn.MSELoss()
 
+epsilon = model.initial_epsilon
+
 replay_memory = []
 accelerate_tensor = torch.Tensor([1,0,0,0,0])
 deccelerate_tensor = torch.Tensor([0,1,0,0,0])
@@ -172,20 +215,78 @@ doNothing_tensor = torch.Tensor([0,0,0,0,1])
 for epoch in range(num_epochs):
     for index,game_run in enumerate(featuresTrain):
         game_state = game_run
-        if index == 0:
-            for state in range(game_run.shape[0]):
-                current_state = state
-                moves = {}
-                moves["0"] = agent.accelerate_move(game_state[current_state])
-                moves["1"] = agent.deccelerate_move(game_state[current_state])
-                moves["2"] = agent.left_move(game_state[current_state])
-                moves["3"] = agent.right_move(game_state[current_state])
-                moves["4"] = game_state[current_state]
+        if index < 2:
+            for current_epoch in range(game_run.shape[0]):
+                for state in range(game_state.shape[0]):
+                    current = game_state[state].data.cpu().numpy()
+                    output = model(torch.Tensor(current))[0]
 
-                CalculateReward(game_state[current_state].data.cpu().numpy(),predictor)
+                    # initialise actions
 
-                try:
-                    pass
-                    # game_state[state + 1] = torch.Tensor([0., 0., 0., 0., 0., 0., 0., state, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
-                except:
-                    pass
+                    action = torch.zeros([model.number_of_actions], dtype=torch.float32)
+                    random_action = random.random() <= epsilon
+                    if random_action: print("Performed random action!")
+                    action_index = [torch.randint(model.number_of_actions, torch.Size([]), dtype=torch.int)
+                                    if random_action
+                                    else torch.argmax(output)][0]
+
+                    action[action_index] = 1
+
+                    # get next state and reward
+
+                    next_state = agent.calculateActionComputed(action,current)
+                    reward,terminal = CalculateReward(next_state,predictor)
+
+                    replay_memory.append((torch.Tensor(current), torch.Tensor(action), reward, torch.Tensor(next_state), terminal))
+
+                    # if replay memory is full, remove the oldest transition
+                    if len(replay_memory) > model.replay_memory_size:
+                        replay_memory.pop(0)
+
+                    epsilon = model.final_epsilon + (model.initial_epsilon - model.final_epsilon) * \
+                                     math.exp(-1. * current_epoch / model.EPSILON_DECAY)
+
+                    minibatch = random.sample(replay_memory, min(len(replay_memory), model.minibatch_size))
+
+                    # minibatch = torch.Tensor(minibatch)
+                    # unpack minibatch
+                    current_batch = Variable(torch.cat(tuple(d[0] for d in minibatch)))
+                    action_batch = Variable(torch.Tensor(tuple(d[1] for d in minibatch)[0]))
+                    reward_batch = Variable(torch.Tensor(tuple(d[2] for d in minibatch)))
+                    next_state_batch = Variable(torch.cat(tuple(d[3] for d in minibatch)))
+                    terminal_state_batch = tuple(d[4] for d in minibatch)
+
+                    # get output for the next state
+                    next_state_batch_output = model(next_state_batch)
+
+                    # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
+                    y_batch = tuple(reward_batch[i] if minibatch[i][4]
+                                        else reward_batch[i] + model.gamma * torch.max(next_state_batch_output[i])
+                                              for i in range(len(minibatch)))
+
+                    # extract Q-value
+                    q_value = torch.sum(model(current_batch) * action_batch, dim=1)
+
+                    # PyTorch accumulates gradients by default, so they need to be reset in each pass
+                    optimizer.zero_grad()
+
+                    # returns a new Tensor, detached from the current graph, the result will never require gradient
+                    y_batch = torch.Tensor(y_batch).detach()
+
+                    print(q_value)
+                    print(y_batch)
+
+                    # calculate loss
+                    loss = criterion(q_value, y_batch)
+
+                    print('Loss:   {:.4f}'.format(loss.item()))
+
+                    # do backward pass
+                    loss.backward()
+                    optimizer.step()
+
+                    print(next_state)
+                    if terminal == True:
+                        break
+                    else:
+                        game_state[state + 1] = torch.Tensor(next_state)

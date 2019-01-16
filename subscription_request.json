@@ -1,1 +1,0 @@
-{"type":"subscription_request","context":"subscriptions","origin":"traffic_orchestrator","version":"0.1.0","timestamp":1540227788814,"message":{"request_id":99,"filter":{"area":{"shape":"circle","center":{"longitude":476947023,"latitude":65357796,"radius":10000}}}},"signature":"TEMPLATE"}

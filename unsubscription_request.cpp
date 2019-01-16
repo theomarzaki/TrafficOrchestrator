@@ -17,6 +17,7 @@ private:
 	int subscriptionId;
 	string signature;
 	string source_uuid;
+	string destination_uuid;
 
 public:
 
@@ -36,6 +37,7 @@ public:
 		context = "subscriptions";
 		origin = "traffic_orchestrator";
 		source_uuid = "OB19D";
+		destination_uuid = "placeholder";
 	}
 
 
@@ -44,6 +46,7 @@ public:
 		context = "subscriptions";
 		origin = "traffic_orchestrator";
 		source_uuid = "OB19D";
+		destination_uuid = "placeholder";
 	}
 
 	friend std::ostream& operator<< (ostream& os, UnsubscriptionRequest * unsubscriptionReq);
@@ -57,6 +60,7 @@ public:
 	string getSignature();
 	int getRequestId();
 	string getSourceUUID();
+	string getDestinationUUID();
 
 	void setType(string);
 	void setContext(string);
@@ -67,6 +71,7 @@ public:
 	void setSignature(string);
 	void setRequestId(int);
 	void setSourceUUID(string);
+	void setDestinationUUID(string);
 
 };
 
@@ -79,6 +84,7 @@ int UnsubscriptionRequest::getSubscriptionId(){return subscriptionId;}
 string UnsubscriptionRequest::getSignature(){return signature;}
 int UnsubscriptionRequest::getRequestId(){return request_id;}
 string UnsubscriptionRequest::getSourceUUID(){return source_uuid;}
+string UnsubscriptionRequest::getDestinationUUID(){return destination_uuid;}
 
 void UnsubscriptionRequest::setType(string parameter){type = parameter;}
 void UnsubscriptionRequest::setContext(string parameter){context = parameter;}
@@ -89,6 +95,7 @@ void UnsubscriptionRequest::setSubscriptionId(int parameter){subscriptionId = pa
 void UnsubscriptionRequest::setSignature(string parameter){signature = parameter;}
 void UnsubscriptionRequest::setRequestId(int parameter){request_id=parameter;}
 void UnsubscriptionRequest::setSourceUUID(string parameter){source_uuid = parameter;}
+void UnsubscriptionRequest::setDestinationUUID(string parameter){destination_uuid = parameter;}
 
 std::ostream& operator<<(std::ostream& os, UnsubscriptionRequest * unsubscriptionReq) {
 
@@ -105,6 +112,8 @@ std::ostream& operator<<(std::ostream& os, UnsubscriptionRequest * unsubscriptio
   << unsubscriptionReq->getTimestamp()
 	<< ","
 	<< unsubscriptionReq->getSourceUUID()
+	<< ","
+	<< unsubscriptionReq->getDestinationUUID()
 	<< ","
 	<< unsubscriptionReq->getRequestId()
   << ","

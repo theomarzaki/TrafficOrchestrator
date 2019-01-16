@@ -41,14 +41,16 @@ class SubscriptionRequest {
 			type = "subscription_request";
 			context = "subscriptions"; //changed from subscription_mechanism
 			origin = "traffic_orchestrator";
-			source_uuid = "OB19D";
+			source_uuid = "TO";
+			destination_uuid = "placeholder";
 		}
 
 		SubscriptionRequest() {
 			type = "subscription_request";
 			context = "subscriptions"; // same as above
 			origin = "traffic_orchestrator";
-			source_uuid = "OB19D"; // add to json format properly
+			source_uuid = "TO"; // add to json format properly
+			destination_uuid = "placeholder";
 		}
 
 	~SubscriptionRequest();
@@ -68,6 +70,7 @@ class SubscriptionRequest {
 	string getSignature();
 	int getRequestId();
 	string getSourceUUID();
+	string getDestinationUUID();
 
 
 	void setType(string);
@@ -83,6 +86,7 @@ class SubscriptionRequest {
 	void setSignature(string);
 	void setRequestId(int);
 	void setSourceUUID(string);
+	void setDestinationUUID(string);
 
 };
 
@@ -101,6 +105,7 @@ double SubscriptionRequest::getRadius(){return radius;}
 string SubscriptionRequest::getSignature(){return signature;}
 int SubscriptionRequest::getRequestId(){return request_id;}
 string SubscriptionRequest::getSourceUUID(){return source_uuid;}
+string SubscriptionRequest::getDestinationUUID(){return destination_uuid;}
 
 void SubscriptionRequest::setType(string parameter){type = parameter;}
 void SubscriptionRequest::setContext(string parameter){context = parameter;}
@@ -115,6 +120,7 @@ void SubscriptionRequest::setRadius(double parameter){radius = parameter;}
 void SubscriptionRequest::setSignature(string parameter){signature = parameter;}
 void SubscriptionRequest::setRequestId(int parameter){request_id = parameter;}
 void SubscriptionRequest::setSourceUUID(string parameter){source_uuid = parameter;}
+void SubscriptionRequest::setDestinationUUID(string parameter){destination_uuid = parameter;}
 
 std::ostream& operator<<(std::ostream& os, SubscriptionRequest * subscriptionReq) {
 
@@ -132,6 +138,8 @@ std::ostream& operator<<(std::ostream& os, SubscriptionRequest * subscriptionReq
 	<< ","
 	<< subscriptionReq->getSourceUUID()
   << ","
+	<< subscriptionReq->getDestinationUUID()
+	<< ","
   << subscriptionReq->getFilter()
   << ","
 	<<subscriptionReq->getRequestId()
