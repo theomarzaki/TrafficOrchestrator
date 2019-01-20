@@ -138,6 +138,13 @@ string createManeuverJSON(ManeuverRecommendation * maneuverRec) {
 	.AddMember("destination_uuid", Value().SetString(maneuverRec->getUuidTo().c_str(),allocator), allocator)
 	.AddMember("timestamp", Value().SetUint64(maneuverRec->getTimestamp()), allocator);
 
+	Value message_id(kObjectType);
+	message_id.AddMember("source_uuid",Value().SetString(maneuverRec->getSourceUUID().c_str(),allocator),allocator);
+
+	message_id.AddMember("uuid",Value().SetString(maneuverRec->getUUID().c_str(),allocator),allocator);
+
+	message_id.AddMember("timestamp",Value().SetUint64(maneuverRec->getTimestamp()), allocator);
+
 	Value message(kObjectType);
 	message.AddMember("uuid_maneuver", Value().SetString(maneuverRec->getUuidManeuver().c_str(),allocator), allocator);
 
@@ -177,6 +184,7 @@ string createManeuverJSON(ManeuverRecommendation * maneuverRec) {
 	// message.AddMember("action", action, allocator);
 
 	document.AddMember("message", message, allocator);
+	document.AddMember("message_id",message_id,allocator);
 	document.AddMember("signature", Value().SetString(maneuverRec->getSignature().c_str(),allocator), allocator);
 
 	StringBuffer strbuf;

@@ -79,6 +79,7 @@ float width_c; // Variance of RU width measurements.
 float height_c; // Variance of RU height measurements.
 
 string signature; // Used for signing the message content.
+string source_uuid;
 
 public:
 
@@ -86,7 +87,7 @@ RoadUser(string type,string context,string origin,string version,uint64_t timest
 uint16_t heading,uint16_t speed,uint16_t acceleration,uint16_t yaw_rate,float length,float width,
 float height,string color,uint4 lane_position,uint8_t existence_probability,uint16_t position_semi_major_confidence,
 uint16_t position_semi_minor_confidence,uint16_t position_semi_major_orientation,uint16_t heading_c,
-uint16_t speed_c,uint16_t acceleration_c,uint16_t yaw_rate_c,float length_c,float width_c,float height_c,string signature) :
+uint16_t speed_c,uint16_t acceleration_c,uint16_t yaw_rate_c,float length_c,float width_c,float height_c,string signature, string source_uuid) :
 type(type),
 context(context),
 origin(origin),
@@ -118,7 +119,8 @@ yaw_rate_c(yaw_rate_c),
 length_c(length_c),
 width_c(width_c),
 height_c(height_c),
-signature(signature)
+signature(signature),
+source_uuid(source_uuid)
 {}
 
 /* Default constructor assigns relevant fields to 'No Value Assigned' if not all values are handed to the above constructor. */
@@ -165,6 +167,7 @@ float getWidthConfidence();
 float getHeightConfidence();
 string getSignature();
 string getPositionType();
+string getSouceUUID();
 
 void setType(string);
 void setContext(string);
@@ -198,6 +201,7 @@ void setWidthConfidence(float);
 void setHeightConfidence(float);
 void setSignature(string);
 void setPositionType(string);
+void setSourceUUID(string);
 
 };
 
@@ -235,6 +239,7 @@ float RoadUser::getWidthConfidence() {return width_c;}
 float RoadUser::getHeightConfidence(){return height_c;}
 string RoadUser::getSignature(){return signature;}
 string RoadUser::getPositionType(){return position_type;}
+string RoadUser::getSouceUUID(){return source_uuid;}
 
 void RoadUser::setType(string parameter){type = parameter;}
 void RoadUser::setContext(string parameter){context = parameter;}
@@ -268,6 +273,7 @@ void RoadUser::setWidthConfidence(float parameter) {width_c = parameter;}
 void RoadUser::setHeightConfidence(float parameter){height_c = parameter;}
 void RoadUser::setSignature(string parameter){signature = parameter;}
 void RoadUser::setPositionType(string parameter){position_type = parameter;}
+void RoadUser::setSourceUUID(string parameter){source_uuid = parameter;}
 
 std::ostream& operator<<(std::ostream& os, RoadUser * roadUser) {
 

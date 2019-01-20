@@ -70,6 +70,7 @@ float length_c;
 float width_c;
 float height_c;
 string signature;
+string source_uuid;
 
 };
 
@@ -78,6 +79,8 @@ struct Detected_To_Notification {
   string context;
   string origin;
   string version;
+  string uuid;
+  string source_uuid;
   uint64_t timestamp;
   int subscriptionId;
   vector<Detected_Road_User> ru_description_list;
@@ -90,6 +93,7 @@ struct Detected_Trajectory_Feedback {
   string origin;
   string version;
   uint64_t timestamp;
+  string source_uuid;
   string uuid_vehicle;
   string uuid_to;
   string uuid_maneuver;
@@ -97,6 +101,7 @@ struct Detected_Trajectory_Feedback {
   string feedback;
   string reason;
   string signature;
+  string uuid;
 
 };
 
@@ -174,7 +179,11 @@ Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notificatio
       values.signature = document["signature"].GetString();
   }
   else values.signature = "placeholder";
-
+  if(document.HasMember("source_uuid") == true){
+      values.source_uuid = document["source_uuid"].GetString();
+  }
+  else if(document.HasMember("message_id")) values.source_uuid = document["message_id"]["source_uuid"].GetString();
+  else values.source_uuid = "placeholder";
 
 
   return values;
@@ -193,6 +202,16 @@ Detected_To_Notification assignNotificationVals(Document document) {
       values.signature = document["signature"].GetString();
   }
   else values.signature = "placeholder";
+
+  if(document.HasMember("source_uuid") == true){
+      values.source_uuid = document["source_uuid"].GetString();
+  }
+  else if(document.HasMember("message_id")) values.source_uuid = document["message_id"]["source_uuid"].GetString();
+  else values.source_uuid = "placeholder";
+
+  if(document.HasMember("message_id")) values.uuid = document["message_id"]["uuid"].GetString();
+  else values.uuid = "placeholder";
+
 
   for(auto& v : document["message"]["ru_description_list"].GetArray()) {
     StringBuffer sb;
@@ -224,8 +243,14 @@ Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document document) {
       values.signature = document["signature"].GetString();
   }
   else values.signature = "placeholder";
-
   return values;
+
+  if(document.HasMember("source_uuid") == true){
+      values.source_uuid = document["source_uuid"].GetString();
+  }
+
+  if(document.HasMember("message_id")) values.uuid = document["message_id"]["uuid"].GetString();
+  else values.uuid = "placeholder";
 
 }
 

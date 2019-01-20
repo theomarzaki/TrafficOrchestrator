@@ -32,6 +32,8 @@ private:
 	uint32_t longitude_action;
 	uint16_t speed_action;
 	uint4 lane_position;
+	string source_uuid;
+	string uuid;
 
 	string signature;
 
@@ -86,6 +88,8 @@ uint32_t getLongitudeAction();
 uint16_t getSpeedAction();
 uint4 getLanePositionAction();
 string getSignature();
+string getSourceUUID();
+string getUUID();
 
 void setType(string);
 void setContext(string);
@@ -102,6 +106,8 @@ void setLongitudeAction(uint32_t);
 void setSpeedAction(uint16_t);
 void setLanePositionAction(uint4);
 void setSignature(string);
+void setSourceUUID(string);
+void setUUID(string);
 
 void addWaypoint(Waypoint *);
 void emptyWaypoints();
@@ -127,6 +133,8 @@ uint32_t ManeuverRecommendation::getLongitudeAction(){return longitude_action;}
 uint16_t ManeuverRecommendation::getSpeedAction(){return speed_action;}
 uint4 ManeuverRecommendation::getLanePositionAction(){return lane_position;}
 string ManeuverRecommendation::getSignature(){return signature;}
+string ManeuverRecommendation::getUUID(){return uuid;}
+string ManeuverRecommendation::getSourceUUID(){return source_uuid;}
 
 void ManeuverRecommendation::setType(string parameter){type = parameter;}
 void ManeuverRecommendation::setContext(string parameter){context = parameter;}
@@ -143,6 +151,8 @@ void ManeuverRecommendation::setLongitudeAction(uint32_t parameter){longitude_ac
 void ManeuverRecommendation::setSpeedAction(uint16_t parameter){speed_action = parameter;}
 void ManeuverRecommendation::setLanePositionAction(uint4 parameter){lane_position = parameter;}
 void ManeuverRecommendation::setSignature(string parameter){signature = parameter;}
+void ManeuverRecommendation::setUUID(string parameter){uuid = parameter;}
+void ManeuverRecommendation::setSourceUUID(string parameter){source_uuid = parameter;}
 
 void ManeuverRecommendation::addWaypoint(Waypoint * parameter) {waypoints.push_back(parameter);}
 
