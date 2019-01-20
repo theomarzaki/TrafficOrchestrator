@@ -1,17 +1,7 @@
 # running code
 
-cd build 
+./runner.sh
 
-remove all files
+# TO Config 
 
-requires ubuntu (torchlib runs for ubuntu)
-
-cmake -DCMAKE_PREFIX_PATH=/communication_layer/libtorch ..
-
-make
-
-./exchange
-
-## TO Config 
-
-inside include
+change the recieve/send adress/port in the TO Config and then run the TO, from the base directory with the bash file ./runner.sh
