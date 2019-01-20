@@ -84,16 +84,16 @@ class DeepQLearning(nn.Module):
         self.final_epsilon = 0.0001
         self.initial_epsilon = 0.1
         self.number_of_iterations = 2000000
-        self.replay_memory_size = 10000
+        self.replay_memory_size = 50
         self.minibatch_size = 32 #TODO may need to change this
         self.EPSILON_DECAY = 100000
 
-        self.fc1 = nn.Linear(1, 19)
+        self.fc1 = nn.Linear(19,200)
         self.relu1 = nn.ReLU(inplace=True)
-        self.fc2 = nn.Linear(19, self.number_of_actions)
+        self.fc2 = nn.Linear(200, self.number_of_actions)
 
     def forward(self, x):
-        out = self.fc1(x.view(x.size()[0], -1))
+        out = self.fc1(x)
         out = self.relu1(out)
         out = self.fc2(out)
 
@@ -219,13 +219,11 @@ for epoch in range(num_epochs):
             for current_epoch in range(game_run.shape[0]):
                 for state in range(game_state.shape[0]):
                     current = game_state[state].data.cpu().numpy()
-                    output = model(torch.Tensor(current))[0]
-
+                    output = model(torch.from_numpy(current))
                     # initialise actions
 
                     action = torch.zeros([model.number_of_actions], dtype=torch.float32)
                     random_action = random.random() <= epsilon
-                    if random_action: print("Performed random action!")
                     action_index = [torch.randint(model.number_of_actions, torch.Size([]), dtype=torch.int)
                                     if random_action
                                     else torch.argmax(output)][0]
@@ -237,30 +235,37 @@ for epoch in range(num_epochs):
                     next_state = agent.calculateActionComputed(action,current)
                     reward,terminal = CalculateReward(next_state,predictor)
 
-                    replay_memory.append((torch.Tensor(current), torch.Tensor(action), reward, torch.Tensor(next_state), terminal))
 
                     # if replay memory is full, remove the oldest transition
                     if len(replay_memory) > model.replay_memory_size:
                         replay_memory.pop(0)
+
+                    replay_memory.append((torch.Tensor(current), torch.Tensor(action), reward, torch.Tensor(next_state), terminal))
+
 
                     epsilon = model.final_epsilon + (model.initial_epsilon - model.final_epsilon) * \
                                      math.exp(-1. * current_epoch / model.EPSILON_DECAY)
 
                     minibatch = random.sample(replay_memory, min(len(replay_memory), model.minibatch_size))
 
-                    # minibatch = torch.Tensor(minibatch)
-                    # unpack minibatch
-                    current_batch = Variable(torch.cat(tuple(d[0] for d in minibatch)))
-                    action_batch = Variable(torch.Tensor(tuple(d[1] for d in minibatch)[0]))
-                    reward_batch = Variable(torch.Tensor(tuple(d[2] for d in minibatch)))
-                    next_state_batch = Variable(torch.cat(tuple(d[3] for d in minibatch)))
-                    terminal_state_batch = tuple(d[4] for d in minibatch)
+                    current_batch = torch.zeros(len(minibatch),19)
+                    action_batch = torch.zeros(len(minibatch),5)
+                    reward_batch = torch.zeros(len(minibatch))
+                    next_state_batch = torch.zeros(len(minibatch),19)
+                    terminal_state_batch = []
+                    for idx,data_point in enumerate(minibatch):
+                        current_batch[idx] = data_point[0]
+                        action_batch[idx] = data_point[1]
+                        reward_batch[idx] = data_point[2]
+                        next_state_batch[idx] = data_point[3]
+                        terminal_state_batch.append(data_point[4])
 
-                    # get output for the next state
-                    next_state_batch_output = model(next_state_batch)
+                    next_state_batch_output = torch.zeros(32,5)
+                    for idx in range(next_state_batch.shape[0]):
+                        next_state_batch_output[idx] = model(torch.Tensor(next_state_batch[idx]))[0]
 
                     # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
-                    y_batch = tuple(reward_batch[i] if minibatch[i][4]
+                    y_batch = tuple(reward_batch[i] if terminal_state_batch[i]
                                         else reward_batch[i] + model.gamma * torch.max(next_state_batch_output[i])
                                               for i in range(len(minibatch)))
 
@@ -273,20 +278,25 @@ for epoch in range(num_epochs):
                     # returns a new Tensor, detached from the current graph, the result will never require gradient
                     y_batch = torch.Tensor(y_batch).detach()
 
-                    print(q_value)
-                    print(y_batch)
-
                     # calculate loss
                     loss = criterion(q_value, y_batch)
 
-                    print('Loss:   {:.4f}'.format(loss.item()))
+                    if state % 10 == 0:
+                        print('Epoch: {}, Runs: {}, Loss:   {:.4f}'.format(epoch,index,loss.item()))
 
                     # do backward pass
                     loss.backward()
                     optimizer.step()
 
-                    print(next_state)
                     if terminal == True:
                         break
                     else:
-                        game_state[state + 1] = torch.Tensor(next_state)
+                        try:
+                            game_state[state + 1] = torch.Tensor(next_state)
+                        except:
+                            print("no more states (time) for maneuvers")
+                            break
+
+
+traced_script_module = torch.jit.trace(model, torch.rand(19))
+traced_script_module.save("rl_model.pt")

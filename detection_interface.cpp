@@ -337,33 +337,23 @@ string listenDataTCP(int socket_c) {
       break;
     }
     else if(i > 0) {
-      if(i>1) printf("Received %d bytes of data. Data received: %s\n",i,dataReceived);
-      auto found = string(dataReceived).find("\n");
-      auto ending = string(dataReceived).find_last_of("}");
-      auto start = string(dataReceived).find("{");
+      // if(i>1) printf("Received %d bytes of data. Data received: %s\n",i,dataReceived);
+      auto found = string(dataReceived).find_last_of("\n");
       if((found!=std::string::npos)){
-        if(found != 0){
+            if (found + 1 != i){
+              string copy_of_return = incomplete_message;
+              cout << "RETURNING" << copy_of_return + string(dataReceived).substr(i,found) << endl;
+              incomplete_message = string(dataReceived).substr(found+1,i);
+              return copy_of_return + string(dataReceived).substr(0,found);
+            }else{
+            cout << "space at: " << found << "message length at: " << i << "message: " << dataReceived << endl;
             string copy_of_return = incomplete_message;
-            incomplete_message = string(dataReceived).substr(found,i);
-            string toReturn = copy_of_return + string(dataReceived).substr(0,found);
-            auto startingB = string(toReturn).find("{");
-            if(startingB != std::string::npos && startingB == 0) {
-              cout << toReturn << endl;
-              return toReturn;
-            }else incomplete_message = "";
-            // return toReturn;
-          }else{
-            auto startingBracket = string(incomplete_message).find("{");
-            if((startingBracket!=std::string::npos)){
-              if(startingBracket == 0){
-                string terminating_return = incomplete_message;
-                incomplete_message = "";
-                cout << terminating_return << endl;
-                return terminating_return;
-              } else incomplete_message = "";
-            }
-            }
-        }else incomplete_message += string(dataReceived).substr(0,i);
+            incomplete_message = string();
+            cout << "toReturn" << endl;
+            cout << copy_of_return + string(dataReceived).substr(0,found+1) << endl;
+            return copy_of_return + string(dataReceived).substr(0,found);
+          }
+        }else cout << "CONCATINATING" << endl; incomplete_message += string(dataReceived);
+        }
     }
   }
-}

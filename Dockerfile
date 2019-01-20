@@ -6,6 +6,8 @@ RUN apt-get install g++ -y
 
 RUN apt install build-essential -y
 
+RUN apt install netcat -y
+
 RUN apt install wget -y
 
 RUN apt install cmake -y
@@ -19,3 +21,5 @@ COPY . /communication_layer
 EXPOSE 7000
 
 WORKDIR /communication_layer
+
+RUN chmod u+x runner.sh

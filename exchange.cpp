@@ -272,8 +272,12 @@ int main() {
 
 	std::shared_ptr<torch::jit::script::Module> lstm_model = torch::jit::load("../include/lstm_model.pt");
 
-  assert(lstm_model != nullptr);
-  std::cout << "import of lstm model successful\n";
+  if(lstm_model != nullptr) std::cout << "import of lstm model successful\n";
+
+	std::shared_ptr<torch::jit::script::Module> rl_model = torch::jit::load("../include/rl_model.pt");
+
+  if(rl_model != nullptr) std::cout << "import of rl model successful\n";
+
 
 	char readBuffer[65536];
 	FileReadStream is(file, readBuffer, sizeof(readBuffer));
@@ -316,13 +320,19 @@ int main() {
 
 			cout << "<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>" << endl;
 
-			std::vector<torch::jit::IValue> inputs;
-		  inputs.push_back(torch::rand({1, 2, 19}));
+			std::vector<torch::jit::IValue> lstm_inputs;
+			std::vector<torch::jit::IValue> rl_inputs;
+		  lstm_inputs.push_back(torch::rand({1, 2, 19}));
 
-		  auto out = lstm_model->forward(inputs).toTensor();
+		  auto lstm_out = lstm_model->forward(lstm_inputs).toTensor();
+			rl_inputs.push_back(lstm_out);
+			auto rl_out = rl_model->forward(rl_inputs).toTensor();
 
-		  std::cout << inputs << std::endl;
-		  std::cout << out << std::endl;
+		  std::cout << lstm_inputs << std::endl;
+			cout << "LSTM OUTPUTS" << endl;
+		  std::cout << lstm_out << std::endl;
+			cout << "RL OUTPUTS" << endl;
+			cout << rl_out << endl;
 
 			}
 			else{
