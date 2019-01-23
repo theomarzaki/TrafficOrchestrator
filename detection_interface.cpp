@@ -70,6 +70,7 @@ float length_c;
 float width_c;
 float height_c;
 string signature;
+string message_id;
 string source_uuid;
 
 };
@@ -85,6 +86,7 @@ struct Detected_To_Notification {
   int subscriptionId;
   vector<Detected_Road_User> ru_description_list;
   string signature;
+  string message_id;
 };
 
 struct Detected_Trajectory_Feedback {
@@ -101,7 +103,7 @@ struct Detected_Trajectory_Feedback {
   string feedback;
   string reason;
   string signature;
-  string uuid;
+  string message_id;
 
 };
 
@@ -117,6 +119,7 @@ struct Detected_Subscription_Response {
   string destination_uuid;
   int subscriptionId;
   string signature;
+  string message_id;
 
 };
 
@@ -131,6 +134,7 @@ struct Detected_Unsubscription_Response {
   string destination_uuid;
   int request_id;
   string signature;
+  string message_id;
 };
 
 Document parse(string readFromServer) {
@@ -182,8 +186,8 @@ Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notificatio
   if(document.HasMember("source_uuid") == true){
       values.source_uuid = document["source_uuid"].GetString();
   }
-  else if(document.HasMember("message_id")) values.source_uuid = document["message_id"]["source_uuid"].GetString();
-  else values.source_uuid = "placeholder";
+  else if(document.HasMember("message_id")) values.message_id = document["message_id"].GetString();
+  else values.message_id = "placeholder";
 
 
   return values;
@@ -206,11 +210,8 @@ Detected_To_Notification assignNotificationVals(Document document) {
   if(document.HasMember("source_uuid") == true){
       values.source_uuid = document["source_uuid"].GetString();
   }
-  else if(document.HasMember("message_id")) values.source_uuid = document["message_id"]["source_uuid"].GetString();
+  else if(document.HasMember("message_id")) values.message_id = document["message_id"].GetString();
   else values.source_uuid = "placeholder";
-
-  if(document.HasMember("message_id")) values.uuid = document["message_id"]["uuid"].GetString();
-  else values.uuid = "placeholder";
 
 
   for(auto& v : document["message"]["ru_description_list"].GetArray()) {
@@ -249,8 +250,8 @@ Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document document) {
       values.source_uuid = document["source_uuid"].GetString();
   }
 
-  if(document.HasMember("message_id")) values.uuid = document["message_id"]["uuid"].GetString();
-  else values.uuid = "placeholder";
+  if(document.HasMember("message_id")) values.message_id = document["message_id"].GetString();
+  else values.message_id = "placeholder";
 
 }
 

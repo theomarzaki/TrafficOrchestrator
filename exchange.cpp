@@ -312,25 +312,10 @@ int main() {
 			listening = true;
 		}
 		if(filterValue == 0 || filterValue == 3) {
-			// vector<ManeuverRecommendation*> recommendations = calculateTrajectories(database,distanceRadius,uuidTo,mergingLongitude,mergingLatitude);
-			vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model);
+			vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
 			database->deleteAll();
 			if(recommendations.size() > 0) {
 				cout << "<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>" << endl;
-
-
-				std::vector<torch::jit::IValue> rl_inputs;
-				std::vector<torch::jit::IValue> lstm_inputs;
-			  lstm_inputs.push_back(torch::rand({1, 2, 19}));
-			  auto lstm_out = lstm_model->forward(lstm_inputs).toTensor();
-				rl_inputs.push_back(lstm_out);
-				auto rl_out = rl_model->forward(rl_inputs).toTensor();
-
-			  std::cout << lstm_inputs << std::endl;
-				cout << "LSTM OUTPUTS" << endl;
-			  std::cout << lstm_out << std::endl;
-				cout << "RL OUTPUTS" << endl;
-				cout << rl_out << endl;
 				cout << "\n\n\n\n\n\n\n" << "***********************************"<< "Sending " << recommendations.size() << " trajectory recommendations." << "***********************************" << "\n\n\n\n\n\n\n" << endl;
 				sendTrajectoryRecommendations(recommendations,socket);
 			}else	printf("No Trajectories Calculated.\n");
@@ -346,3 +331,17 @@ int main() {
 
 	return 0;
 }
+
+
+// std::vector<torch::jit::IValue> rl_inputs;
+// std::vector<torch::jit::IValue> lstm_inputs;
+// lstm_inputs.push_back(torch::rand({1, 2, 19}));
+// auto lstm_out = lstm_model->forward(lstm_inputs).toTensor();
+// rl_inputs.push_back(lstm_out);
+// auto rl_out = rl_model->forward(rl_inputs).toTensor();
+
+// std::cout << lstm_inputs << std::endl;
+// cout << "LSTM OUTPUTS" << endl;
+// std::cout << lstm_out << std::endl;
+// cout << "RL OUTPUTS" << endl;
+// cout << rl_out << endl;

@@ -1,5 +1,6 @@
 {
-  "startTime": 1521631164238,
+  "Vigo_1_startTime": 1521631164238,
+  "Montlhery_1_startTime": 1544104461014,
   "ports": {
     "dataFusionUdp": 4001,
     "dataFusionTcp": 4002,

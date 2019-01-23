@@ -34,6 +34,7 @@ private:
 	uint4 lane_position;
 	string source_uuid;
 	string uuid;
+	string message_id;
 
 	string signature;
 
@@ -90,6 +91,7 @@ uint4 getLanePositionAction();
 string getSignature();
 string getSourceUUID();
 string getUUID();
+string getMessageID();
 
 void setType(string);
 void setContext(string);
@@ -108,6 +110,7 @@ void setLanePositionAction(uint4);
 void setSignature(string);
 void setSourceUUID(string);
 void setUUID(string);
+void setMessageID(string);
 
 void addWaypoint(Waypoint *);
 void emptyWaypoints();
@@ -135,6 +138,7 @@ uint4 ManeuverRecommendation::getLanePositionAction(){return lane_position;}
 string ManeuverRecommendation::getSignature(){return signature;}
 string ManeuverRecommendation::getUUID(){return uuid;}
 string ManeuverRecommendation::getSourceUUID(){return source_uuid;}
+string ManeuverRecommendation::getMessageID(){return message_id;}
 
 void ManeuverRecommendation::setType(string parameter){type = parameter;}
 void ManeuverRecommendation::setContext(string parameter){context = parameter;}
@@ -153,6 +157,7 @@ void ManeuverRecommendation::setLanePositionAction(uint4 parameter){lane_positio
 void ManeuverRecommendation::setSignature(string parameter){signature = parameter;}
 void ManeuverRecommendation::setUUID(string parameter){uuid = parameter;}
 void ManeuverRecommendation::setSourceUUID(string parameter){source_uuid = parameter;}
+void ManeuverRecommendation::setMessageID(string parameter){message_id = parameter;}
 
 void ManeuverRecommendation::addWaypoint(Waypoint * parameter) {waypoints.push_back(parameter);}
 
@@ -175,6 +180,8 @@ std::ostream& operator<<(std::ostream& os, ManeuverRecommendation * maneuverRec)
   << maneuverRec->getUuidVehicle()
   << ","
   << maneuverRec->getUuidTo()
+	<< ","
+	<< maneuverRec->getMessageID()
   << ","
   << maneuverRec->getUuidManeuver()
   << ","

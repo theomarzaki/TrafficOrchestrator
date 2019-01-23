@@ -33,32 +33,34 @@ test_data.drop(['recommendation', 'heading', 'recommendedAcceleration'], axis=1,
 # train_data = scaler_x.fit_transform(train_data)
 # test_data = scaler_x.transform(test_data)
 
-featuresTrain = torch.zeros(math.ceil(train_data.shape[0]/2),1,19)
-targetsTrain = torch.zeros(math.ceil(train_data.shape[0]/2),19)
+featuresTrain = torch.zeros(math.ceil(train_data.shape[0]/1),1,19)
+targetsTrain = torch.zeros(math.ceil(train_data.shape[0]/1),19)
 
-featuresTest = torch.zeros(math.ceil(test_data.shape[0]/2),1,19)
-targetsTest= torch.zeros(math.ceil(test_data.shape[0]/2),19)
+featuresTest = torch.zeros(math.ceil(test_data.shape[0]/1),1,19)
+targetsTest= torch.zeros(math.ceil(test_data.shape[0]/1),19)
 
 batch = torch.zeros(1,19)
+counter = 0
 for idx in range(train_data.shape[0]):
-    if idx % 2 != 0:
+    if idx % 1 != 0:
         batch[0]= torch.Tensor(train_data.values[idx])
     else:
-        pos = math.ceil(idx/2)
-        featuresTrain[pos] = batch
-        targetsTrain[pos] = torch.Tensor(train_data.values[idx])
+        featuresTrain[counter] = batch
+        targetsTrain[counter] = torch.Tensor(train_data.values[idx])
+        counter = counter + 1
         batch = torch.zeros(1,19)
 
 train = torch.utils.data.TensorDataset(featuresTrain,targetsTrain)
 
 batch = torch.zeros(1,19)
+counter = 0
 for idx in range(test_data.shape[0]):
-    if idx % 2 != 0:
+    if idx % 1 != 0:
         batch[0]= torch.Tensor(test_data.values[idx])
     else:
-        pos = math.ceil(idx/2)
-        featuresTest[pos] = batch
-        targetsTest[pos] = torch.Tensor(test_data.values[idx])
+        featuresTest[counter] = batch
+        targetsTest[counter] = torch.Tensor(test_data.values[idx])
+        counter = counter + 1
         batch = torch.zeros(1,19)
 
 
@@ -144,7 +146,7 @@ with torch.no_grad():
     print('Test Accuracy of the model of the model: {} %'.format(100 * correct / total))
 
 # Save the model checkpoint
-traced_script_module = torch.jit.trace(model, torch.rand(1,2,19))
+traced_script_module = torch.jit.trace(model, torch.rand(1,1,19))
 traced_script_module.save("lstm_model.pt")
 
 data.drop(['recommendation', 'heading', 'recommendedAcceleration'], axis=1, inplace=True)
