@@ -62,26 +62,48 @@ pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * mergin
     }
   }
 return pair<RoadUser*,RoadUser*>(closest_preceeding,closest_following);
-
-
-
 }
+
+
+at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
+	int accelerate_tensor = 0;
+	int deccelerate_tensor = 1;
+	int left_tensor = 2;
+	int right_tensor = 3;
+	int doNothing_tensor = 4;
+
+	auto actionTensor = torch::argmax(action_Tensor);
+
+	if(accelerate_tensor == actionTensor.item<int>()){
+		return stateTensor;
+	} else if(deccelerate_tensor == actionTensor.item<int>()){
+		return stateTensor;
+	} else if(left_tensor == actionTensor.item<int>()){
+		return stateTensor;
+	} else if(right_tensor == actionTensor.item<int>()){
+		return stateTensor;
+	} else if(doNothing_tensor == actionTensor.item<int>()){
+		return stateTensor;
+	} else cout << "ERROR: incomputing incorrect action tensor";
+
+	return stateTensor;
+}
+
+
+
 
 vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,vector<RoadUser*>>> neighbours){
   std::vector<float> mergingCar;
 
-  printf("SEEING IF THERE IS FOLLOWING / PRECEEDING CAR.\n");
   cout << "number of neighbours :" << neighbours.size() << endl;
   std::vector<RoadUser*> v;
   auto x = getClosestFollowingandPreceedingCars(merging_car,v);
   // concatenate the lists into one list for the lstm
   for(pair<RoadUser*,vector<RoadUser*>> v : neighbours){
     if ( v.first->getUuid() == merging_car->getUuid() ){
-      cout << "WOHOOOOOO" << endl;
       x = getClosestFollowingandPreceedingCars(merging_car,v.second);
-      cout << x.first->getLongitude() << x.first->getLatitude() << x.second->getLongitude() << x.second->getLatitude() << endl;
-    } else cout << "no nearby cars" << endl;
-  }
+  	}
+	}
 
     mergingCar.push_back(merging_car->getLatitude());
     mergingCar.push_back(merging_car->getLongitude());
@@ -125,17 +147,38 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
 	at::Tensor calculatedLSTM = lstm_model->forward(lstm_inputs).toTensor();
 	rl_inputs.push_back(calculatedLSTM);
 	at::Tensor calculatedRL = rl_model->forward(rl_inputs).toTensor();
+	auto calculated_n_1_states = GetStateFromActions(calculatedRL,calculatedLSTM);
 
-	// repeat for 1-10 times depending on number of waypoints you want
-	// parse action into waypoint
-	// add more waypoints here
-  Waypoint * waypoint = new Waypoint();
-  waypoint->setTimestamp(timeCalculator.count() + (distanceCalculate(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculatedLSTM[0][0].item<float>(),calculatedLSTM[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
-  waypoint->setLatitude(calculatedLSTM[0][0].item<float>());
-  waypoint->setLongitude(calculatedLSTM[0][1].item<float>());
-  waypoint->setSpeed(calculatedLSTM[0][4].item<float>());
+	Waypoint * waypoint = new Waypoint();
+  waypoint->setTimestamp(timeCalculator.count() + (distanceCalculate(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
+  waypoint->setLatitude(calculated_n_1_states[0][0].item<float>());
+  waypoint->setLongitude(calculated_n_1_states[0][1].item<float>());
+  waypoint->setSpeed(calculated_n_1_states[0][4].item<float>());
   waypoint->setLanePosition(mergingVehicle->getLanePosition()+1);
   mergingManeuver->addWaypoint(waypoint);
+
+	at::Tensor previous_state = calculated_n_1_states;
+	for(int counter = 0;counter < 7; counter++){
+		std::vector<torch::jit::IValue> lstm_n_inputs;
+		std::vector<torch::jit::IValue> rl_n_inputs;
+
+		lstm_n_inputs.push_back(previous_state.unsqueeze(0));
+		auto predicted_next_state = lstm_model->forward(lstm_n_inputs).toTensor();
+		rl_n_inputs.push_back(predicted_next_state);
+		auto calculated_next_state = rl_model->forward(rl_n_inputs).toTensor();
+		auto calculated_waypoint = GetStateFromActions(calculatedRL,calculatedLSTM);
+		previous_state = calculated_waypoint;
+
+		Waypoint * waypoint = new Waypoint();
+	  waypoint->setTimestamp(timeCalculator.count() + (distanceCalculate(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_waypoint[0][0].item<float>(),calculated_waypoint[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
+	  waypoint->setLatitude(calculated_waypoint[0][0].item<float>());
+	  waypoint->setLongitude(calculated_waypoint[0][1].item<float>());
+	  waypoint->setSpeed(calculated_waypoint[0][4].item<float>());
+	  waypoint->setLanePosition(mergingVehicle->getLanePosition()+1);
+	  mergingManeuver->addWaypoint(waypoint);
+
+
+	}
 
   return mergingManeuver;
 }
@@ -147,7 +190,7 @@ vector<ManeuverRecommendation*> ManeuverParser(Database * database, double dista
 			printf("CAR IN LANE 0.\n");
 			auto neighbours = mapNeighbours(database,distanceRadius);
       auto input_values = RoadUsertoModelInput(r,neighbours);
-      auto models_input = torch::tensor(input_values).unsqueeze(0).unsqueeze(0);;
+      auto models_input = torch::tensor(input_values).unsqueeze(0).unsqueeze(0);
       recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
 		}
 	}
