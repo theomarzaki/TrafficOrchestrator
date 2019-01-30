@@ -107,7 +107,7 @@ class DeepQLearning(nn.Module):
 #        'lengthPreceding', 'widthPreceding', 'velocityPreceding',
 #        'accelarationPreceding', 'globalXfollowing', 'globalYfollowing',
 #        'widthFollowing', 'velocityFollowing', 'accelerationFollowing',
-#        'spacingFollowing', 'recommendation', 'heading',
+#        'spacingFollowing',] 'recommendation', 'heading',
 #        'recommendedAcceleration'],
 
 def isCarTerminal(state):
@@ -132,6 +132,7 @@ def CalculateReward(state,predictor):
 
     return reward
 
+
 class Agent():
     def __init__(self):
         self.accelerate_tensor = torch.Tensor([1,0,0,0,0])
@@ -141,33 +142,81 @@ class Agent():
         self.doNothing_tensor = torch.Tensor([0,0,0,0,1])
 
     def calculateActionComputed(self,action_tensor,state):
-        if torch.equal(action_tensor,self.accelerate_tensor):
+        if torch.equal(action_tensor,self.accelerate_tensor).cuda():
             return self.accelerate_move(state)
-        elif torch.equal(action_tensor,self.deccelerate_tensor):
+        elif torch.equal(action_tensor,self.deccelerate_tensor).cuda():
             return self.deccelerate_move(state)
-        elif torch.equal(action_tensor,self.left_tensor):
+        elif torch.equal(action_tensor,self.left_tensor).cuda():
             return self.left_move(state)
-        elif torch.equal(action_tensor,self.right_tensor):
+        elif torch.equal(action_tensor,self.right_tensor).cuda():
             return self.right_move(state)
-        elif torch.equal(action_tensor,self.doNothing_tensor):
+        elif torch.equal(action_tensor,self.doNothing_tensor).cuda():
             return self.passive_move(state)
         else:
             logging.warning('inappropriate action -- SEE ME')
 
     def left_move(self,state):
-        return state
+        displacement = state[4] * 0.001 + 0.5 * (state[5] * 0.001 * 0.001)
+        angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
+        new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2))
+        new_x = state[0] + new_position - (0.001 * new_position)
+        new_y = state[1] + new_position
+        new_state = state
+        new_state[0] = new_x
+        new_state[1] = new_y
+        return new_state
 
     def right_move(self,state):
-        return state
+        displacement = state[4] * 0.001 + 0.5 * (state[5] * 0.001 * 0.001)
+        angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
+        new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
+        new_x = state[0] + new_position + (0.001 * new_position)
+        new_y = state[1] + new_position
+        new_state = state
+        new_state[0] = new_x
+        new_state[1] = new_y
+        return new_state
 
     def accelerate_move(self,state):
-        return state
+        final_velocity = state[4] + 0.001 * (state[4] + state[5] * 0.001)
+        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.001)
+        displacement = final_velocity * 0.001 + 0.5 * (final_acceleration * 0.001 * 0.001)
+        angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
+        new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
+        new_x = state[0] + new_position
+        new_y = state[1] + new_position
+        new_state = state
+        new_state[0] = new_x
+        new_state[1] = new_y
+        new_state[4] = final_velocity
+        new_state[5] = final_acceleration
+        return new_state
 
     def deccelerate_move(self,state):
-        return state
+        final_velocity = state[4] - 0.001 * (state[4] + state[5] * 0.001)
+        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.001)
+        displacement = final_velocity * 0.001 + 0.5 * (final_acceleration * 0.001 * 0.001)
+        angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
+        new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
+        new_x = state[0] + new_position
+        new_y = state[1] + new_position
+        new_state = state
+        new_state[0] = new_x
+        new_state[1] = new_y
+        new_state[4] = final_velocity
+        new_state[5] = final_acceleration
+        return new_state
 
     def passive_move(self,state):
-        return state
+        displacement = state[4] * 0.001 + 0.5 * (state[5] * 0.001 * 0.001)
+        angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
+        new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
+        new_x = state[0] + new_position
+        new_y = state[1] + new_position
+        new_state = state
+        new_state[0] = new_x
+        new_state[1] = new_y
+        return new_state
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -205,12 +254,6 @@ criterion = nn.MSELoss()
 epsilon = model.initial_epsilon
 
 replay_memory = []
-accelerate_tensor = torch.Tensor([1,0,0,0,0])
-deccelerate_tensor = torch.Tensor([0,1,0,0,0])
-left_tensor = torch.Tensor([0,0,1,0,0])
-right_tensor = torch.Tensor([0,0,0,1,0])
-doNothing_tensor = torch.Tensor([0,0,0,0,1])
-
 
 for epoch in range(num_epochs):
     for index,game_run in enumerate(featuresTrain):

@@ -8,9 +8,9 @@
 #include <nearest_neighbour.cpp>
 #include <torch/torch.h>
 #include <torch/script.h>
+#include <math.h>
 
 using namespace std;
-
 using namespace rapidjson;
 
 using namespace std::chrono;
@@ -79,18 +79,67 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 	int right_tensor = 3;
 	int doNothing_tensor = 4;
 
-	auto actionTensor = torch::argmax(action_Tensor);
+	auto state = stateTensor;
 
+	auto actionTensor = torch::argmax(action_Tensor);
 	if(accelerate_tensor == actionTensor.item<int>()){
-		return stateTensor;
+		auto final_velocity = state[0][4].item<float>() + 0.001 * (state[0][4].item<float>() + state[0][5].item<float>() * 0.001);
+    auto final_acceleration = (pow(final_velocity,2) - pow(state[0][4].item<float>(),2)) / 2 * (0.5 * (state[0][4].item<float>() + final_velocity) * 0.001);
+    auto displacement = final_velocity * 0.001 + 0.5 * (final_acceleration * 0.001 * 0.001);
+    auto angular_displacement =sin(15*M_PI/180) * displacement /sin(90*M_PI/180);
+    auto new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2));
+    auto new_x = state[0][0] + new_position;
+    auto new_y = state[0][1] + new_position;
+    auto new_state = state;
+    new_state[0][0] = new_x;
+    new_state[0][1] = new_y;
+    new_state[0][4] = final_velocity;
+    new_state[0][5] = final_acceleration;
+    return new_state;
 	} else if(deccelerate_tensor == actionTensor.item<int>()){
-		return stateTensor;
+		auto final_velocity = state[0][4].item<float>() - 0.001 * (state[0][4].item<float>() + state[0][5].item<float>() * 0.001);
+  	auto final_acceleration = (pow(final_velocity,2) - pow(state[0][4].item<float>(),2)) / 2 * (0.5 * (state[0][4].item<float>() + final_velocity) * 0.001);
+    auto displacement = final_velocity * 0.001 + 0.5 * (final_acceleration * 0.001 * 0.001);
+    auto angular_displacement = sin(15*M_PI/180) * displacement / sin(90*M_PI/180);
+    auto new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2));
+    auto new_x = state[0][0] + new_position;
+    auto new_y = state[0][1] + new_position;
+    auto new_state = state;
+    new_state[0][0] = new_x;
+    new_state[0][1] = new_y;
+    new_state[0][4] = final_velocity;
+    new_state[0][5] = final_acceleration;
+    return new_state;
 	} else if(left_tensor == actionTensor.item<int>()){
-		return stateTensor;
+		auto displacement = state[0][4].item<float>() * 0.001 + 0.5 * (state[0][5].item<float>() * 0.001 * 0.001);
+    auto angular_displacement = sin(15*M_PI/180) * displacement / sin(90*M_PI/180);
+    auto new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2));
+    auto new_x = state[0][0] + new_position - (0.001 * new_position);
+    auto new_y = state[0][1] + new_position;
+    auto new_state = state;
+    new_state[0][0] = new_x;
+    new_state[0][1] = new_y;
+    return new_state;
 	} else if(right_tensor == actionTensor.item<int>()){
-		return stateTensor;
+		auto displacement = state[0][4].item<float>() * 0.001 + 0.5 * (state[0][5].item<float>() * 0.001 * 0.001);
+    auto angular_displacement = sin(15*M_PI/180) * displacement / sin(90*M_PI/180);
+    auto new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2));
+    auto new_x = state[0][0] + new_position + (0.001 * new_position);
+    auto new_y = state[0][1] + new_position;
+    auto new_state = state;
+    new_state[0][0] = new_x;
+    new_state[0][1] = new_y;
+    return new_state;
 	} else if(doNothing_tensor == actionTensor.item<int>()){
-		return stateTensor;
+		auto displacement = state[0][4].item<float>() * 0.001 + 0.5 * (state[0][5].item<float>() * 0.001 * 0.001);
+    auto angular_displacement = sin(15*M_PI/180) * displacement / sin(90*M_PI/180);
+    auto new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2));
+    auto new_x = state[0][0] + new_position;
+    auto new_y = state[0][1] + new_position;
+    auto new_state = state;
+    new_state[0][0] = new_x;
+    new_state[0][1] = new_y;
+    return new_state;
 	} else cout << "ERROR: incomputing incorrect action tensor";
 
 	return stateTensor;
@@ -162,6 +211,8 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
   waypoint->setSpeed(calculated_n_1_states[0][4].item<float>());
   waypoint->setLanePosition(mergingVehicle->getLanePosition()+1);
   mergingManeuver->addWaypoint(waypoint);
+
+	cout << "reached" << endl;
 
 	at::Tensor previous_state = calculated_n_1_states;
 	for(int counter = 0;counter < 7; counter++){
