@@ -36,16 +36,11 @@ class SubscriptionResponse {
 		{
 			type = "subscription_response";
 			context = "subscriptions";
-			origin = "injector";
-			version = "0.1.0";
-			source_uuid = "TO";
 		}
 
 		SubscriptionResponse() {
 			type = "subscriptions";
 			context = "subscriptions";
-			origin = "injector";
-			version = "0.1.0";
 		}
 
 	friend std::ostream& operator<< (ostream& os, SubscriptionResponse * subscriptionResp);

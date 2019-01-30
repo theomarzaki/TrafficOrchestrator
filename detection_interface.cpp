@@ -147,6 +147,8 @@ Document parse(string readFromServer) {
 Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notification detectedToNotification) {
 	Detected_Road_User values;
 
+  // get Uint error
+
   values.type = document["type"].GetString();
   values.context = document["context"].GetString();
   values.origin = document["origin"].GetString();
@@ -165,7 +167,7 @@ Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notificatio
   values.length = document["message"]["size"]["length"].GetDouble();
   values.width = document["message"]["size"]["width"].GetDouble();
   values.height = document["message"]["size"]["height"].GetDouble();
-  values.color = document["message"]["color"].GetString();
+  // values.color = document["message"]["color"].GetString();
   values.lane_position = document["message"]["lane_position"].GetUint();
   values.existence_probability = document["message"]["existence_probability"].GetUint();
   values.position_semi_major_confidence = document["message"]["confidence"]["position_semi_major_confidence"].GetUint();
@@ -186,7 +188,8 @@ Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notificatio
   if(document.HasMember("source_uuid") == true){
       values.source_uuid = document["source_uuid"].GetString();
   }
-  else if(document.HasMember("message_id")) values.message_id = document["message_id"].GetString();
+  else values.source_uuid = "placeholder";
+  if(document.HasMember("message_id")) values.message_id = document["message_id"].GetString();
   else values.message_id = "placeholder";
 
 
@@ -210,8 +213,9 @@ Detected_To_Notification assignNotificationVals(Document document) {
   if(document.HasMember("source_uuid") == true){
       values.source_uuid = document["source_uuid"].GetString();
   }
-  else if(document.HasMember("message_id")) values.message_id = document["message_id"].GetString();
   else values.source_uuid = "placeholder";
+  if(document.HasMember("message_id")) values.message_id = document["message_id"].GetString();
+  else values.message_id = "placeholder";
 
 
   for(auto& v : document["message"]["ru_description_list"].GetArray()) {
@@ -275,11 +279,11 @@ Detected_Subscription_Response assignSubResponseVals(Document document) {
   if(document.HasMember("source_uuid") == true){
       values.source_uuid = document["source_uuid"].GetString();
   }
-  else values.signature = "placeholder";
+  else values.source_uuid = "placeholder";
   if(document.HasMember("destination_uuid") == true){
       values.destination_uuid = document["destination_uuid"].GetString();
   }
-  else values.signature = "placeholder";
+  else values.destination_uuid = "placeholder";
 
   return values;
 
@@ -299,11 +303,11 @@ Detected_Unsubscription_Response assignUnsubResponseVals(Document document) {
   if(document.HasMember("source_uuid") == true){
       values.source_uuid = document["source_uuid"].GetString();
   }
-  else values.signature = "placeholder";
+  else values.source_uuid = "placeholder";
   if(document.HasMember("destination_uuid") == true){
       values.destination_uuid = document["destination_uuid"].GetString();
   }
-  else values.signature = "placeholder";
+  else values.destination_uuid = "placeholder";
   if(document.HasMember("signature") == true){
       values.signature = document["signature"].GetString();
   }
@@ -315,7 +319,7 @@ Detected_Unsubscription_Response assignUnsubResponseVals(Document document) {
 
 int filterInput(Document document) {
 
-  if(!(document.IsObject()) || !(document.HasMember("type"))){
+  if(!(document.IsObject()) || !(document.HasMember("type")) || document.IsArray()){
     return -1;
   }
 
@@ -364,22 +368,22 @@ string listenDataTCP(int socket_c) {
     }
     else if(i > 0) {
       // if(i>1) printf("Received %d bytes of data. Data received: %s\n",i,dataReceived);
-      auto found = string(dataReceived).find_last_of("\n");
+      auto found = string(dataReceived).find("\n");
       if((found!=std::string::npos)){
             if (found + 1 != i){
               string copy_of_return = incomplete_message;
-              cout << "RETURNING" << copy_of_return + string(dataReceived).substr(i,found) << endl;
+              // cout << "RETURNING" << copy_of_return + string(dataReceived).substr(i,found) << endl;
               incomplete_message = string(dataReceived).substr(found+1,i);
+              cout << incomplete_message << endl;
               return copy_of_return + string(dataReceived).substr(0,found);
             }else{
-            cout << "space at: " << found << "message length at: " << i << "message: " << dataReceived << endl;
+            // cout << "space at: " << found << "message length at: " << i << "message: " << dataReceived << endl;
             string copy_of_return = incomplete_message;
             incomplete_message = string();
-            cout << "toReturn" << endl;
             cout << copy_of_return + string(dataReceived).substr(0,found+1) << endl;
             return copy_of_return + string(dataReceived).substr(0,found);
           }
-        }else cout << "CONCATINATING" << endl; incomplete_message += string(dataReceived);
+        }else incomplete_message += string(dataReceived); // concatinating incomplete messages
         }
     }
   }

@@ -33,13 +33,13 @@ public:
 	{
 		type = "unsubscription_response";
 		context = "unsubscription_management";
-		origin = "GDM";
+		origin = "v2x gateway";
 	}
 
 	UnsubscriptionResponse() {
 		type = "unsubscription_response";
 		context = "unsubscription_management";
-		origin = "GDM";
+		origin = "v2x gateway";
 	}
 
 	friend std::ostream& operator<< (ostream& os, UnsubscriptionResponse * unsubscriptionRes);

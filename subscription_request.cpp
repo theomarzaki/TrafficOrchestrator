@@ -41,16 +41,16 @@ class SubscriptionRequest {
 			type = "subscription_request";
 			context = "subscriptions"; //changed from subscription_mechanism
 			origin = "traffic_orchestrator";
-			source_uuid = "TO";
-			destination_uuid = "placeholder";
+			source_uuid = "traffic_orchestrator";
+			destination_uuid = "v2x gateway";
 		}
 
 		SubscriptionRequest() {
 			type = "subscription_request";
 			context = "subscriptions"; // same as above
 			origin = "traffic_orchestrator";
-			source_uuid = "TO"; // add to json format properly
-			destination_uuid = "placeholder";
+			source_uuid = "traffic_orchestrator"; // add to json format properly
+			destination_uuid = "v2x gateway";
 		}
 
 	~SubscriptionRequest();

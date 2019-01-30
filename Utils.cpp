@@ -16,6 +16,13 @@ using namespace rapidjson;
 using namespace std::chrono;
 using std::cout;
 
+
+// TODO
+
+// 1. waypoints to actions
+// 2. spacing for cars
+// 3. get following and preceeding cars
+
 double distanceCalculate(double x1, double y1, double x2, double y2)
 {
 	double x = x1 - x2; //calculating number to square in next step
@@ -98,7 +105,6 @@ vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,
   cout << "number of neighbours :" << neighbours.size() << endl;
   std::vector<RoadUser*> v;
   auto x = getClosestFollowingandPreceedingCars(merging_car,v);
-  // concatenate the lists into one list for the lstm
   for(pair<RoadUser*,vector<RoadUser*>> v : neighbours){
     if ( v.first->getUuid() == merging_car->getUuid() ){
       x = getClosestFollowingandPreceedingCars(merging_car,v.second);
@@ -159,6 +165,7 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
 
 	at::Tensor previous_state = calculated_n_1_states;
 	for(int counter = 0;counter < 7; counter++){
+		auto timeCalculator = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 		std::vector<torch::jit::IValue> lstm_n_inputs;
 		std::vector<torch::jit::IValue> rl_n_inputs;
 

@@ -58,17 +58,22 @@ public:
 	lane_position(lane_position),
 	signature(signature)
 	{
-		type = "maneuver_recommendation";
+		type = "maneuver";
 		context = "lane_merge";
 		origin = "traffic_orchestrator";
+		source_uuid = "traffic_orchestrator";
 		uuid_maneuver = to_string(10000000+(std::rand()%(99999999-10000000+1)));
+		source_uuid = "traffic_orchestrator";
+
 	}
 
 	ManeuverRecommendation() {
-		type = "maneuver_recommendation";
+		type = "maneuver";
 		context = "lane_merge";
 		origin = "traffic_orchestrator";
+		source_uuid = "traffic_orchestrator";
 		uuid_maneuver = to_string(10000000 +(std::rand()%(99999999-10000000+1)));
+		source_uuid = "traffic_orchestrator";
 	}
 
 

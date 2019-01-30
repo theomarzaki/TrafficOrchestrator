@@ -11,7 +11,7 @@ private:
 	string type;
 	string context;
 	string origin;
-	string version = "1.0.0";
+	string version = "1.1.0";
 	uint64_t timestamp;
 	int request_id;
 	int subscriptionId;
@@ -36,8 +36,8 @@ public:
 		type = "unsubscription_request";
 		context = "subscriptions";
 		origin = "traffic_orchestrator";
-		source_uuid = "OB19D";
-		destination_uuid = "placeholder";
+		source_uuid = "traffic_orchestrator";
+		destination_uuid = "v2x gateway";
 	}
 
 
@@ -45,8 +45,8 @@ public:
 		type = "unsubscription_request";
 		context = "subscriptions";
 		origin = "traffic_orchestrator";
-		source_uuid = "OB19D";
-		destination_uuid = "placeholder";
+		source_uuid = "traffic_orchestrator";
+		destination_uuid = "v2x gateway";
 	}
 
 	friend std::ostream& operator<< (ostream& os, UnsubscriptionRequest * unsubscriptionReq);

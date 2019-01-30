@@ -83,6 +83,8 @@ RoadUser * detectedToRoadUserList(vector<Detected_Road_User> v) {
 		roadUser->setWidthConfidence(d.width_c);
 		roadUser->setHeightConfidence(d.height_c);
 		roadUser->setSignature(d.signature);
+		// source uuid
+		// destination uuid
 
 		road_users[i] = *roadUser;
 
@@ -299,7 +301,7 @@ int main() {
 	printf("Initialising Database: Preparing to receive subscription response.\n");
 	bool listening = false;
 
-	auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(20000);
+	// auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(100000); // change to logical
 
 
 	do {
@@ -323,7 +325,7 @@ int main() {
 		if(filterValue == 4) {
 			printf("Road User Deleted.\n");
 		}
-	} while(std::chrono::high_resolution_clock::now() <  end_time);
+	} while(true);
 
 	cout << "want to unsubscribe" << endl;
 
