@@ -374,7 +374,7 @@ string listenDataTCP(int socket_c) {
               string copy_of_return = incomplete_message;
               // cout << "RETURNING" << copy_of_return + string(dataReceived).substr(i,found) << endl;
               incomplete_message = string(dataReceived).substr(found+1,i);
-              cout << incomplete_message << endl;
+              cout << copy_of_return + string(dataReceived).substr(0,found) << endl;
               return copy_of_return + string(dataReceived).substr(0,found);
             }else{
             // cout << "space at: " << found << "message length at: " << i << "message: " << dataReceived << endl;

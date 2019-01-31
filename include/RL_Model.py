@@ -142,15 +142,15 @@ class Agent():
         self.doNothing_tensor = torch.Tensor([0,0,0,0,1])
 
     def calculateActionComputed(self,action_tensor,state):
-        if torch.equal(action_tensor,self.accelerate_tensor).cuda():
+        if torch.equal(action_tensor,self.accelerate_tensor):
             return self.accelerate_move(state)
-        elif torch.equal(action_tensor,self.deccelerate_tensor).cuda():
+        elif torch.equal(action_tensor,self.deccelerate_tensor):
             return self.deccelerate_move(state)
-        elif torch.equal(action_tensor,self.left_tensor).cuda():
+        elif torch.equal(action_tensor,self.left_tensor):
             return self.left_move(state)
-        elif torch.equal(action_tensor,self.right_tensor).cuda():
+        elif torch.equal(action_tensor,self.right_tensor):
             return self.right_move(state)
-        elif torch.equal(action_tensor,self.doNothing_tensor).cuda():
+        elif torch.equal(action_tensor,self.doNothing_tensor):
             return self.passive_move(state)
         else:
             logging.warning('inappropriate action -- SEE ME')
