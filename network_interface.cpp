@@ -224,14 +224,13 @@ int sendDataTCP(int pre_socket,string connectionAdress, int port,string receiveA
 	// if(validator < 0)
 	// 	printf("Send: Connection Error.\n");
 	// else
-	printf("Send: Connected!\n");
+	// printf("Send: Connected!\n");
 
 	validator = send(socket_connect,jsonString.c_str(),jsonString.size(),0);
 
 	if(validator < 0)
 		printf("Send failed.\n");
-	else
-		printf("Data sent to remote server.\n");
+
 
 		char dataReceived[MAXIMUM_TRANSFER];
 	  memset(dataReceived,0,sizeof(dataReceived));

@@ -23,3 +23,5 @@ EXPOSE 7000
 WORKDIR /communication_layer
 
 RUN chmod u+x runner.sh
+
+ENTRYPOINT "./runner.sh"

@@ -40,6 +40,7 @@ uint32_t mergingLatitude;
 string uuidTo;
 bool filter = true;
 
+
 RoadUser * detectedToRoadUserList(vector<Detected_Road_User> v) {
 
 	cout << "Detected number of RoadUsers: " << v.size() <<".\n";
@@ -189,7 +190,7 @@ int filterExecution(string data) {
 	int filterNum = filterInput(parse(data));
 
 	if(filterNum == -1) {
-		cout << "Error: Incomplete Message.";
+		write_to_log("Error: Incomplete Message.");
 		return -1;
 	}
 	else if(filterNum == 0) {
@@ -218,6 +219,8 @@ int filterExecution(string data) {
 	}
 	else if (filterNum == 3) {
 		maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(parse(data)));
+		cout << maneuverFeed << endl;
+		write_to_log(maneuverFeed->getFeedback());
 		if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
 			return 3;
 		}
@@ -258,6 +261,7 @@ void inputDistanceRadius(int radius) {
 void sendTrajectoryRecommendations(vector<ManeuverRecommendation*> v,int socket) {
 	for(ManeuverRecommendation * m : v) {
 		cout << createManeuverJSON(m) << endl;
+		write_to_log(createManeuverJSON(m));
 		sendDataTCP(socket,sendAddress, sendPort,receiveAddress,receivePort, createManeuverJSON(m));
 	}
 }
@@ -296,9 +300,9 @@ int main() {
 	inputReceiveAddress(document["receiveAddress"].GetString());
 
 	auto socket = initiateSubscription(sendAddress,sendPort,receiveAddress,receivePort,filter,document["distanceRadius"].GetInt(),document["longitude"].GetUint(),document["latitude"].GetUint());
-	printf("Subscription Service: Sending subscription request to address %s using port %d.\n", sendAddress.c_str(), sendPort);
+	// printf("Subscription Service: Sending subscription request to address %s using port %d.\n", sendAddress.c_str(), sendPort);
 	initaliseDatabase();
-	printf("Initialising Database: Preparing to receive subscription response.\n");
+	// printf("Initialising Database: Preparing to receive subscription response.\n");
 	bool listening = false;
 
 	// auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(100000); // change to logical
@@ -306,7 +310,7 @@ int main() {
 
 	do {
 		if(listening == true) {
-			printf("Waiting for notify packets.\n");
+			// printf("Waiting for notify packets.\n");
 		}
 		int filterValue = filterExecution(listenDataTCP(socket));
 		if(filterValue == 1) {
@@ -317,8 +321,8 @@ int main() {
 			vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
 			database->deleteAll();
 			if(recommendations.size() > 0) {
-				cout << "<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>" << endl;
-				cout << "\n\n\n\n\n\n\n" << "***********************************"<< "Sending " << recommendations.size() << " trajectory recommendations." << "***********************************" << "\n\n\n\n\n\n\n" << endl;
+				write_to_log("<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>");
+				write_to_log("\n\n\n\n\n\n\n *********************************** Sending  ***********************************");
 				sendTrajectoryRecommendations(recommendations,socket);
 			}else	printf("No Trajectories Calculated.\n");
 		}
@@ -327,7 +331,7 @@ int main() {
 		}
 	} while(true);
 
-	cout << "want to unsubscribe" << endl;
+	// cout << "want to unsubscribe" << endl;
 
 	initiateUnsubscription(sendAddress,sendPort,subscriptionResp);
 

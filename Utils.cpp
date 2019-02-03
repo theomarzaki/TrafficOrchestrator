@@ -223,7 +223,7 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,vector<RoadUser*>>> neighbours){
   std::vector<float> mergingCar;
 
-  cout << "number of neighbours :" << neighbours.size() << endl;
+  // cout << "number of neighbours :" << neighbours.size() << endl;
   std::vector<RoadUser*> v;
   auto x = getClosestFollowingandPreceedingCars(merging_car,v);
   for(pair<RoadUser*,vector<RoadUser*>> v : neighbours){
@@ -364,7 +364,7 @@ vector<ManeuverRecommendation*> ManeuverParser(Database * database, double dista
   vector<ManeuverRecommendation*> recommendations;
   for(RoadUser * r : *database->getDatabase()) {
 		if(r->getConnected() == true && r->getLanePosition() == 0) {
-			printf("CAR IN LANE 0.\n");
+			// printf("CAR IN LANE 0.\n");
 			auto neighbours = mapNeighbours(database,distanceRadius);
       auto input_values = RoadUsertoModelInput(r,neighbours);
       auto models_input = torch::tensor(input_values).unsqueeze(0);

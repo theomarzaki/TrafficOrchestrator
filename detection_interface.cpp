@@ -137,6 +137,11 @@ struct Detected_Unsubscription_Response {
   string message_id;
 };
 
+void write_to_log(const string & text){
+	std::ofstream log_file("../logs/log_file.txt",std::ios_base::out | std::ios_base::app);
+	log_file << text << endl;
+}
+
 Document parse(string readFromServer) {
   Document document;
   ParseResult result = document.Parse(readFromServer.c_str());
@@ -147,51 +152,40 @@ Document parse(string readFromServer) {
 Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notification detectedToNotification) {
 	Detected_Road_User values;
 
-  // get Uint error
-
   values.type = document["type"].GetString();
-  values.context = document["context"].GetString();
-  values.origin = document["origin"].GetString();
-  values.version = document["version"].GetString();
-  values.timestamp = document["timestamp"].GetUint64();
-  values.uuid = document["message"]["uuid"].GetString();
-  values.its_station_type = document["message"]["its_station_type"].GetString();
-  values.connected = document["message"]["connected"].GetBool();
-  values.latitude = document["message"]["position"]["latitude"].GetDouble();
-  values.longitude = document["message"]["position"]["longitude"].GetDouble();
-  values.position_type = document["message"]["position_type"].GetString();
-  values.heading = document["message"]["heading"].GetDouble();
-  values.speed = document["message"]["speed"].GetDouble();
-  values.acceleration = document["message"]["acceleration"].GetDouble();
-  values.yaw_rate = document["message"]["yaw_rate"].GetDouble();
-  values.length = document["message"]["size"]["length"].GetDouble();
-  values.width = document["message"]["size"]["width"].GetDouble();
-  values.height = document["message"]["size"]["height"].GetDouble();
-  // values.color = document["message"]["color"].GetString();
-  values.lane_position = document["message"]["lane_position"].GetUint();
-  values.existence_probability = document["message"]["existence_probability"].GetUint();
-  values.position_semi_major_confidence = document["message"]["confidence"]["position_semi_major_confidence"].GetUint();
-  values.position_semi_minor_confidence = document["message"]["confidence"]["position_semi_minor_confidence"].GetUint();
-  values.position_semi_major_orientation = document["message"]["confidence"]["position_semi_major_orientation"].GetUint();
-  values.heading_c = document["message"]["confidence"]["heading"].GetUint();
-  values.speed_c = document["message"]["confidence"]["speed"].GetUint();
-  values.acceleration_c = document["message"]["confidence"]["acceleration"].GetUint();
-  values.yaw_rate_c = document["message"]["confidence"]["yaw_rate"].GetUint();
-  values.length_c = document["message"]["confidence"]["size"]["length"].GetDouble();
-  values.width_c = document["message"]["confidence"]["size"]["width"].GetDouble();
-  values.height_c = document["message"]["confidence"]["size"]["height"].GetDouble();
-
-  if(document.HasMember("signature") == true){
-      values.signature = document["signature"].GetString();
-  }
-  else values.signature = "placeholder";
-  if(document.HasMember("source_uuid") == true){
-      values.source_uuid = document["source_uuid"].GetString();
-  }
-  else values.source_uuid = "placeholder";
-  if(document.HasMember("message_id")) values.message_id = document["message_id"].GetString();
-  else values.message_id = "placeholder";
-
+  document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
+  document.HasMember("origin") ? values.origin = document["origin"].GetString() : values.origin = "placeholder";
+  document.HasMember("version") ? values.version = document["version"].GetString() : values.version = "placeholder";
+  document.HasMember("timestamp") ? values.timestamp = document["timestamp"].GetUint64() : values.timestamp = -1;
+  document["message"].HasMember("uuid") ? values.uuid = document["message"]["uuid"].GetString() : values.uuid = "placeholder";
+  document["message"].HasMember("its_station_type") ? values.its_station_type = document["message"]["its_station_type"].GetString() : values.its_station_type = "placeholder";
+  document["message"].HasMember("connected") ? values.connected = document["message"]["connected"].GetBool() : values.connected = false;
+  document["message"]["position"].HasMember("latitude") ? values.latitude = document["message"]["position"]["latitude"].GetDouble() : values.latitude = 0.0;
+  document["message"]["position"].HasMember("longitude") ? values.longitude = document["message"]["position"]["longitude"].GetDouble() : values.longitude = 0.0;
+  document["message"].HasMember("position_type") ? values.position_type = document["message"]["position_type"].GetString() : values.position_type = "placeholder";
+  document["message"].HasMember("heading") ? values.heading = document["message"]["heading"].GetDouble() : values.heading = 0.0;
+  document["message"].HasMember("speed") ? values.speed = document["message"]["speed"].GetDouble() : values.speed = 0.0;
+  document["message"].HasMember("acceleration") ? values.acceleration = document["message"]["acceleration"].GetDouble() : values.acceleration = 0.0;
+  document["message"].HasMember("yaw_rate") ? values.yaw_rate = document["message"]["yaw_rate"].GetDouble() : values.yaw_rate = 0.0;
+  document["message"]["size"].HasMember("length") ? values.length = document["message"]["size"]["length"].GetDouble() : values.length = 0.0;
+  document["message"]["size"].HasMember("width") ? values.width = document["message"]["size"]["width"].GetDouble() : values.width = 0.0;
+  document["message"]["size"].HasMember("height") ? values.height = document["message"]["size"]["height"].GetDouble() : values.height = 0.0;
+  document["message"].HasMember("existence_probability") ? values.existence_probability = document["message"]["existence_probability"].GetUint() : values.existence_probability = -1;
+  document["message"]["confidence"].HasMember("position_semi_major_confidence") ? values.position_semi_major_confidence = document["message"]["confidence"]["position_semi_major_confidence"].GetUint() : values.position_semi_major_confidence = -1;
+  document["message"]["confidence"].HasMember("position_semi_minor_confidence") ? values.position_semi_minor_confidence = document["message"]["confidence"]["position_semi_minor_confidence"].GetUint() : values.position_semi_minor_confidence = -1;
+  document["message"]["confidence"].HasMember("position_semi_major_orientation") ? values.position_semi_major_orientation = document["message"]["confidence"]["position_semi_major_orientation"].GetUint() : values.position_semi_major_orientation = -1;
+  document["message"]["confidence"].HasMember("heading") ? values.heading_c = document["message"]["confidence"]["heading"].GetUint() : values.heading_c = -1;
+  document["message"]["confidence"].HasMember("speed") ? values.speed_c = document["message"]["confidence"]["speed"].GetUint() : values.speed_c = -1;
+  document["message"]["confidence"].HasMember("acceleration") ? values.acceleration_c = document["message"]["confidence"]["acceleration"].GetUint() : values.acceleration_c = 0;
+  document["message"]["confidence"].HasMember("yaw_rate") ? values.yaw_rate_c = document["message"]["confidence"]["yaw_rate"].GetUint() : values.yaw_rate_c = 0;
+  document["message"]["confidence"]["size"].HasMember("length") ? values.length_c = document["message"]["confidence"]["size"]["length"].GetDouble() : values.length_c = 0.0;
+  document["message"]["confidence"]["size"].HasMember("width") ? values.width_c = document["message"]["confidence"]["size"]["width"].GetDouble() : values.width_c = 0.0;
+  document["message"]["confidence"]["size"].HasMember("height") ? values.height_c = document["message"]["confidence"]["size"]["height"].GetDouble() : values.height_c = 0.0;
+  document["message"].HasMember("color") ? values.color = document["message"]["color"].GetString() : values.color = "0x0000";
+  document["message"].HasMember("lane_position") ? values.lane_position = document["message"]["lane_position"].GetUint() : values.lane_position = 15;
+  document.HasMember("signature") ? values.signature = document["signature"].GetString() : values.signature = "placeholder";
+  document.HasMember("source_uuid") ? values.source_uuid = document["source_uuid"].GetString() : values.source_uuid = "placeholder";
+  document.HasMember("message_id") ? values.message_id = document["message_id"].GetString() : values.message_id = "placeholder";
 
   return values;
 
@@ -205,17 +199,9 @@ Detected_To_Notification assignNotificationVals(Document document) {
   values.version = document["version"].GetString();
   values.timestamp = document["timestamp"].GetUint64();
   values.subscriptionId = document["message"]["subscription_id"].GetInt();
-  if(document.HasMember("signature") == true){
-      values.signature = document["signature"].GetString();
-  }
-  else values.signature = "placeholder";
-
-  if(document.HasMember("source_uuid") == true){
-      values.source_uuid = document["source_uuid"].GetString();
-  }
-  else values.source_uuid = "placeholder";
-  if(document.HasMember("message_id")) values.message_id = document["message_id"].GetString();
-  else values.message_id = "placeholder";
+  (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
+  (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
+  (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
 
 
   for(auto& v : document["message"]["ru_description_list"].GetArray()) {
@@ -244,18 +230,9 @@ Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document document) {
   values.timestamp_message = document["message"]["timestamp"].GetUint64();
   values.feedback = document["message"]["feedback"].GetString();
   values.reason = document["message"]["reason"].GetString();
-  if(document.HasMember("signature") == true){
-      values.signature = document["signature"].GetString();
-  }
-  else values.signature = "placeholder";
-  return values;
-
-  if(document.HasMember("source_uuid") == true){
-      values.source_uuid = document["source_uuid"].GetString();
-  }
-
-  if(document.HasMember("message_id")) values.message_id = document["message_id"].GetString();
-  else values.message_id = "placeholder";
+  (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
+  (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
+  (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
 
 }
 
@@ -272,18 +249,9 @@ Detected_Subscription_Response assignSubResponseVals(Document document) {
   values.result = document["message"]["result"].GetString();
   values.request_id = document["message"]["request_id"].GetInt();
   values.subscriptionId = document["message"]["subscription_id"].GetInt();
-  if(document.HasMember("signature") == true){
-      values.signature = document["signature"].GetString();
-  }
-  else values.signature = "placeholder";
-  if(document.HasMember("source_uuid") == true){
-      values.source_uuid = document["source_uuid"].GetString();
-  }
-  else values.source_uuid = "placeholder";
-  if(document.HasMember("destination_uuid") == true){
-      values.destination_uuid = document["destination_uuid"].GetString();
-  }
-  else values.destination_uuid = "placeholder";
+  (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
+  (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
+  (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
 
   return values;
 
@@ -300,18 +268,9 @@ Detected_Unsubscription_Response assignUnsubResponseVals(Document document) {
   values.timestamp = document["timestamp"].GetUint64();
   values.result = document["message"]["result"].GetInt();
   values.request_id = document["message"]["request_id"].GetInt();
-  if(document.HasMember("source_uuid") == true){
-      values.source_uuid = document["source_uuid"].GetString();
-  }
-  else values.source_uuid = "placeholder";
-  if(document.HasMember("destination_uuid") == true){
-      values.destination_uuid = document["destination_uuid"].GetString();
-  }
-  else values.destination_uuid = "placeholder";
-  if(document.HasMember("signature") == true){
-      values.signature = document["signature"].GetString();
-  }
-  else values.signature = "placeholder";
+  (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
+  (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
+  (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
 
   return values;
 
@@ -352,8 +311,13 @@ int filterInput(Document document) {
 
 string listenDataTCP(int socket_c) {
 
+
+
   char dataReceived[MAXIMUM_TRANSFER];
   memset(dataReceived,0,sizeof(dataReceived));
+  // std::ofstream out("logs.txt");
+  // auto *coutbuf = std::cout.rdbuf();
+  // std::cout.rdbuf(out.rdbuf());
 
   while(1) {
     int i = read(socket_c,dataReceived,sizeof(dataReceived));
@@ -374,16 +338,17 @@ string listenDataTCP(int socket_c) {
               string copy_of_return = incomplete_message;
               // cout << "RETURNING" << copy_of_return + string(dataReceived).substr(i,found) << endl;
               incomplete_message = string(dataReceived).substr(found+1,i);
-              cout << copy_of_return + string(dataReceived).substr(0,found) << endl;
+              write_to_log(copy_of_return + string(dataReceived).substr(0,found));
               return copy_of_return + string(dataReceived).substr(0,found);
             }else{
             // cout << "space at: " << found << "message length at: " << i << "message: " << dataReceived << endl;
             string copy_of_return = incomplete_message;
             incomplete_message = string();
-            cout << copy_of_return + string(dataReceived).substr(0,found+1) << endl;
+            write_to_log(copy_of_return + string(dataReceived).substr(0,found+1));
             return copy_of_return + string(dataReceived).substr(0,found);
           }
         }else incomplete_message += string(dataReceived); // concatinating incomplete messages
         }
     }
+    // std::cout.rdbuf(coutbuf);
   }

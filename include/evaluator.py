@@ -136,6 +136,8 @@ counter = 0
 for index,game_run in enumerate(featuresTrain):
     for current_epoch in range(game_run.shape[0]):
         game_state = game_run
+        if counter > 3: break
+        counter = counter + 1
         for state in range(game_state.shape[0]):
             current = game_state[state].data.cpu().numpy()
             try:
@@ -155,7 +157,7 @@ for index,game_run in enumerate(featuresTrain):
             plots_X = [mergingX,precedingX,followingX]
             plots_Y = [mergingY,precedingY,followingY]
             to_plot.append((plots_X,plots_Y))
-            counter = counter + 1
+
 
             try:
                 game_state[state + 1] = torch.Tensor(next)
@@ -163,7 +165,7 @@ for index,game_run in enumerate(featuresTrain):
                 break
         # all_plots.append(to_plot)
         # to_plot.clear()
-
+        counter = counter + 1
 
 
 camera = Camera(plt.figure())
@@ -171,6 +173,5 @@ colors = cm.rainbow(np.linspace(0, 1, 3))
 for plot_data in to_plot:
     plt.scatter(plot_data[0],plot_data[1], c=colors, s=100)
     camera.snap()
-    anim = camera.animate(blit=True)
-    # anim.show()
-anim.save('scatter.mp4')
+anim = camera.animate(blit=True)
+anim.save('trial.mp4')
