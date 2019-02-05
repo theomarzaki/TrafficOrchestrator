@@ -10,6 +10,8 @@ RUN apt install netcat -y
 
 RUN apt install wget -y
 
+RUN apt install nodejs  -y
+
 RUN apt install cmake -y
 
 RUN apt install unzip -y
@@ -23,5 +25,3 @@ EXPOSE 7000
 WORKDIR /communication_layer
 
 RUN chmod u+x runner.sh
-
-ENTRYPOINT "./runner.sh"

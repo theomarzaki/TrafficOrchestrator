@@ -233,9 +233,9 @@ Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document document) {
   document["message"].HasMember("feedback") ? values.feedback = document["message"]["feedback"].GetString() : values.feedback = "placeholder";
   document["message"].HasMember("reason") ? values.reason = document["message"]["reason"].GetString() : values.reason = "placeholder";
   (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
-  (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
   (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
 
+  return values;
 }
 
 
@@ -337,7 +337,7 @@ string listenDataTCP(int socket_c) {
           string copy_of_return = incomplete_message;
           incomplete_message = string();
           if(copy_of_return.length() != 0) incomplete_messages.push_back(copy_of_return);
-          else incomplete_message = string(dataReceived).substr(counter,i); return string(dataReceived).substr(0,counter);
+          // else incomplete_message = string(dataReceived).substr(counter,i); return string(dataReceived).substr(0,counter);
         }else{
           incomplete_message += chrc;
         }
@@ -345,18 +345,15 @@ string listenDataTCP(int socket_c) {
       }
       if(incomplete_messages.size() != 0) {
         for(string returning_json : incomplete_messages){
-          if(returning_json.length() > 0){
             write_to_log(returning_json);
-            string return_json = returning_json;
             incomplete_messages.remove(returning_json);
-            return return_json;
-          }
+            return returning_json;
         }
       }
 
-      write_to_log("Received %d bytes of data. Data received: ");
-      write_to_log(dataReceived);
-      write_to_log("\n");
+      // write_to_log("Received %d bytes of data. Data received: ");
+      // write_to_log(dataReceived);
+      // write_to_log("\n");
       // auto found = string(dataReceived).find("\n");
       // if((found!=std::string::npos)){
       //       if (found + 1 != i){
@@ -373,7 +370,7 @@ string listenDataTCP(int socket_c) {
       //       return copy_of_return + string(dataReceived).substr(0,found);
       //     }
       //   }else incomplete_message += string(dataReceived); // concatinating incomplete messages
-
+      //
 
 
         }
