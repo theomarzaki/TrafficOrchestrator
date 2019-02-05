@@ -315,6 +315,7 @@ string listenDataTCP(int socket_c) {
 
   char dataReceived[MAXIMUM_TRANSFER];
   memset(dataReceived,0,sizeof(dataReceived));
+  string to_return;
   // std::ofstream out("logs.txt");
   // auto *coutbuf = std::cout.rdbuf();
   // std::cout.rdbuf(out.rdbuf());
@@ -334,26 +335,17 @@ string listenDataTCP(int socket_c) {
       int counter = 0;
       for( char chrc : dataReceived){
         if(chrc == '\n'){
-          string copy_of_return = incomplete_message;
+          to_return = incomplete_message;
           incomplete_message = string();
-          if(copy_of_return.length() != 0) incomplete_messages.push_back(copy_of_return);
-          // else incomplete_message = string(dataReceived).substr(counter,i); return string(dataReceived).substr(0,counter);
         }else{
           incomplete_message += chrc;
         }
         counter++;
       }
-      if(incomplete_messages.size() != 0) {
-        for(string returning_json : incomplete_messages){
-            write_to_log(returning_json);
-            incomplete_messages.remove(returning_json);
-            return returning_json;
-        }
-      }
+      if(to_return.length() != 0) cout << to_return << "\n" << endl; return to_return;
 
-      // write_to_log("Received %d bytes of data. Data received: ");
-      // write_to_log(dataReceived);
-      // write_to_log("\n");
+    }
+
       // auto found = string(dataReceived).find("\n");
       // if((found!=std::string::npos)){
       //       if (found + 1 != i){
@@ -370,10 +362,7 @@ string listenDataTCP(int socket_c) {
       //       return copy_of_return + string(dataReceived).substr(0,found);
       //     }
       //   }else incomplete_message += string(dataReceived); // concatinating incomplete messages
-      //
 
-
-        }
     }
     // std::cout.rdbuf(coutbuf);
   }
