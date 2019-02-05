@@ -115,7 +115,7 @@ model = torch.jit.load('rl_model.pt')
 
 data = pd.read_csv("csv/lineMergeDataWithHeading.csv")
 data.drop(['recommendation', 'heading', 'recommendedAcceleration'], axis=1, inplace=True)
-
+data = data[::-1]
 featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,19)
 
 batch = torch.zeros(70,19)
@@ -154,13 +154,16 @@ for index,game_run in enumerate(featuresTrain):
             followingX = next[13]
             followingY = next[14]
 
+            for counter in range(6,19):
+                waypoint[counter] = next[counter]
+
             plots_X = [mergingX,precedingX,followingX]
             plots_Y = [mergingY,precedingY,followingY]
             to_plot.append((plots_X,plots_Y))
 
 
             try:
-                game_state[state + 1] = torch.Tensor(next)
+                game_state[state + 1] = torch.Tensor(waypoint)
             except:
                 break
         # all_plots.append(to_plot)

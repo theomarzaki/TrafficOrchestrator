@@ -221,6 +221,7 @@ class Agent():
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 data = pd.read_csv("csv/lineMergeDataWithHeading.csv")
+data = data[::-1]
 
 
 num_epochs = 1
@@ -262,6 +263,10 @@ for epoch in range(num_epochs):
             for current_epoch in range(game_run.shape[0]):
                 for state in range(game_state.shape[0]):
                     current = game_state[state].data.cpu().numpy()
+                    try:
+                        s_next = game_state[state + 1].data.cpu().numpy()
+                    except:
+                        pass
                     output = model(torch.from_numpy(current))
                     # initialise actions
 
@@ -276,6 +281,13 @@ for epoch in range(num_epochs):
                     # get next state and reward
 
                     next_state = agent.calculateActionComputed(action,current)
+                    s_next[0] = next_state[0]
+                    s_next[1] = next_state[1]
+                    s_next[2] = next_state[2]
+                    s_next[3] = next_state[3]
+                    s_next[4] = next_state[4]
+                    s_next[5] = next_state[5]
+                    s_next[6] = next_state[6]
                     reward,terminal = CalculateReward(next_state,predictor)
 
 

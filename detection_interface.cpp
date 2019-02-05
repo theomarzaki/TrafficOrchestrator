@@ -32,8 +32,9 @@ typedef uint32_t uint4;
 #define SUBSCRIPTION_RESPONSE "subscription_response"
 #define UNSUBSCRIPTION_RESPONSE "unsubscription_response"
 #define TRAJECTORY_FEEDBACK "maneuver_feedback"
-string incomplete_message = "";
+string incomplete_message = string();
 #define MAXIMUM_TRANSFER 100000
+std::list<string> incomplete_messages;
 
 /* struct to represent fields found in JSON string. */
 struct Detected_Road_User {
@@ -152,7 +153,7 @@ Document parse(string readFromServer) {
 Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notification detectedToNotification) {
 	Detected_Road_User values;
 
-  values.type = document["type"].GetString();
+  document.HasMember("type") ? values.type = document["type"].GetString() : values.type = "placeholder";
   document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
   document.HasMember("origin") ? values.origin = document["origin"].GetString() : values.origin = "placeholder";
   document.HasMember("version") ? values.version = document["version"].GetString() : values.version = "placeholder";
@@ -193,24 +194,25 @@ Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notificatio
 
 Detected_To_Notification assignNotificationVals(Document document) {
   Detected_To_Notification values;
-  values.type = document["type"].GetString();
-  values.context = document["context"].GetString();
-  values.origin = document["origin"].GetString();
-  values.version = document["version"].GetString();
-  values.timestamp = document["timestamp"].GetUint64();
-  values.subscriptionId = document["message"]["subscription_id"].GetInt();
+  document.HasMember("type") ? values.type = document["type"].GetString() : values.type = "placeholder";
+  document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
+  document.HasMember("origin") ? values.origin = document["origin"].GetString() : values.origin = "placeholder";
+  document.HasMember("version") ? values.version = document["version"].GetString() : values.version = "placeholder";
+  document.HasMember("timestamp") ? values.timestamp = document["timestamp"].GetUint64() : values.timestamp = -1;
+  document["message"].HasMember("subscription_id") ? values.subscriptionId = document["message"]["subscription_id"].GetInt() : values.subscriptionId = 0;
   (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
   (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
   (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
 
-
-  for(auto& v : document["message"]["ru_description_list"].GetArray()) {
-    StringBuffer sb;
-    Writer<StringBuffer> writer(sb);
-    v.Accept(writer);
-    values.ru_description_list.push_back(assignRoadUserVals(parse(sb.GetString()),values));
-    sb.Clear();
-    writer.Reset(sb);
+  if(document["message"].HasMember("ru_description_list")){
+    for(auto& v : document["message"]["ru_description_list"].GetArray()) {
+      StringBuffer sb;
+      Writer<StringBuffer> writer(sb);
+      v.Accept(writer);
+      values.ru_description_list.push_back(assignRoadUserVals(parse(sb.GetString()),values));
+      sb.Clear();
+      writer.Reset(sb);
+    }
   }
 
   return values;
@@ -219,17 +221,17 @@ Detected_To_Notification assignNotificationVals(Document document) {
 Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document document) {
   Detected_Trajectory_Feedback values;
 
-  values.type = document["type"].GetString();
-  values.context = document["context"].GetString();
-  values.origin = document["origin"].GetString();
-  values.version = document["version"].GetString();
-  values.uuid_vehicle = document["source_uuid"].GetString();
-  values.uuid_to = document["destination_uuid"].GetString();
-  values.timestamp = document["timestamp"].GetUint64();
-  values.uuid_maneuver = document["message"]["uuid_maneuver"].GetString();
-  values.timestamp_message = document["message"]["timestamp"].GetUint64();
-  values.feedback = document["message"]["feedback"].GetString();
-  values.reason = document["message"]["reason"].GetString();
+  document.HasMember("type") ? values.type = document["type"].GetString() : values.type = "placeholder";
+  document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
+  document.HasMember("origin") ? values.origin = document["origin"].GetString() : values.origin = "placeholder";
+  document.HasMember("version") ? values.version = document["version"].GetString() : values.version = "placeholder";
+  document.HasMember("timestamp") ? values.timestamp = document["timestamp"].GetUint64() : values.timestamp = -1;
+  document.HasMember("source_uuid") ? values.uuid_vehicle = document["source_uuid"].GetString() : values.uuid_vehicle = "placeholder";
+  document.HasMember("destination_uuid") ? values.uuid_to = document["destination_uuid"].GetString() : values.uuid_to = "placeholder";
+  document["message"].HasMember("uuid_maneuver") ? values.uuid_maneuver = document["message"]["uuid_maneuver"].GetString() : values.uuid_maneuver = "placeholder";
+  document["message"].HasMember("timestamp") ? values.timestamp_message = document["message"]["timestamp"].GetUint64() : values.timestamp_message = -1;
+  document["message"].HasMember("feedback") ? values.feedback = document["message"]["feedback"].GetString() : values.feedback = "placeholder";
+  document["message"].HasMember("reason") ? values.reason = document["message"]["reason"].GetString() : values.reason = "placeholder";
   (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
   (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
   (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
@@ -241,14 +243,14 @@ Detected_Subscription_Response assignSubResponseVals(Document document) {
 
   Detected_Subscription_Response values;
 
-  values.type = document["type"].GetString();
-  values.context = document["context"].GetString();
-  values.origin = document["origin"].GetString();
-  values.version = document["version"].GetString();
-  values.timestamp = document["timestamp"].GetUint64();
-  values.result = document["message"]["result"].GetString();
-  values.request_id = document["message"]["request_id"].GetInt();
-  values.subscriptionId = document["message"]["subscription_id"].GetInt();
+  document.HasMember("type") ? values.type = document["type"].GetString() : values.type = "placeholder";
+  document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
+  document.HasMember("origin") ? values.origin = document["origin"].GetString() : values.origin = "placeholder";
+  document.HasMember("version") ? values.version = document["version"].GetString() : values.version = "placeholder";
+  document.HasMember("timestamp") ? values.timestamp = document["timestamp"].GetUint64() : values.timestamp = -1;
+  document.HasMember("result") ? values.result = document["result"].GetString() : values.result = "placeholder";
+  document["message"].HasMember("request_id") ? values.request_id = document["message"]["request_id"].GetInt() : values.request_id = -1;
+  document["message"].HasMember("subscription_id") ? values.subscriptionId = document["message"]["subscription_id"].GetInt() : values.subscriptionId = -1;
   (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
   (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
   (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
@@ -261,13 +263,13 @@ Detected_Unsubscription_Response assignUnsubResponseVals(Document document) {
 
   Detected_Unsubscription_Response values;
 
-  values.type = document["type"].GetString();
-  values.context = document["context"].GetString();
-  values.origin = document["origin"].GetString();
-  values.version = document["version"].GetString();
-  values.timestamp = document["timestamp"].GetUint64();
-  values.result = document["message"]["result"].GetInt();
-  values.request_id = document["message"]["request_id"].GetInt();
+  document.HasMember("type") ? values.type = document["type"].GetString() : values.type = "placeholder";
+  document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
+  document.HasMember("origin") ? values.origin = document["origin"].GetString() : values.origin = "placeholder";
+  document.HasMember("version") ? values.version = document["version"].GetString() : values.version = "placeholder";
+  document.HasMember("timestamp") ? values.timestamp = document["timestamp"].GetUint64() : values.timestamp = -1;
+  document["message"].HasMember("result") ? values.result = document["message"]["result"].GetInt() : values.result = -1;
+  document["message"].HasMember("request_id") ? values.request_id = document["message"]["request_id"].GetInt() : values.request_id = -1;
   (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
   (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
   (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
@@ -311,8 +313,6 @@ int filterInput(Document document) {
 
 string listenDataTCP(int socket_c) {
 
-
-
   char dataReceived[MAXIMUM_TRANSFER];
   memset(dataReceived,0,sizeof(dataReceived));
   // std::ofstream out("logs.txt");
@@ -331,23 +331,51 @@ string listenDataTCP(int socket_c) {
       break;
     }
     else if(i > 0) {
-      // if(i>1) printf("Received %d bytes of data. Data received: %s\n",i,dataReceived);
-      auto found = string(dataReceived).find("\n");
-      if((found!=std::string::npos)){
-            if (found + 1 != i){
-              string copy_of_return = incomplete_message;
-              // cout << "RETURNING" << copy_of_return + string(dataReceived).substr(i,found) << endl;
-              incomplete_message = string(dataReceived).substr(found+1,i);
-              write_to_log(copy_of_return + string(dataReceived).substr(0,found));
-              return copy_of_return + string(dataReceived).substr(0,found);
-            }else{
-            // cout << "space at: " << found << "message length at: " << i << "message: " << dataReceived << endl;
-            string copy_of_return = incomplete_message;
-            incomplete_message = string();
-            write_to_log(copy_of_return + string(dataReceived).substr(0,found+1));
-            return copy_of_return + string(dataReceived).substr(0,found);
+      int counter = 0;
+      for( char chrc : dataReceived){
+        if(chrc == '\n'){
+          string copy_of_return = incomplete_message;
+          incomplete_message = string();
+          if(copy_of_return.length() != 0) incomplete_messages.push_back(copy_of_return);
+          else incomplete_message = string(dataReceived).substr(counter,i); return string(dataReceived).substr(0,counter);
+        }else{
+          incomplete_message += chrc;
+        }
+        counter++;
+      }
+      if(incomplete_messages.size() != 0) {
+        for(string returning_json : incomplete_messages){
+          if(returning_json.length() > 0){
+            write_to_log(returning_json);
+            string return_json = returning_json;
+            incomplete_messages.remove(returning_json);
+            return return_json;
           }
-        }else incomplete_message += string(dataReceived); // concatinating incomplete messages
+        }
+      }
+
+      write_to_log("Received %d bytes of data. Data received: ");
+      write_to_log(dataReceived);
+      write_to_log("\n");
+      // auto found = string(dataReceived).find("\n");
+      // if((found!=std::string::npos)){
+      //       if (found + 1 != i){
+      //         string copy_of_return = incomplete_message;
+      //         // cout << "RETURNING" << copy_of_return + string(dataReceived).substr(i,found) << endl;
+      //         incomplete_message = string(dataReceived).substr(found+1,i);
+      //         write_to_log(copy_of_return + string(dataReceived).substr(0,found));
+      //         return copy_of_return + string(dataReceived).substr(0,found);
+      //       }else{
+      //       // cout << "space at: " << found << "message length at: " << i << "message: " << dataReceived << endl;
+      //       string copy_of_return = incomplete_message;
+      //       incomplete_message = string();
+      //       write_to_log(copy_of_return + string(dataReceived).substr(0,found));
+      //       return copy_of_return + string(dataReceived).substr(0,found);
+      //     }
+      //   }else incomplete_message += string(dataReceived); // concatinating incomplete messages
+
+
+
         }
     }
     // std::cout.rdbuf(coutbuf);
