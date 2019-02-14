@@ -239,5 +239,4 @@ int sendDataTCP(int pre_socket,string connectionAdress, int port,string receiveA
 	  memset(dataReceived,0,sizeof(dataReceived));
 
 		return socket_connect;
-
 }

@@ -10,6 +10,8 @@
 #include <vector>
 #include <iostream>
 #include <tuple>
+#include <chrono>
+#include <thread>
 
 #include <errno.h>
 #include <string.h>
@@ -316,9 +318,6 @@ string listenDataTCP(int socket_c) {
   char dataReceived[MAXIMUM_TRANSFER];
   memset(dataReceived,0,sizeof(dataReceived));
   string to_return;
-  // std::ofstream out("logs.txt");
-  // auto *coutbuf = std::cout.rdbuf();
-  // std::cout.rdbuf(out.rdbuf());
 
   while(1) {
     int i = read(socket_c,dataReceived,sizeof(dataReceived));
@@ -329,7 +328,8 @@ string listenDataTCP(int socket_c) {
     }
     else if(i == 0) {
       printf("Socket closed from the remote server.\n");
-      break;
+      printf("trying to reconnect ....\n");
+      return "RECONNECT";
     }
     else if(i > 0) {
       int counter = 0;
@@ -364,5 +364,4 @@ string listenDataTCP(int socket_c) {
       //   }else incomplete_message += string(dataReceived); // concatinating incomplete messages
 
     }
-    // std::cout.rdbuf(coutbuf);
   }

@@ -16,6 +16,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <thread>
 
 using namespace std;
 
@@ -191,7 +192,6 @@ int filterExecution(string data) {
 	int filterNum = filterInput(parse(data));
 
 	if(filterNum == -1) {
-		write_to_log("Error: Incomplete Message.");
 		return -1;
 	}
 	else if(filterNum == 0) {
@@ -208,7 +208,7 @@ int filterExecution(string data) {
 		for(int j = 0; j < size; j++) {
 			database->deleteRoadUser(road_users[j].getUuid());
 		}
-		return 0;
+		return 4;
 	}
 	else if(filterNum == 1) {
 		subscriptionResp = detectedToSubscription(assignSubResponseVals(parse(data)));
@@ -220,7 +220,6 @@ int filterExecution(string data) {
 	}
 	else if (filterNum == 3) {
 		maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(parse(data)));
-		cout << maneuverFeed << endl;
 		write_to_log(maneuverFeed->getFeedback());
 		if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
 			return 3;
@@ -301,19 +300,16 @@ int main() {
 	inputReceiveAddress(document["receiveAddress"].GetString());
 
 	auto socket = initiateSubscription(sendAddress,sendPort,receiveAddress,receivePort,filter,document["distanceRadius"].GetInt(),document["longitude"].GetUint(),document["latitude"].GetUint());
-	// printf("Subscription Service: Sending subscription request to address %s using port %d.\n", sendAddress.c_str(), sendPort);
 	initaliseDatabase();
-	// printf("Initialising Database: Preparing to receive subscription response.\n");
 	bool listening = false;
-
-	// auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(100000); // change to logical
+	string reconnect = "RECONNECT";
+	string reconnect_flag;
 
 
 	do {
-		if(listening == true) {
-			// printf("Waiting for notify packets.\n");
-		}
-		int filterValue = filterExecution(listenDataTCP(socket));
+		auto captured_data = listenDataTCP(socket);
+		int filterValue = filterExecution(captured_data);
+		reconnect_flag = captured_data;
 		if(filterValue == 1) {
 			printf("%s\n","Subscription Response Received.");
 			listening = true;
@@ -330,9 +326,12 @@ int main() {
 		if(filterValue == 4) {
 			printf("Road User Deleted.\n");
 		}
-	} while(true);
-
-	// cout << "want to unsubscribe" << endl;
+	} while(reconnect_flag != reconnect);
+	listening = false;
+	while(!listening){
+		std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+		main();
+	}
 
 	initiateUnsubscription(sendAddress,sendPort,subscriptionResp);
 
