@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include <nearest_neighbour.cpp>
+#include <to/nearest_neighbour.cpp>
 #include <torch/torch.h>
 #include <torch/script.h>
 #include <math.h>
