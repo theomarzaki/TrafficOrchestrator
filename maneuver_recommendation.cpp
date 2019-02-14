@@ -35,7 +35,6 @@ private:
 	string source_uuid;
 	string uuid;
 	string message_id;
-
 	string signature;
 
 public:

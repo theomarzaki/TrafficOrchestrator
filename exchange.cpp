@@ -173,6 +173,7 @@ int initiateSubscription(string sendAddress, int sendPort,string receiveAddress,
 	subscriptionReq->setSignature("TEMPLATE");
 	subscriptionReq->setRequestId(generateReqID());
 	subscriptionReq->setTimestamp(timeSub.count());
+	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
 	auto socket = sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createSubscriptionRequestJSON(subscriptionReq));
 	return socket;
 }

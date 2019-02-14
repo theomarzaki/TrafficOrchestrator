@@ -21,6 +21,7 @@ class SubscriptionRequest {
 		string source_uuid;
 		string destination_uuid;
 		int request_id;  // added later TODO
+		string message_id;
 
 	public:
 		SubscriptionRequest(string type, string context,string origin, string version, uint64_t timestamp,
@@ -71,6 +72,7 @@ class SubscriptionRequest {
 	int getRequestId();
 	string getSourceUUID();
 	string getDestinationUUID();
+	string getMessageID();
 
 
 	void setType(string);
@@ -87,6 +89,7 @@ class SubscriptionRequest {
 	void setRequestId(int);
 	void setSourceUUID(string);
 	void setDestinationUUID(string);
+	void setMessageID(string);
 
 };
 
@@ -106,6 +109,7 @@ string SubscriptionRequest::getSignature(){return signature;}
 int SubscriptionRequest::getRequestId(){return request_id;}
 string SubscriptionRequest::getSourceUUID(){return source_uuid;}
 string SubscriptionRequest::getDestinationUUID(){return destination_uuid;}
+string SubscriptionRequest::getMessageID(){return message_id;}
 
 void SubscriptionRequest::setType(string parameter){type = parameter;}
 void SubscriptionRequest::setContext(string parameter){context = parameter;}
@@ -121,6 +125,7 @@ void SubscriptionRequest::setSignature(string parameter){signature = parameter;}
 void SubscriptionRequest::setRequestId(int parameter){request_id = parameter;}
 void SubscriptionRequest::setSourceUUID(string parameter){source_uuid = parameter;}
 void SubscriptionRequest::setDestinationUUID(string parameter){destination_uuid = parameter;}
+void SubscriptionRequest::setMessageID(string parameter){message_id = parameter;}
 
 std::ostream& operator<<(std::ostream& os, SubscriptionRequest * subscriptionReq) {
 

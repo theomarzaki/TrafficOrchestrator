@@ -324,6 +324,7 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
   mergingManeuver->setLatitudeAction(mergingVehicle->getLatitude());
   mergingManeuver->setSpeedAction(mergingVehicle->getSpeed());
   mergingManeuver->setLanePositionAction(mergingVehicle->getLanePosition());
+	mergingManeuver->setMessageID(std::string(mergingManeuver->getOrigin()) + "/" + std::string(mergingManeuver->getUuidManeuver()) + "/" + std::string(to_string(mergingManeuver->getTimestamp())));
 
 	rl_inputs.push_back(models_input);
 	at::Tensor calculatedRL = rl_model->forward(rl_inputs).toTensor();

@@ -136,8 +136,9 @@ string createManeuverJSON(ManeuverRecommendation * maneuverRec) {
 	.AddMember("version",Value().SetString(maneuverRec->getVersion().c_str(),allocator),allocator)
 	.AddMember("source_uuid", Value().SetString(maneuverRec->getSourceUUID().c_str(),allocator), allocator)
 	.AddMember("destination_uuid", Value().SetString(maneuverRec->getUuidTo().c_str(),allocator), allocator)
-	.AddMember("timestamp", Value().SetUint64(maneuverRec->getTimestamp()), allocator);
-	// .AddMember("message_id", Value().SetString(maneuverRec->getMessageID().c_str(),allocator), allocator);
+	.AddMember("timestamp", Value().SetUint64(maneuverRec->getTimestamp()), allocator)
+	.AddMember("message_id", Value().SetString(maneuverRec->getMessageID().c_str(),allocator), allocator);
+
 
 
 
@@ -158,6 +159,8 @@ string createManeuverJSON(ManeuverRecommendation * maneuverRec) {
 		point.AddMember("position", position, allocator)
 		.AddMember("speed", Value().SetUint(waypoint->getSpeed()), allocator)
 		.AddMember("lane_position", Value().SetUint(waypoint->getLanePosition()), allocator);
+
+
 
 		waypoints.PushBack(point, allocator);
 	}

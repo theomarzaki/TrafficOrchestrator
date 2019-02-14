@@ -34,91 +34,89 @@ class Agent():
         self.doNothing_tensor = 4
         self.M_PI = 3.141539
 
-    def calculateActionComputed(self,action_tensor,state):
+    def calculateActionComputed(self,action_tensor,state,next):
         if (action_tensor == self.accelerate_tensor):
-            return self.accelerate_move(state)
+            return self.accelerate_move(state,next)
         elif (action_tensor == self.deccelerate_tensor):
-            return self.deccelerate_move(state)
+            return self.deccelerate_move(state,next)
         elif (action_tensor == self.left_tensor):
-            return self.left_move(state)
+            return self.left_move(state,next)
         elif (action_tensor == self.right_tensor):
-            return self.right_move(state)
+            return self.right_move(state,next)
         elif (action_tensor == self.doNothing_tensor):
-            return self.passive_move(state)
+            return self.passive_move(state,next)
         else:
             logging.warning('inappropriate action -- SEE ME')
 
-    def left_move(self,state):
-        displacement = state[4] * 0.001 + 0.5 * (state[5] * 0.001 * 0.001)
-        angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
-        new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
-        new_x = state[0] + new_position - (0.001 * new_position)
-        new_y = state[1] + new_position
-        new_state = state
-        new_state[0] = new_x
-        new_state[1] = new_y
-        return new_state
+    def left_move(self,state,next):
+        displacement = state[4] * 0.01 + 0.5 * (state[5] * 0.01 * 0.01)
+        angle = state[20]
+        print(angle)
+        # angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
+        # new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
 
-    def right_move(self,state):
-        displacement = state[4] * 0.001 + 0.5 * (state[5] * 0.001 * 0.001)
-        angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
-        new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
-        new_x = state[0]+ new_position + (0.001 * new_position)
-        new_y = state[1] + new_position
-        new_state = state
-        new_state[0] = new_x
-        new_state[1] = new_y
-        return new_state
+        if(angle <= 180):
+            angle = (angle - 5) % 360
+        else:
+            angle = (angle + 5) % 360
 
-    def accelerate_move(self,state):
-        final_velocity = state[4] + 0.001 * (state[4] + state[5] * 0.001)
-        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.001)
-        displacement = final_velocity * 0.001 + 0.5 * (final_acceleration * 0.001 * 0.001)
-        angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
-        new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
-        new_x = state[0] + new_position
-        new_y = state[1] + new_position
-        new_state = state
-        new_state[0] = new_x
-        new_state[1] = new_y
-        new_state[4] = final_velocity
-        new_state[5] = final_acceleration
-        return new_state
+        print(angle)
+        new_x = state[0] + displacement * Math.Cos(angle * Math.Pi / 180)
+        new_y = state[1] + displacement * Math.Sin(angle * Math.Pi / 180)
+        next[0] = new_x
+        next[1] = new_y
+        return next
 
-    def deccelerate_move(self,state):
-        final_velocity = state[4] - 0.001 * (state[4] + state[5] * 0.001)
-        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.001)
-        displacement = final_velocity * 0.001 + 0.5 * (final_acceleration * 0.001 * 0.001)
+    def right_move(self,state,next):
+        displacement = state[4] * 0.01 + 0.5 * (state[5] * 0.01 * 0.01)
         angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
         new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
-        new_x = state[0] + new_position
-        new_y = state[1] + new_position
-        new_state = state
-        new_state[0] = new_x
-        new_state[1] = new_y
-        new_state[4] = final_velocity
-        new_state[5] = final_acceleration
-        return new_state
+        # new_x = state[0]+ new_position + (0.01 * new_position)
+        # new_x = state[0] + (0.1 * new_position)
+        new_y = state[1] - 1.1 * (new_position)
+        # next[0] = new_x
+        next[1] = new_y
+        return next
 
-    def passive_move(self,state):
-        displacement = state[4] * 0.001 + 0.5 * (state[5] * 0.001 * 0.001)
+    def accelerate_move(self,state,next):
+        final_velocity = state[4] + 0.01 * (state[4] + state[5] * 0.01)
+        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.01)
+        displacement = final_velocity * 0.01 + 0.5 * (final_acceleration * 0.01 * 0.01)
         angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
         new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
-        new_x = state[0] + new_position
-        new_y = state[1] + new_position
-        new_state = state
-        new_state[0] = new_x
-        new_state[1] = new_y
-        return new_state
+        new_x = state[0] + 1.1 * new_position
+        # new_y = state[1] + new_position
+        next[0] = new_x
+        # next[1] = new_y
+        next[4] = final_velocity
+        next[5] = final_acceleration
+        return next
+
+    def deccelerate_move(self,state,next):
+        final_velocity = state[4] - 0.01 * (state[4] + state[5] * 0.01)
+        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.01)
+        displacement = final_velocity * 0.01 + 0.5 * (final_acceleration * 0.01 * 0.01)
+        angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
+        new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
+        new_x = state[0] - 1.1 * new_position
+        # new_y = state[1] + new_position
+        next[0] = new_x
+        # next[1] = new_y
+        next[4] = final_velocity
+        next[5] = final_acceleration
+        return next
+
+    def passive_move(self,state,next):
+        return next
 
 model = torch.jit.load('rl_model.pt')
 
 data = pd.read_csv("csv/lineMergeDataWithHeading.csv")
-data.drop(['recommendation', 'heading', 'recommendedAcceleration'], axis=1, inplace=True)
+data.drop(['recommendation', 'recommendedAcceleration'], axis=1, inplace=True)
 data = data[::-1]
-featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,19)
+featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,20)
 
-batch = torch.zeros(70,19)
+batch = torch.zeros(70,20)
 counter = 0
 for idx in range(data.shape[0]):
     if idx % 70 != 0 or idx == 0:
@@ -126,7 +124,7 @@ for idx in range(data.shape[0]):
     else:
         featuresTrain[counter] = batch
         counter = counter + 1
-        batch = torch.zeros(70,19)
+        batch = torch.zeros(70,20)
 
 to_plot = []
 all_plots = []
@@ -142,30 +140,25 @@ for index,game_run in enumerate(featuresTrain):
             current = game_state[state].data.cpu().numpy()
             try:
                 next = game_state[state + 1].data.cpu().numpy()
-            except:
-                pass
-            output = model(torch.from_numpy(current))
-            waypoint = agent.calculateActionComputed(torch.argmax(output),current)
+                # output = model(torch.from_numpy(current))
+                # waypoint = agent.calculateActionComputed(torch.argmax(output),current)
+                waypoint = agent.calculateActionComputed(2,current,next)
 
-            mergingX = waypoint[0]
-            mergingY = waypoint[1]
-            precedingX = next[7]
-            precedingY = next[8]
-            followingX = next[13]
-            followingY = next[14]
+                mergingX = waypoint[0]
+                mergingY = waypoint[1]
+                precedingX = waypoint[7]
+                precedingY = waypoint[8]
+                followingX = waypoint[13]
+                followingY = waypoint[14]
 
-            for counter in range(6,19):
-                waypoint[counter] = next[counter]
-
-            plots_X = [mergingX,precedingX,followingX]
-            plots_Y = [mergingY,precedingY,followingY]
-            to_plot.append((plots_X,plots_Y))
+                plots_X = [mergingX,precedingX,followingX]
+                plots_Y = [mergingY,precedingY,followingY]
+                to_plot.append((plots_X,plots_Y))
 
 
-            try:
                 game_state[state + 1] = torch.Tensor(waypoint)
             except:
-                break
+                pass
         # all_plots.append(to_plot)
         # to_plot.clear()
         counter = counter + 1
