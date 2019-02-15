@@ -7,15 +7,15 @@
 
 change the recieve/send adress/port in the TO_Config.json file located in ./include.
 
+If image is directly built from the repository:
+
+- download libtorch library here : https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-latest.zip and replace with libtorch library in directory
+
 ### Run TO
 
 - not optimised for CUDA. due to library dependancies.
 
 - build docker image 
-
-If image is directly built from the repository:
-
-- download libtorch library here : https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-latest.zip and replace with libtorch library in directory
   
 - run docker image
 
@@ -25,6 +25,8 @@ If image is directly built from the repository:
 ## Executing AI (python)
 
 ### Requirements 
+
+- `pip install -r requirements.txt` to install all the python libraries needed to run either the models and the evaluator.
 
 ### Running & Training LSTM 
 
@@ -50,6 +52,9 @@ If image is directly built from the repository:
 
 - rl_model.pt given as well to simulate the process in the TO, replace file in ./include with the new rl_model.pt 
 
+### Testing RL 
+
+- `python3 evaluator.py` is used to test the RL model in two lane merge instances. Purple Car = Agent. saves a video in the same directory of the lane merger scenario.
 
 ## Dataset
 
