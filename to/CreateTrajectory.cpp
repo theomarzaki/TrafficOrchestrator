@@ -1,3 +1,14 @@
+// This file uses both of the models(LSTM,RL) to compute way points for a 3 - window
+
+// returns a maneuver recommendation to the TO
+
+// Calculated actions to waypoints and vice versa
+
+// change to n step window
+
+// Created by: Omar Nassef (KCL)
+
+
 #include <iostream>
 #include <vector>
 #include <random>

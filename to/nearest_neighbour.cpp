@@ -1,3 +1,9 @@
+// This script provides the closest cars in terms of longitude and latitude
+
+// Created by: KCL
+
+
+
 #include <iostream>
 #include <vector>
 #include <cmath>

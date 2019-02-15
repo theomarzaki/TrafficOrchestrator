@@ -1,3 +1,9 @@
+// this script models the unsubscription response sent by the v2x gateway presented in class structure
+
+// Created by: KCL
+
+// Modified by: Omar Nassef (KCL)
+
 #include <iostream>
 #include <ostream>
 #include <string>

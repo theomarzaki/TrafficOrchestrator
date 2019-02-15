@@ -1,3 +1,10 @@
+// This script is responsible for sending the respective messages from classes to the v2x gatway
+
+// Created by: KCL
+
+// Modified by: Omar Nassef (KCL)
+
+
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"

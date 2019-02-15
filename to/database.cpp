@@ -1,3 +1,7 @@
+// this file stores the road user information presented by the v2x gateway
+
+// Created by : KCL
+
 #include "road_user.cpp"
 
 #include <iostream>

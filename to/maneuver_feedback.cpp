@@ -1,3 +1,10 @@
+// This script is a class for the manuever feedback parsing the information from the v2x Gateway
+
+// Created by: KCL
+
+// Modified by: Omar Nassef(KCL)
+
+
 #include <iostream>
 #include <ostream>
 #include <string>

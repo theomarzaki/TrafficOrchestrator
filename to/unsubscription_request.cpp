@@ -1,3 +1,9 @@
+// this script models the unsubscription response sent by the TO presented in class structure
+
+// Created by: KCL
+
+// Modified by: Omar Nassef (KCL)
+
 #include <iostream>
 #include <string>
 #include <ostream>

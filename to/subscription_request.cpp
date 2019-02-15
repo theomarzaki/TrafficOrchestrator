@@ -1,3 +1,11 @@
+// This script is a class that represents sending a subscription request to the v2x Gateway
+// in order to start receiving road users
+
+// Created by: KCL
+
+// Modified by: Omar Nassef (KCL)
+
+
 #include <iostream>
 #include <string>
 #include <ostream>

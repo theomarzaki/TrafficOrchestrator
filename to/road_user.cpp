@@ -1,3 +1,10 @@
+// This script handles the road user information of the cars in a class structure
+
+// Created by: KCL
+
+// Modified by: Omar Nassef (KCL)
+
+
 #include <iostream>
 #include <ostream>
 #include <string>

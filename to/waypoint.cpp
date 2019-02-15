@@ -1,3 +1,8 @@
+// this script models the way points needed for the vehicle to follow the lane merge algorithm
+
+// Created by: KCL
+
+// Modified by: Omar Nassef (KCL)
 #include <iostream>
 #include <ostream>
 

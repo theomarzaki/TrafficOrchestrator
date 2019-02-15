@@ -1,3 +1,11 @@
+// This is the Main script that brings all the components together
+
+// Obtains TO connection data from configuration file and starts a connection and listens
+
+// Created by : KCL
+
+// Modified by : Omar Nassef(KCL)
+
 #include <torch/torch.h>
 #include <torch/script.h>
 #include "detection_interface.cpp"

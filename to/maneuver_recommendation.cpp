@@ -1,3 +1,10 @@
+// this script is a class for the manuever recommendation to parse data to JSON format
+//  for the v2X gatway to recieve
+
+// Created by: KCL
+
+// Modified by: Omar Nassef (KCL)
+
 #include <iostream>
 #include <ostream>
 #include <string>

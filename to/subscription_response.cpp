@@ -1,3 +1,10 @@
+ // this script models the subscription response sent by the v2x gateway presented in class structure
+
+ // Created by: KCL
+
+ // Modified by: Omar Nassef (KCL)
+
+
 #include <iostream>
 #include <string>
 #include <ostream>

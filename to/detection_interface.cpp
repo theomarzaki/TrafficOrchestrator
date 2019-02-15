@@ -1,3 +1,10 @@
+// This file detects the messages sent by the v2X Gatway, Parses the JSON
+// Message to obtain the relevant message type for futher processing
+
+// Created by: KCL
+
+// Modified by: Omar Nassef (KCL)
+
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/prettywriter.h"
