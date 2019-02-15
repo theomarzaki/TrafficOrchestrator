@@ -15,9 +15,7 @@ If image is directly built from the repository:
 
 - not optimised for CUDA. due to library dependancies.
 
-- build docker image 
-  
-- run docker image
+- build docker image & run docker image
 
 - once in bash on the container `./runner.sh`
 
