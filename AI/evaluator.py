@@ -57,22 +57,17 @@ class Agent():
             logging.warning('inappropriate action')
 
     def left_move(self,state,next):
-        displacement = state[4] * 0.01 + 0.5 * (state[5] * 0.01 * 0.01)
-        angle = state[20]
-        print(angle)
-        # angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
-        # new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
-
-        if(angle <= 180):
-            angle = (angle - 5) % 360
-        else:
-            angle = (angle + 5) % 360
+        displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
+        angle = state[19]
+        angle = (angle + 5) % 360
 
         print(angle)
-        new_x = state[0] + displacement * Math.Cos(angle * Math.Pi / 180)
-        new_y = state[1] + displacement * Math.Sin(angle * Math.Pi / 180)
+        new_x = state[0] + displacement * math.cos(math.radians(angle))
+        new_y = state[1] + displacement * math.sin(math.radians(angle))
+
         next[0] = new_x
         next[1] = new_y
+        next[19] = angle
         return next
 
     def right_move(self,state,next):
@@ -117,7 +112,7 @@ class Agent():
     def passive_move(self,state,next):
         return next
 
-model = torch.jit.load('rl_model.pt')
+model = torch.jit.load('../include/rl_model.pt')
 
 data = pd.read_csv("csv/lineMergeDataWithHeading.csv")
 data.drop(['recommendation', 'recommendedAcceleration'], axis=1, inplace=True)
@@ -127,6 +122,7 @@ featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,20)
 batch = torch.zeros(70,20)
 counter = 0
 for idx in range(data.shape[0]):
+    data.values[idx][19] = (data.values[idx][19] + 180) % 360
     if idx % 70 != 0 or idx == 0:
         batch[idx % 70]= torch.Tensor(data.values[idx])
     else:
@@ -176,4 +172,4 @@ for plot_data in to_plot:
     plt.scatter(plot_data[0],plot_data[1], c=colors, s=100)
     camera.snap()
 anim = camera.animate(blit=True)
-anim.save('trial_sim.mp4')
+anim.save('trial.mp4')
