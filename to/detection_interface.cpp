@@ -141,7 +141,7 @@ struct Detected_Unsubscription_Response {
 };
 
 void write_to_log(const string & text){
-	std::ofstream log_file("../logs/log_file.txt",std::ios_base::out | std::ios_base::app);
+	std::ofstream log_file("../logs/to_logs.log",std::ios_base::out | std::ios_base::app);
 	log_file << text << endl;
 }
 
