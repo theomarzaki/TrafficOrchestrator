@@ -147,15 +147,16 @@ void write_to_log(const string & text){
 
 Document parse(string readFromServer) {
   Document document;
-  ParseResult result = document.Parse(readFromServer.c_str());
-  if(!result) return NULL;
-  return document;
+  if(readFromServer.length() != 0){
+    ParseResult result = document.Parse(readFromServer.c_str());
+    return document;
+  }
 }
 
 Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notification detectedToNotification) {
 	Detected_Road_User values;
 
-  document.HasMember("type") ? values.type = document["type"].GetString() : values.type = "placeholder";
+  values.type = document["type"].GetString();
   document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
   document.HasMember("origin") ? values.origin = document["origin"].GetString() : values.origin = "placeholder";
   document.HasMember("version") ? values.version = document["version"].GetString() : values.version = "placeholder";
@@ -196,7 +197,7 @@ Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notificatio
 
 Detected_To_Notification assignNotificationVals(Document document) {
   Detected_To_Notification values;
-  document.HasMember("type") ? values.type = document["type"].GetString() : values.type = "placeholder";
+  values.type = document["type"].GetString();
   document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
   document.HasMember("origin") ? values.origin = document["origin"].GetString() : values.origin = "placeholder";
   document.HasMember("version") ? values.version = document["version"].GetString() : values.version = "placeholder";
@@ -206,16 +207,15 @@ Detected_To_Notification assignNotificationVals(Document document) {
   (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
   (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
 
-  if(document["message"].HasMember("ru_description_list")){
-    for(auto& v : document["message"]["ru_description_list"].GetArray()) {
-      StringBuffer sb;
-      Writer<StringBuffer> writer(sb);
-      v.Accept(writer);
-      values.ru_description_list.push_back(assignRoadUserVals(parse(sb.GetString()),values));
-      sb.Clear();
-      writer.Reset(sb);
-    }
+  for(auto& v : document["message"]["ru_description_list"].GetArray()) {
+    StringBuffer sb;
+    Writer<StringBuffer> writer(sb);
+    v.Accept(writer);
+    values.ru_description_list.push_back(assignRoadUserVals(parse(sb.GetString()),values));
+    sb.Clear();
+    writer.Reset(sb);
   }
+
 
   return values;
 }
@@ -282,7 +282,7 @@ Detected_Unsubscription_Response assignUnsubResponseVals(Document document) {
 
 int filterInput(Document document) {
 
-  if(!(document.IsObject()) || !(document.HasMember("type")) || document.IsArray()){
+  if(!(document.IsObject())){
     return -1;
   }
 
@@ -331,37 +331,25 @@ string listenDataTCP(int socket_c) {
       printf("trying to reconnect ....\n");
       return "RECONNECT";
     }
-    else if(i > 0) {
-      int counter = 0;
-      for( char chrc : dataReceived){
+    else if(i > 0){
+      for(int index = 0; index < i; index++){
+        char chrc = dataReceived[index];
         if(chrc == '\n'){
           to_return = incomplete_message;
+          incomplete_messages.push_back(to_return);
           incomplete_message = string();
         }else{
           incomplete_message += chrc;
         }
-        counter++;
       }
-      if(to_return.length() != 0) cout << to_return << "\n" << endl; return to_return;
-
     }
 
-      // auto found = string(dataReceived).find("\n");
-      // if((found!=std::string::npos)){
-      //       if (found + 1 != i){
-      //         string copy_of_return = incomplete_message;
-      //         // cout << "RETURNING" << copy_of_return + string(dataReceived).substr(i,found) << endl;
-      //         incomplete_message = string(dataReceived).substr(found+1,i);
-      //         write_to_log(copy_of_return + string(dataReceived).substr(0,found));
-      //         return copy_of_return + string(dataReceived).substr(0,found);
-      //       }else{
-      //       // cout << "space at: " << found << "message length at: " << i << "message: " << dataReceived << endl;
-      //       string copy_of_return = incomplete_message;
-      //       incomplete_message = string();
-      //       write_to_log(copy_of_return + string(dataReceived).substr(0,found));
-      //       return copy_of_return + string(dataReceived).substr(0,found);
-      //     }
-      //   }else incomplete_message += string(dataReceived); // concatinating incomplete messages
+    if(incomplete_messages.size() != 0){
+      string returning = incomplete_messages.front();
+      cout << incomplete_messages.front() << "\n" << endl;
+      incomplete_messages.pop_front();
+      return returning;
+    }
 
     }
   }

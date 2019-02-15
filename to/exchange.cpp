@@ -7,7 +7,6 @@
 #include "subscription_response.cpp"
 #include "CreateTrajectory.cpp"
 #include "unsubscription_response.cpp"
-#include "trajectory_calculator.cpp"
 #include <iostream>
 #include <vector>
 #include <random>
@@ -85,8 +84,6 @@ RoadUser * detectedToRoadUserList(vector<Detected_Road_User> v) {
 		roadUser->setWidthConfidence(d.width_c);
 		roadUser->setHeightConfidence(d.height_c);
 		roadUser->setSignature(d.signature);
-		// source uuid
-		// destination uuid
 
 		road_users[i] = *roadUser;
 
@@ -318,8 +315,8 @@ int main() {
 			vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
 			database->deleteAll();
 			if(recommendations.size() > 0) {
-				write_to_log("<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>");
-				write_to_log("\n\n\n\n\n\n\n *********************************** Sending  ***********************************");
+				cout << "<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>" << endl;
+				cout << "\n\n\n\n\n\n\n *********************************** Sending  ***********************************" << endl;
 				sendTrajectoryRecommendations(recommendations,socket);
 			}else	printf("No Trajectories Calculated.\n");
 		}
@@ -337,17 +334,3 @@ int main() {
 
 	return 0;
 }
-
-
-// std::vector<torch::jit::IValue> rl_inputs;
-// std::vector<torch::jit::IValue> lstm_inputs;
-// lstm_inputs.push_back(torch::rand({1, 2, 19}));
-// auto lstm_out = lstm_model->forward(lstm_inputs).toTensor();
-// rl_inputs.push_back(lstm_out);
-// auto rl_out = rl_model->forward(rl_inputs).toTensor();
-
-// std::cout << lstm_inputs << std::endl;
-// cout << "LSTM OUTPUTS" << endl;
-// std::cout << lstm_out << std::endl;
-// cout << "RL OUTPUTS" << endl;
-// cout << rl_out << endl;
