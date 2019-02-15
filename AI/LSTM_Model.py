@@ -1,3 +1,15 @@
+# This script provides a way for the TO to predict the neighrest cars to the merging car to
+# provide a state space for the lane merge enviroment. Uses an LSTM Model to acheive this:
+
+# Sequential learning -> change to minibatch learning
+
+# multi variable classifir -> sequence to sequence regressor
+
+# output: LSTM Model to predict next car states (preceeding,merging,following) jit trace file
+
+# Created by: Omar Nassef(KCL)
+
+
 import torch
 import torch.nn as nn
 import torchvision

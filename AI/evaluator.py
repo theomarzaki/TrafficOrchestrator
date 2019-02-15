@@ -1,3 +1,11 @@
+# This script provides a way to test the implementation of the rl model in the merging scenario
+# presented in the US101 dataset.
+#
+# output: a video file showing the agent(purple) in merge lane scenario
+
+# Created by: Omar Nassef(KCL)
+
+
 import torch
 import torch.nn as nn
 import torchvision
@@ -46,7 +54,7 @@ class Agent():
         elif (action_tensor == self.doNothing_tensor):
             return self.passive_move(state,next)
         else:
-            logging.warning('inappropriate action -- SEE ME')
+            logging.warning('inappropriate action')
 
     def left_move(self,state,next):
         displacement = state[4] * 0.01 + 0.5 * (state[5] * 0.01 * 0.01)
@@ -159,8 +167,6 @@ for index,game_run in enumerate(featuresTrain):
                 game_state[state + 1] = torch.Tensor(waypoint)
             except:
                 pass
-        # all_plots.append(to_plot)
-        # to_plot.clear()
         counter = counter + 1
 
 
@@ -170,4 +176,4 @@ for plot_data in to_plot:
     plt.scatter(plot_data[0],plot_data[1], c=colors, s=100)
     camera.snap()
 anim = camera.animate(blit=True)
-anim.save('trial.mp4')
+anim.save('trial_sim.mp4')

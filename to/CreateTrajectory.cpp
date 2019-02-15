@@ -223,7 +223,6 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,vector<RoadUser*>>> neighbours){
   std::vector<float> mergingCar;
 
-  // cout << "number of neighbours :" << neighbours.size() << endl;
   std::vector<RoadUser*> v;
   auto x = getClosestFollowingandPreceedingCars(merging_car,v);
   for(pair<RoadUser*,vector<RoadUser*>> v : neighbours){

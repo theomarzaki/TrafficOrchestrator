@@ -323,7 +323,7 @@ string listenDataTCP(int socket_c) {
     int i = read(socket_c,dataReceived,sizeof(dataReceived));
 
     if(i < 0) {
-      perror("Error: Failed to receive transmitted data.\n");
+      write_to_log("Error: Failed to receive transmitted data.\n");
       break;
     }
     else if(i == 0) {
@@ -346,7 +346,7 @@ string listenDataTCP(int socket_c) {
 
     if(incomplete_messages.size() != 0){
       string returning = incomplete_messages.front();
-      cout << incomplete_messages.front() << "\n" << endl;
+      write_to_log(incomplete_messages.front() + "\n");
       incomplete_messages.pop_front();
       return returning;
     }

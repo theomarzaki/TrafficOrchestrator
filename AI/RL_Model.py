@@ -1,9 +1,24 @@
+# This Script provides a way to approximate the best actions for the agent to undertake
+# in order lane merge
+
+# Contains Random Forest Classifer to assign rewards to agent.
+
+# input : LSTM output (enviroment state)
+
+# output: RL Model (argmax) jit trace file
+
+# to be translated into waypoints again
+
+# Created by: Omar Nassef(KCL)
+
+
 import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import pandas as pd
 import numpy as np
+from RandomForestClassifier import RandomForestPredictor
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import cross_val_score, train_test_split
 import math
@@ -21,59 +36,6 @@ from scipy.spatial import distance
 import random
 from torch.autograd import Variable
 
-class RandomForestPredictor():
-
-    def __init__(self):
-        self.data = data
-        self.train_and_test_random_forest_classifier()
-
-    def countClassifiedResults(self,predictions):
-        cnt = 0
-        for i in range(len(predictions)):
-            if predictions[i] != 1:
-                cnt += 1
-
-        return cnt, len(predictions)-cnt
-
-    def train_and_test_random_forest_classifier(self):
-        self.train_data, self.test_data = train_test_split(self.data, test_size=0.2, random_state=1)
-        self.train, self.validation = train_test_split(self.train_data, test_size=0.2, random_state=1)
-
-        self.X_trainRecommendation = self.train.drop(['recommendation', 'heading', 'recommendedAcceleration'], axis=1)
-        self.Y_trainRecommendation = self.train['recommendation']
-
-        self.X_valRecommendation = self.validation.drop(["recommendation", 'heading', 'recommendedAcceleration'], axis=1).copy()
-        self.Y_valRecommendation = self.validation['recommendation']
-
-        self.X_testRecommendation = self.test_data.drop(['recommendation', 'heading', 'recommendedAcceleration'], axis=1)
-        self.Y_testRecommendation = self.test_data['recommendation']
-
-        self.random_forest = RandomForestClassifier(n_estimators=100, max_depth=16, n_jobs=-1)
-
-        self.random_forest.fit(self.X_trainRecommendation, self.Y_trainRecommendation)
-
-        acc_random_forest = round(self.random_forest.score(self.X_trainRecommendation, self.Y_trainRecommendation) * 100, 2)
-        print("Training accuracy: ", acc_random_forest)
-
-        self.Y_pred = self.random_forest.predict(self.X_valRecommendation)
-
-        print(self.countClassifiedResults(self.Y_pred))
-
-        acc_random_forest_val = round(accuracy_score(self.Y_valRecommendation, self.Y_pred)*100, 2)
-        print("Validation accuracy: ", acc_random_forest_val)
-
-    def predict_possible_merge(self,prediction_variables):
-        # try:
-        prediction_array = self.random_forest.predict(prediction_variables.reshape(1,-1))
-        if len(prediction_array) != 0:
-            if prediction_array[0] == 1:
-                return True
-            else:
-                return False
-        else:
-            logging.warning('Trying to find predictions in an empty array')
-        # except:
-        #     logging.error('Data is not in Correct Format for Train')
 
 class DeepQLearning(nn.Module):
     def __init__(self):
@@ -153,12 +115,12 @@ class Agent():
         elif torch.equal(action_tensor,self.doNothing_tensor):
             return self.passive_move(state)
         else:
-            logging.warning('inappropriate action -- SEE ME')
+            logging.warning('inappropriate action')
 
     def left_move(self,state):
         displacement = state[4] * 0.001 + 0.5 * (state[5] * 0.001 * 0.001)
         angular_displacement = math.degrees(math.sin(15)) * displacement / math.degrees(math.sin (90))
-        new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2))
+        new_position = math.sqrt(pow(angular_displacement,2) + pow(displacement,2))
         new_x = state[0] + new_position - (0.001 * new_position)
         new_y = state[1] + new_position
         new_state = state
@@ -245,7 +207,7 @@ for idx in range(train_data.shape[0]):
 
 
 
-predictor = RandomForestPredictor()
+predictor = RandomForestPredictor(data)
 
 #TRAIN RL
 model = DeepQLearning()

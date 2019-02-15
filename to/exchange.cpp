@@ -43,7 +43,7 @@ bool filter = true;
 
 RoadUser * detectedToRoadUserList(vector<Detected_Road_User> v) {
 
-	cout << "Detected number of RoadUsers: " << v.size() <<".\n";
+	write_to_log("Detected number of RoadUsers: " + string(to_string(v.size())) + ".\n");
 
 	RoadUser * road_users = new RoadUser[v.size()];
 
@@ -217,8 +217,9 @@ int filterExecution(string data) {
 	}
 	else if (filterNum == 3) {
 		maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(parse(data)));
-		write_to_log(maneuverFeed->getFeedback());
+		write_to_log("Manueaver Feedback: " + maneuverFeed->getFeedback());
 		if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
+			write_to_log("calculating new Trajectory for Vehicle");
 			return 3;
 		}
 		return -2;
@@ -276,11 +277,11 @@ int main() {
 
 	std::shared_ptr<torch::jit::script::Module> lstm_model = torch::jit::load("../include/lstm_model.pt");
 
-  if(lstm_model != nullptr) std::cout << "import of lstm model successful\n";
+  if(lstm_model != nullptr) write_to_log("import of lstm model successful\n");
 
 	std::shared_ptr<torch::jit::script::Module> rl_model = torch::jit::load("../include/rl_model.pt");
 
-  if(rl_model != nullptr) std::cout << "import of rl model successful\n";
+  if(rl_model != nullptr) write_to_log("import of rl model successful\n");
 
 
 	char readBuffer[65536];
@@ -308,20 +309,19 @@ int main() {
 		int filterValue = filterExecution(captured_data);
 		reconnect_flag = captured_data;
 		if(filterValue == 1) {
-			printf("%s\n","Subscription Response Received.");
+			write_to_log("Subscription Response Received.\n");
 			listening = true;
 		}
 		if(filterValue == 0 || filterValue == 3) {
 			vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
-			database->deleteAll();
 			if(recommendations.size() > 0) {
-				cout << "<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>" << endl;
-				cout << "\n\n\n\n\n\n\n *********************************** Sending  ***********************************" << endl;
+				write_to_log("<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>");
+				write_to_log("\n\n\n\n\n\n\n ***********************************  Sending  ***********************************");
 				sendTrajectoryRecommendations(recommendations,socket);
-			}else	printf("No Trajectories Calculated.\n");
+			}else	write_to_log("No Trajectories Calculated.\n");
 		}
 		if(filterValue == 4) {
-			printf("Road User Deleted.\n");
+			write_to_log("Road User Deleted.\n");
 		}
 	} while(reconnect_flag != reconnect);
 	listening = false;
