@@ -31,101 +31,20 @@ from torch.autograd import Variable
 import matplotlib.animation as animation
 from celluloid import Camera
 from matplotlib import cm
+from csv_data import Data
+from Agent import Agent
 
 
-class Agent():
-    def __init__(self):
-        self.accelerate_tensor = 0
-        self.deccelerate_tensor = 1
-        self.left_tensor = 2
-        self.right_tensor = 3
-        self.doNothing_tensor = 4
-        self.M_PI = 3.141539
+agent = Agent()
+model = torch.jit.load('rl_model.pt')
 
-    def calculateActionComputed(self,action_tensor,state,next):
-        if (action_tensor == self.accelerate_tensor):
-            return self.accelerate_move(state,next)
-        elif (action_tensor == self.deccelerate_tensor):
-            return self.deccelerate_move(state,next)
-        elif (action_tensor == self.left_tensor):
-            return self.left_move(state,next)
-        elif (action_tensor == self.right_tensor):
-            return self.right_move(state,next)
-        elif (action_tensor == self.doNothing_tensor):
-            return self.passive_move(state,next)
-        else:
-            logging.warning('inappropriate action')
+data = Data().get_data()
 
-    def left_move(self,state,next):
-        displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
-        angle = state[19]
-        angle = (angle + 5) % 360
-
-        new_x = state[0] + displacement * math.cos(math.radians(angle))
-        new_y = state[1] + displacement * math.sin(math.radians(angle))
-
-        next[0] = new_x
-        next[1] = new_y
-        next[19] = angle
-        return next
-
-    def right_move(self,state,next):
-        displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
-        angle = state[19]
-        angle = (angle - 5) % 360
-        new_x = state[0] + displacement * math.cos(math.radians(angle))
-        new_y = state[1] + displacement * math.sin(math.radians(angle))
-        next[0] = new_x
-        next[1] = new_y
-        next[19] = angle
-        return next
-
-    def accelerate_move(self,state,next):
-        final_velocity = state[4] + 0.035 * (state[4] + state[5] * 0.035)
-        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.035)
-        displacement = final_velocity * 0.035 + 0.5 * (final_acceleration * 0.035 * 0.035)
-        angle = state[19]
-        new_x = state[0] + displacement * math.cos(math.radians(angle))
-        new_y = state[1] + displacement * math.sin(math.radians(angle))
-        next[0] = new_x
-        next[1] = new_y
-        next[4] = final_velocity
-        next[5] = final_velocity
-        return next
-
-    def deccelerate_move(self,state,next):
-        final_velocity = state[4] - 0.035 * (state[4] + state[5] * 0.035)
-        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.035)
-        displacement = final_velocity * 0.035 + 0.5 * (final_acceleration * 0.035 * 0.035)
-        angle = state[19]
-        new_x = state[0] + displacement * math.cos(math.radians(angle))
-        new_y = state[1] + displacement * math.sin(math.radians(angle))
-        next[0] = new_x
-        next[1] = new_y
-        next[4] = final_velocity
-        next[5] = final_velocity
-        return next
-
-    def passive_move(self,state,next):
-        displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
-        angle = state[19]
-        new_x = state[0] + displacement * math.cos(math.radians(angle))
-        new_y = state[1] + displacement * math.sin(math.radians(angle))
-        next[0] = new_x
-        next[1] = new_y
-        return next
-
-model = torch.jit.load('../include/rl_model.pt')
-
-data = pd.read_csv("csv/lineMergeDataWithHeading.csv")
-data.drop(['recommendation', 'recommendedAcceleration'], axis=1, inplace=True)
-data = data[::-1]
 featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,20)
 
 batch = torch.zeros(70,20)
 counter = 0
 for idx in range(data.shape[0]):
-    data.values[idx][19] = (data.values[idx][19] + 180) % 360
     if idx % 70 != 0 or idx == 0:
         batch[idx % 70]= torch.Tensor(data.values[idx])
     else:
@@ -147,9 +66,10 @@ for index,game_run in enumerate(featuresTrain):
             current = game_state[state].data.cpu().numpy()
             try:
                 next = game_state[state + 1].data.cpu().numpy()
-                # output = model(torch.from_numpy(current))
-                # waypoint = agent.calculateActionComputed(torch.argmax(output),current)
-                waypoint = agent.calculateActionComputed(4,current,next)
+                output = model(torch.from_numpy(current))
+                waypoint = agent.calculateActionComputed(torch.argmax(output),current,next)
+                # waypoint = agent.calculateActionComputed(0,current,next)
+
 
                 mergingX = waypoint[0]
                 mergingY = waypoint[1]
