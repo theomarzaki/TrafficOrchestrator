@@ -15,7 +15,7 @@ class Data():
 
     def get_RFC_dataset(self):
         return pd.read_csv("csv/lineMergeDataWithHeading.csv")
-        
+
     def get_training_data_tensor(self):
         self.featuresTrain = torch.zeros(math.ceil(self.train_data.shape[0]/70),70,20)
         batch = torch.zeros(70,20)
@@ -43,3 +43,31 @@ class Data():
                 batch = torch.zeros(70,20)
 
         return self.featuresTest
+
+    def get_training_lstm_data(self):
+        featuresTrain = torch.zeros(math.ceil(self.train_data.shape[0]/2),1,20)
+        targetsTrain = torch.zeros(math.ceil(self.train_data.shape[0]/2),1,20)
+        f_counter = 0
+        t_counter = 0
+        for idx in range(self.train_data.shape[0]):
+            if idx % 2 != 0:
+                featuresTrain[f_counter] = torch.Tensor(self.train_data.values[idx])
+                f_counter = f_counter + 1
+            else:
+                targetsTrain[t_counter] = torch.Tensor(self.train_data.values[idx])
+                t_counter = t_counter + 1
+        return featuresTrain,targetsTrain
+
+    def get_testing_lstm_data(self):
+        featuresTest = torch.zeros(math.ceil(self.train_data.shape[0]/2),1,20)
+        targetsTest = torch.zeros(math.ceil(self.train_data.shape[0]/2),1,20)
+        f_counter = 0
+        t_counter = 0
+        for idx in range(self.train_data.shape[0]):
+            if idx % 2 != 0:
+                featuresTest[f_counter] = torch.Tensor(self.train_data.values[idx])
+                f_counter = f_counter + 1
+            else:
+                targetsTest[t_counter] = torch.Tensor(self.train_data.values[idx])
+                t_counter = t_counter + 1
+        return featuresTest,targetsTest

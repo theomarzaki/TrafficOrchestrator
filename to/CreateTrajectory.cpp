@@ -166,63 +166,57 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 
 	auto actionTensor = torch::argmax(action_Tensor);
 	if(accelerate_tensor == actionTensor.item<int>()){
-		auto final_velocity = state[0][4].item<float>() + 0.01 * (state[0][4].item<float>() + state[0][5].item<float>() * 0.01);
-    auto final_acceleration = (pow(final_velocity,2) - pow(state[0][4].item<float>(),2)) / 2 * (0.5 * (state[0][4].item<float>() + final_velocity) * 0.01);
-    auto displacement = final_velocity * 0.01 + 0.5 * (final_acceleration * 0.01 * 0.01);
-    auto angular_displacement =sin(15*M_PI/180) * displacement /sin(90*M_PI/180);
-    auto new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2));
-    auto new_x = state[0][0] + new_position;
-    auto new_y = state[0][1] + new_position;
-    auto new_state = state;
-    new_state[0][0] = new_x;
-    new_state[0][1] = new_y;
-    new_state[0][4] = final_velocity;
-    new_state[0][5] = final_acceleration;
-    return new_state;
+			auto final_velocity = state[0][4].item<float>() + 0.035 * (state[0][4].item<float>() + state[0][5].item<float>() * 0.035);
+			auto final_acceleration = (pow(final_velocity,2) - pow(state[0][4].item<float>(),2)) / 2 * (0.5 * (state[0][4].item<float>() + final_velocity) * 0.035);
+			auto displacement = final_velocity * 0.035 + 0.5 * (final_acceleration * 0.035 * 0.035);
+			auto angle = (int(state[0][19].item<float>()) + 180) % 360;
+			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
+			auto new_y = state[0][1].item<float>() + displacement * sin((angle * M_PI)/ 180);
+			stateTensor[0][0] = new_x;
+			stateTensor[0][1] = new_y;
+			stateTensor[0][4] = final_velocity;
+			stateTensor[0][5] = final_velocity;
+		return stateTensor;
 	} else if(deccelerate_tensor == actionTensor.item<int>()){
-		auto final_velocity = state[0][4].item<float>() - 0.01 * (state[0][4].item<float>() + state[0][5].item<float>() * 0.01);
-  	auto final_acceleration = (pow(final_velocity,2) - pow(state[0][4].item<float>(),2)) / 2 * (0.5 * (state[0][4].item<float>() + final_velocity) * 0.01);
-    auto displacement = final_velocity * 0.01 + 0.5 * (final_acceleration * 0.01 * 0.01);
-    auto angular_displacement = sin(15*M_PI/180) * displacement / sin(90*M_PI/180);
-    auto new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2));
-    auto new_x = state[0][0] + new_position;
-    auto new_y = state[0][1] + new_position;
-    auto new_state = state;
-    new_state[0][0] = new_x;
-    new_state[0][1] = new_y;
-    new_state[0][4] = final_velocity;
-    new_state[0][5] = final_acceleration;
-    return new_state;
+		auto final_velocity = state[0][4].item<float>() - 0.035 * (state[0][4].item<float>() + state[0][5].item<float>() * 0.035);
+		auto final_acceleration = (pow(final_velocity,2) - pow(state[0][4].item<float>(),2)) / 2 * (0.5 * (state[0][4].item<float>() + final_velocity) * 0.035);
+		auto displacement = final_velocity * 0.035 + 0.5 * (final_acceleration * 0.035 * 0.035);
+		auto angle = (int(state[0][19].item<float>()) + 180) % 360;
+		auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
+		auto new_y = state[0][1].item<float>() + displacement * sin((angle * M_PI)/ 180);
+		stateTensor[0][0] = new_x;
+		stateTensor[0][1] = new_y;
+		stateTensor[0][4] = final_velocity;
+		stateTensor[0][5] = final_velocity;
+	return stateTensor;
 	} else if(left_tensor == actionTensor.item<int>()){
-		auto displacement = state[0][4].item<float>() * 0.01 + 0.5 * (state[0][5].item<float>() * 0.01 * 0.01);
-    auto angular_displacement = sin(15*M_PI/180) * displacement / sin(90*M_PI/180);
-    auto new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2));
-    auto new_x = state[0][0] + new_position - (0.01 * new_position);
-    auto new_y = state[0][1] + new_position;
-    auto new_state = state;
-    new_state[0][0] = new_x;
-    new_state[0][1] = new_y;
-    return new_state;
+			float displacement = state[0][4].item<float>() * 0.035 + 0.5 * (state[0][5].item<float>() * 0.035 * 0.035);
+			auto angle = (int(state[0][19].item<float>()) + 180) % 360;
+			angle = (angle + 5) % 360;
+			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
+			auto new_y = state[0][1].item<float>()  + displacement * sin((angle * M_PI)/ 180);
+			stateTensor[0][0] = new_x;
+			stateTensor[0][1] = new_y;
+			stateTensor[0][19] = angle;
+		return stateTensor;
 	} else if(right_tensor == actionTensor.item<int>()){
-		auto displacement = state[0][4].item<float>() * 0.01 + 0.5 * (state[0][5].item<float>() * 0.01 * 0.01);
-    auto angular_displacement = sin(15*M_PI/180) * displacement / sin(90*M_PI/180);
-    auto new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2));
-    auto new_x = state[0][0] + new_position + (0.01 * new_position);
-    auto new_y = state[0][1] + new_position;
-    auto new_state = state;
-    new_state[0][0] = new_x;
-    new_state[0][1] = new_y;
-    return new_state;
+			auto displacement = state[0][4].item<float>() * 0.035 + 0.5 * (state[0][5].item<float>() * 0.035 * 0.035);
+			auto angle = (int(state[0][19].item<float>()) + 180) % 360;
+			angle = (angle - 5) % 360;
+			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
+			auto new_y = state[0][1].item<float>()  + displacement * sin((angle * M_PI)/ 180);
+			stateTensor[0][0] = new_x;
+			stateTensor[0][1] = new_y;
+			stateTensor[0][19] = angle;
+		return stateTensor;
 	} else if(doNothing_tensor == actionTensor.item<int>()){
-		auto displacement = state[0][4].item<float>() * 0.01 + 0.5 * (state[0][5].item<float>() * 0.01 * 0.01);
-    auto angular_displacement = sin(15*M_PI/180) * displacement / sin(90*M_PI/180);
-    auto new_position = sqrt(pow(angular_displacement,2) + pow(displacement,2));
-    auto new_x = state[0][0] + new_position;
-    auto new_y = state[0][1] + new_position;
-    auto new_state = state;
-    new_state[0][0] = new_x;
-    new_state[0][1] = new_y;
-    return new_state;
+			auto displacement = state[0][4].item<float>() * 0.035 + 0.5 * (state[0][5].item<float>() * 0.035 * 0.035);
+	   	auto angle = (int(state[0][19].item<float>()) + 180) % 360;
+	    auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
+	    auto new_y = state[0][1].item<float>() + displacement * sin((angle * M_PI)/ 180);
+	    stateTensor[0][0] = new_x;
+	    stateTensor[0][1] = new_y;
+    return stateTensor;
 	} else cout << "ERROR: incomputing incorrect action tensor";
 
 	return stateTensor;
@@ -261,6 +255,7 @@ vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,
     mergingCar.push_back(x.second->getSpeed());
     mergingCar.push_back(x.second->getAcceleration());
     mergingCar.push_back(x.second->getLatitude()); // spacing
+		mergingCar.push_back(merging_car->getHeading());
 
   return mergingCar;
 }
