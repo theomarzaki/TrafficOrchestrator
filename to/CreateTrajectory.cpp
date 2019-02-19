@@ -30,8 +30,7 @@ using std::cout;
 
 // TODO
 
-// 2. spacing for cars
-// 3. get following and preceeding cars
+// 1. spacing for cars (remove for shorter training time)
 
 double distanceCalculate(double x1, double y1, double x2, double y2)
 {
@@ -81,7 +80,7 @@ pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * mergin
 return pair<RoadUser*,RoadUser*>(closest_preceeding,closest_following);
 }
 
-
+// FOR LSTM Incorporated Algorithm
 // at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 // 	int accelerate_tensor = 0;
 // 	int deccelerate_tensor = 1;
@@ -155,6 +154,7 @@ return pair<RoadUser*,RoadUser*>(closest_preceeding,closest_following);
 // 	return stateTensor;
 // }
 
+// For RL only Algorithm
 at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 	int accelerate_tensor = 0;
 	int deccelerate_tensor = 1;

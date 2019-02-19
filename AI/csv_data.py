@@ -1,3 +1,8 @@
+# This script provides a way for the different models to access the training and testing data
+
+# Created by: Omar Nassef(KCL)
+
+
 import pandas as pd
 import torch
 import math

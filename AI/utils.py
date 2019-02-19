@@ -1,3 +1,7 @@
+# This Script provides extra methods that are used for simulating the enviroment
+
+# Created by: Omar Nassef(KCL)
+
 import pandas as pd
 import numpy as np
 import torch

@@ -1,3 +1,14 @@
+# This script provides a way for the agent(car) to carry out actions based on its
+
+#various values
+
+# @parameters input: state tensor of highway
+
+# @parameters output: new state tensor
+
+# Created by: Omar Nassef(KCL)
+
+
 import pandas as pd
 import numpy as np
 import torch

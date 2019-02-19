@@ -1,7 +1,7 @@
 # This script provides a way to test the implementation of the rl model in the merging scenario
 # presented in the US101 dataset.
 #
-# output: a video file showing the agent(purple) in merge lane scenario
+# @parameters output: a video file showing the agent(purple) in merge lane scenario
 
 # Created by: Omar Nassef(KCL)
 
@@ -68,8 +68,6 @@ for index,game_run in enumerate(featuresTrain):
                 next = game_state[state + 1].data.cpu().numpy()
                 output = model(torch.from_numpy(current))
                 waypoint = agent.calculateActionComputed(torch.argmax(output),current,next)
-                # waypoint = agent.calculateActionComputed(0,current,next)
-
 
                 mergingX = waypoint[0]
                 mergingY = waypoint[1]
@@ -88,11 +86,14 @@ for index,game_run in enumerate(featuresTrain):
                 pass
         counter = counter + 1
 
+def main():
+    camera = Camera(plt.figure())
+    colors = cm.rainbow(np.linspace(0, 1, 3))
+    for plot_data in to_plot:
+        plt.scatter(plot_data[0],plot_data[1], c=colors, s=100)
+        camera.snap()
+    anim = camera.animate(blit=True)
+    anim.save('trial.mp4')
 
-camera = Camera(plt.figure())
-colors = cm.rainbow(np.linspace(0, 1, 3))
-for plot_data in to_plot:
-    plt.scatter(plot_data[0],plot_data[1], c=colors, s=100)
-    camera.snap()
-anim = camera.animate(blit=True)
-anim.save('trial.mp4')
+if __name__ == '__main__':
+    main()

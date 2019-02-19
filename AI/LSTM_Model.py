@@ -5,7 +5,9 @@
 
 # multi variable classifir -> sequence to sequence regressor
 
-# output: LSTM Model to predict next car states (preceeding,merging,following) jit trace file
+# @parameters input: Road state Tensor
+
+# @parameters output: LSTM Model to predict next car states (preceeding,merging,following) jit trace file
 
 # Created by: Omar Nassef(KCL)
 
@@ -127,32 +129,35 @@ class RNN(nn.Module):
 
             print('Test Accuracy of the model of the model: {} %'.format(100 * correct / total))
 
+def main():
+    model = RNN(train_loader,test_loader).to(device)
 
-model = RNN(train_loader,test_loader).to(device)
+    hist = model.train()
 
-hist = model.train()
+    model.test()
 
-model.test()
+    # Save the model checkpoint
+    traced_script_module = torch.jit.trace(model, torch.rand(1,1,20))
+    traced_script_module.save("lstm_model.pt")
 
-# Save the model checkpoint
-traced_script_module = torch.jit.trace(model, torch.rand(1,1,20))
-traced_script_module.save("lstm_model.pt")
+    #
+    # # scaler_x.transform(data)
+    #
+    # input = torch.zeros(1,1,20)
+    #
+    # input[0][0] = torch.Tensor(data.iloc[1])
+    # # input[0][1] = torch.Tensor(data.iloc[2])
+    #
+    # x = model(input)
+    #
+    # print(x.data)
+    #
+    # # print(scaler_x.inverse_transform(x.data.numpy().reshape(1,-1)))
+    #
+    # print(data.iloc[2])
 
-#
-# # scaler_x.transform(data)
-#
-# input = torch.zeros(1,1,20)
-#
-# input[0][0] = torch.Tensor(data.iloc[1])
-# # input[0][1] = torch.Tensor(data.iloc[2])
-#
-# x = model(input)
-#
-# print(x.data)
-#
-# # print(scaler_x.inverse_transform(x.data.numpy().reshape(1,-1)))
-#
-# print(data.iloc[2])
+    plt.plot(hist)
+    plt.show()
 
-plt.plot(hist)
-plt.show()
+if __name__ == '__main__':
+    main()

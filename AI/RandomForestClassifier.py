@@ -1,6 +1,6 @@
 # This script is uses a random forest classifier to predict whether a car can merge or not
 
-# output = model that can be used in python to train RL
+# @parameters output = model that can be used in python to train RL
 
 # TODO :
 # implement in pytorch to transfer to c++
