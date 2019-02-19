@@ -80,7 +80,7 @@ pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * mergin
 return pair<RoadUser*,RoadUser*>(closest_preceeding,closest_following);
 }
 
-// FOR LSTM Incorporated Algorithm
+// FOR LSTM & RL Incorporated Algorithm
 // at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 // 	int accelerate_tensor = 0;
 // 	int deccelerate_tensor = 1;
@@ -344,7 +344,7 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
   mergingManeuver->addWaypoint(waypoint);
 
 	at::Tensor previous_state = calculated_n_1_states;
-	for(int counter = 0;counter < 1; counter++){
+	for(int counter = 0;counter < 1; counter++){ //number of waypoints
 		auto timeCalculator = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 		std::vector<torch::jit::IValue> rl_n_inputs;
 

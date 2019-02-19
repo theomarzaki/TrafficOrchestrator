@@ -43,6 +43,10 @@ class Dueling_DQN(nn.Module):
         self.final_epsilon = 0.01
         self.EPSILON_DECAY = 50
         self.initial_epsilon = 1.0
+        self.number_of_iterations = 1000
+        self.replay_memory_size = 10000
+        self.minibatch_size = 32
+        self.gamma = 0.9
 
         self.feature = nn.Sequential(
             nn.Linear(20, 128),
@@ -70,7 +74,7 @@ class Dueling_DQN(nn.Module):
     def update_target(current_model, target_model):
         target_model.load_state_dict(current_model.state_dict())
 
-    def train_dueling(self,model,target_model,featuresTrain,agent):
+    def train_dueling(self,model,target_model,featuresTrain,agent,predictor):
         replay_memory = []
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-6)
         criterion = nn.MSELoss()
@@ -89,9 +93,9 @@ class Dueling_DQN(nn.Module):
                         output = model(torch.from_numpy(current))
                         # initialise actions
 
-                        action = torch.zeros([model.number_of_actions], dtype=torch.float32)
+                        action = torch.zeros([model.num_outputs], dtype=torch.float32)
                         random_action = random.random() <= epsilon
-                        action_index = [torch.randint(model.number_of_actions, torch.Size([]), dtype=torch.int)
+                        action_index = [torch.randint(model.num_outputs, torch.Size([]), dtype=torch.int)
                                         if random_action
                                         else torch.argmax(output)][0]
 
@@ -182,7 +186,7 @@ def main():
     model = Dueling_DQN()
     target_model = Dueling_DQN()
 
-    model.train_dueling(model,target_model,featuresTrain,agent)
+    model.train_dueling(model,target_model,featuresTrain,agent,predictor)
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
     traced_script_module.save("rl_model_deuling.pt")

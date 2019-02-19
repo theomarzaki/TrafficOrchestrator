@@ -68,7 +68,7 @@ class Agent():
         next[0] = new_x
         next[1] = new_y
         next[4] = final_velocity
-        next[5] = final_velocity
+        next[5] = final_acceleration
         return next
 
     def deccelerate_move(self,state,next):
@@ -81,7 +81,7 @@ class Agent():
         next[0] = new_x
         next[1] = new_y
         next[4] = final_velocity
-        next[5] = final_velocity
+        next[5] = final_acceleration
         return next
 
     def passive_move(self,state,next):
