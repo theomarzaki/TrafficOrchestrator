@@ -8,7 +8,6 @@
 # @parameters output: RL Model (argmax) jit trace file
 
 # Created by: Omar Nassef(KCL)
-
 import torch
 import torch.nn as nn
 import torchvision
@@ -47,6 +46,7 @@ class Dueling_DQN(nn.Module):
         self.replay_memory_size = 10000
         self.minibatch_size = 32
         self.gamma = 0.9
+        self.learn_step_counter = 0
 
         self.feature = nn.Sequential(
             nn.Linear(20, 128),
@@ -74,7 +74,7 @@ class Dueling_DQN(nn.Module):
     def update_target(current_model, target_model):
         target_model.load_state_dict(current_model.state_dict())
 
-    def train_dueling(self,model,target_model,featuresTrain,agent,predictor):
+    def train_dueling(self,model,target,featuresTrain,agent,predictor):
         replay_memory = []
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-6)
         criterion = nn.MSELoss()
@@ -90,6 +90,12 @@ class Dueling_DQN(nn.Module):
                             s_next = game_state[state + 1].data.cpu().numpy()
                         except:
                             pass
+
+                        if self.learn_step_counter % 100 == 0:
+                            target.load_state_dict(model.state_dict())
+                            self.learn_step_counter += 1
+
+
                         output = model(torch.from_numpy(current))
                         # initialise actions
 
@@ -136,25 +142,33 @@ class Dueling_DQN(nn.Module):
                         for idx in range(next_state_batch.shape[0]):
                             next_state_batch_output[idx] = model(torch.Tensor(next_state_batch[idx]))[0]
 
-                        # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
-                        y_batch = tuple(reward_batch[i] if terminal_state_batch[i]
-                                            else reward_batch[i] + model.gamma * torch.max(next_state_batch_output[i])
-                                                  for i in range(len(minibatch)))
+                        # No use of Target Network
+                        # # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
+                        # y_batch = tuple(reward_batch[i] if terminal_state_batch[i]
+                        #                     else reward_batch[i] + model.gamma * torch.max(next_state_batch_output[i])
+                        #                           for i in range(len(minibatch)))
+                        #
+                        # # extract Q-value
+                        # q_value = torch.sum(model(current_batch) * action_batch, dim=1)
 
-                        # extract Q-value
-                        q_value = torch.sum(model(current_batch) * action_batch, dim=1)
+                        # Use of Target Network
+                        q_eval = torch.sum(model(current_batch) * action_batch, dim=1)  # shape (batch, 1)
+                        q_next = target(next_state_batch).detach()     # detach from graph, don't backpropagate
+                        q_target = reward_batch + 0.9 * q_next.max(1)[0]   # shape (batch, 1)
+                        loss = criterion(q_eval, q_target)
 
                         # PyTorch accumulates gradients by default, so they need to be reset in each pass
                         optimizer.zero_grad()
 
+                        # No use of Target Network
                         # returns a new Tensor, detached from the current graph, the result will never require gradient
-                        y_batch = torch.Tensor(y_batch).detach()
+                        # y_batch = torch.Tensor(y_batch).detach()
 
                         # calculate loss
-                        loss = criterion(q_value, y_batch)
+                        # loss = criterion(q_value, y_batch)
 
                         if state % 10 == 0:
-                            print('Epoch: {}, Runs: {}, Loss:   {:.4f}'.format(epoch,index,loss.item()))
+                            print('Epoch: {}, Runs: {}, Loss:   {:.4f}, Average Reward: {:.2f}'.format(epoch,index,loss.item(),sum(reward_batch)/self.minibatch_size))
 
                         # do backward pass
                         loss.backward()
@@ -168,6 +182,7 @@ class Dueling_DQN(nn.Module):
                             except:
                                 print("no more states (time) for maneuvers")
                                 break
+
 
 def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
