@@ -11,6 +11,8 @@ If image is directly built from the repository:
 
 - download libtorch library here : https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-latest.zip and replace with libtorch library in directory
 
+- to run with new trained models, place model in ./include
+
 ### Run TO
 
 - not optimised for CUDA. due to library dependancies.
