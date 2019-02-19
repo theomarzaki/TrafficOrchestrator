@@ -40,7 +40,7 @@ If image is directly built from the repository:
 
 - optimised for CUDA with Torch
 
-- `python3 RL_Model.py`
+- `python3 DQN.py` or `python3 Dueling_DQN.py`
 
 - Again, Hyper paramters can be tuned. Uses Random Forest Classifier found in AI, as a means of assigning reward. 
 
