@@ -242,7 +242,7 @@ vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,
     mergingCar.push_back(merging_car->getWidth());
     mergingCar.push_back(merging_car->getSpeed());
     mergingCar.push_back(merging_car->getAcceleration());
-    mergingCar.push_back(merging_car->getLatitude()); // spacing
+    mergingCar.push_back(distanceCalculate(merging_car->getLongitude(),merging_car->getLatitude(),x.first->getLongitude(),x.first->getLatitude())); // spacing
     mergingCar.push_back(x.first->getLatitude());
     mergingCar.push_back(x.first->getLongitude());
     mergingCar.push_back(x.first->getLength());
@@ -254,7 +254,7 @@ vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,
     mergingCar.push_back(x.second->getWidth());
     mergingCar.push_back(x.second->getSpeed());
     mergingCar.push_back(x.second->getAcceleration());
-    mergingCar.push_back(x.second->getLatitude()); // spacing
+    mergingCar.push_back(distanceCalculate(merging_car->getLongitude(),merging_car->getLatitude(),x.second->getLongitude(),x.second->getLatitude())); // spacing
 		mergingCar.push_back(merging_car->getHeading());
 
   return mergingCar;
