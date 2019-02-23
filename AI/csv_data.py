@@ -13,6 +13,7 @@ class Data():
         self.data = pd.read_csv("csv/lineMergeDataWithHeading.csv")
         self.data.drop(['recommendation', 'recommendedAcceleration'], axis=1, inplace=True)
         self.data = self.data[::-1]
+        self.data.heading = (self.data.heading + 180) % 360
         self.train_data, self.test_data = train_test_split(self.data, test_size=0.2, random_state=1)
 
     def get_data(self):

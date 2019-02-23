@@ -61,7 +61,7 @@ class DeepQLearning(nn.Module):
         out = self.fc2(out)
         return out
 
-    def train(self,model,target,featuresTrain,agent):
+    def train(self,model,target,featuresTrain,agent,predictor):
         replay_memory = []
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-6)
         criterion = nn.MSELoss()
@@ -99,10 +99,10 @@ class DeepQLearning(nn.Module):
 
                         reward,terminal = CalculateReward(next_state,predictor)
 
-
                         # if replay memory is full, remove the oldest transition
                         if len(replay_memory) > model.replay_memory_size:
                             replay_memory.pop(0)
+
 
                         replay_memory.append((torch.Tensor(current), torch.Tensor(action), reward, torch.Tensor(next_state), terminal))
 
@@ -189,7 +189,7 @@ def main():
     model = DeepQLearning()
     target_network = DeepQLearning()
 
-    model.train(model,target_network,featuresTrain,agent)
+    model.train(model,target_network,featuresTrain,agent,predictor)
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
     traced_script_module.save("rl_model.pt")

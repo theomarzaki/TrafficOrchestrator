@@ -38,7 +38,7 @@ class Agent():
 
     def left_move(self,state,next):
         displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
-        angle = (state[19] + 180) % 360
+        angle = state[19]
         angle = (angle + 5) % 360
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
@@ -49,7 +49,7 @@ class Agent():
 
     def right_move(self,state,next):
         displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
-        angle = (state[19] + 180) % 360
+        angle = state[19]
         angle = (angle - 5) % 360
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
@@ -62,7 +62,7 @@ class Agent():
         final_velocity = state[4] + 0.035 * (state[4] + state[5] * 0.035)
         final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.035)
         displacement = final_velocity * 0.035 + 0.5 * (final_acceleration * 0.035 * 0.035)
-        angle = (state[19] + 180) % 360
+        angle = state[19]
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
         next[0] = new_x
@@ -75,7 +75,7 @@ class Agent():
         final_velocity = state[4] - 0.035 * (state[4] + state[5] * 0.035)
         final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.035)
         displacement = final_velocity * 0.035 + 0.5 * (final_acceleration * 0.035 * 0.035)
-        angle = (state[19] + 180) % 360
+        angle = state[19]
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
         next[0] = new_x
@@ -86,7 +86,7 @@ class Agent():
 
     def passive_move(self,state,next):
         displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
-        angle = (state[19] + 180) % 360
+        angle = state[19]
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
         next[0] = new_x
