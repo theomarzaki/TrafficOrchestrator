@@ -31,12 +31,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 data_wrapper = Data()
 data = data_wrapper.get_data()
 
-scaler_x = MinMaxScaler(feature_range =(0, 1))
-
-train_data, test_data = train_test_split(data, test_size=0.2, random_state=1)
-# train_data = scaler_x.fit_transform(train_data)
-# test_data = scaler_x.transform(test_data)
-
 featuresTrain,targetsTrain = data_wrapper.get_training_lstm_data()
 
 featuresTest, targetsTest = data_wrapper.get_testing_lstm_data()
@@ -46,9 +40,9 @@ train = torch.utils.data.TensorDataset(featuresTrain,targetsTrain)
 test = torch.utils.data.TensorDataset(featuresTest,targetsTest)
 
 # Data loader
-train_loader = torch.utils.data.DataLoader(dataset=train,batch_size=1,shuffle=True)
+train_loader = torch.utils.data.DataLoader(dataset=train,batch_size=128,shuffle=False)
 
-test_loader = torch.utils.data.DataLoader(dataset=test,batch_size=1,shuffle=False)
+test_loader = torch.utils.data.DataLoader(dataset=test,batch_size=128,shuffle=False)
 
 # Recurrent neural network (many-to-one)
 class RNN(nn.Module):
@@ -57,19 +51,23 @@ class RNN(nn.Module):
 
         # Hyper-parameters
         self.sequence_length = 1
-        self.input_size = 20
-        self.hidden_size = 512
-        self.num_layers = 3
-        self.num_classes = 20
+        self.input_size = 13
+        self.hidden_size = 128
+        self.num_layers = 2
+        self.num_classes = 13
         self.batch_size = 32
-        self.num_epochs = 1
-        self.learning_rate = 0.1
-
+        self.num_epochs = 5000
+        self.learning_rate = 1e-5
         self.train_loader = train_loader
         self.test_loader = test_loader
 
         self.lstm = nn.LSTM(self.input_size, self.hidden_size, self.num_layers, batch_first=True)
         self.fc = nn.Linear(self.hidden_size, self.num_classes)
+
+    def init_hidden(self):
+    # This is what we'll initialise our hidden state as
+        return (torch.zeros(self.num_layers, self.batch_size, self.hidden_size),
+            torch.zeros(self.num_layers, self.batch_size, self.hidden_size))
 
     def forward(self, x):
         # Set initial hidden and cell states
@@ -83,13 +81,16 @@ class RNN(nn.Module):
         out = self.fc(out[:, -1, :])
         return out
 
-    def train(self):
+    def train(self,model):
         criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)
         hist = []
         total_step = len(self.train_loader)
         for epoch in range(self.num_epochs):
+            model.zero_grad()
+            # model.hidden = model.init_hidden()
             for i, (locations, labels) in enumerate(self.train_loader):
+
 
                 locations = locations.reshape(-1, self.sequence_length, self.input_size).to(device)
                 labels = labels.to(device)
@@ -111,12 +112,12 @@ class RNN(nn.Module):
 
         return hist
 
-    def test(self):
+    def test(self,model):
         with torch.no_grad():
             correct = 0
             total = 0
             for locations, labels in test_loader:
-                locations = locations.reshape(-1, sequence_length, input_size).to(device)
+                locations = locations.reshape(-1, self.sequence_length, self.input_size).to(device)
                 labels = labels.to(device)
                 outputs = model(locations)
                 _, predicted = torch.max(outputs.data, 1)
@@ -132,29 +133,13 @@ class RNN(nn.Module):
 def main():
     model = RNN(train_loader,test_loader).to(device)
 
-    hist = model.train()
+    hist = model.train(model)
 
-    model.test()
+    model.test(model)
 
     # Save the model checkpoint
     traced_script_module = torch.jit.trace(model, torch.rand(1,1,20))
     traced_script_module.save("lstm_model.pt")
-
-    #
-    # # scaler_x.transform(data)
-    #
-    # input = torch.zeros(1,1,20)
-    #
-    # input[0][0] = torch.Tensor(data.iloc[1])
-    # # input[0][1] = torch.Tensor(data.iloc[2])
-    #
-    # x = model(input)
-    #
-    # print(x.data)
-    #
-    # # print(scaler_x.inverse_transform(x.data.numpy().reshape(1,-1)))
-    #
-    # print(data.iloc[2])
 
     plt.plot(hist)
     plt.show()

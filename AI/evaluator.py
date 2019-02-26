@@ -76,12 +76,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--scatter","--s",help="display vehicle trajectory of the merging car in a scatter plot",action='store_true')
     parser.add_argument("--heatmap","--h",help="display vehicle trajectory of the merging car in a heat map",action='store_true')
+    parser.add_argument("--lstm","--lm",help="test the accuracy of the lstm model",action='store_true')
     args = parser.parse_args()
 
     agent = Agent()
     model = torch.jit.load('../include/rl_model.pt')
+    lstm_model = torch.jit.load('../include/lstm_model.pt')
 
-    data = Data().get_data()
+    data_wrapper = Data()
+    data = data_wrapper.get_data()
 
     featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,20)
 
@@ -101,6 +104,18 @@ def main():
         plt.show()
     elif args.heatmap == True:
         print("coming soon ...")
+    elif args.lstm == True:
+        score = 0
+        total = 0
+        input,target = data_wrapper.get_testing_lstm_data()
+        data_set = list(zip(input,target))
+        for (input_data,target) in data_set:
+            output = lstm_model(input_data.unsqueeze(0))
+            print(output)
+            if torch.equal(output,target):
+                score = score + 1
+            total = total + 1
+        print((score/total)*100)
     else:
         to_plot = FullMergeLaneScenario(False,featuresTrain,model,agent)
         camera = Camera(plt.figure())
