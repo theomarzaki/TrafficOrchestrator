@@ -84,7 +84,8 @@ def main():
     lstm_model = torch.jit.load('../include/lstm_model.pt')
 
     data_wrapper = Data()
-    data = data_wrapper.get_data()
+    data = data_wrapper.get_RFC_dataset()
+    data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
 
     featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,20)
 
