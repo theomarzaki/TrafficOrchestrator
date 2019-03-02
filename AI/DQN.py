@@ -43,7 +43,7 @@ class DeepQLearning(nn.Module):
         super(DeepQLearning,self).__init__()
 
         self.learn_step_counter = 0
-        self.num_epochs = 500
+        self.num_epochs = 10000
         self.number_of_actions = 5
         self.gamma = 0.99
         self.final_epsilon = 0.01
@@ -67,111 +67,123 @@ class DeepQLearning(nn.Module):
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-6)
         criterion = nn.MSELoss()
         epsilon = model.initial_epsilon
+        counter = 0
         for epoch in range(self.num_epochs):
             for index,game_run in enumerate(featuresTrain):
                 game_state = game_run
-                for current_epoch in range(game_run.shape[0]):
-                    for state in range(game_state.shape[0]):
-                        current = game_state[state].data.cpu().numpy()
+                counter = counter + 1
+
+                if(counter % 500 == 0):
+                    model_state = {
+                        'epoch': counter,
+                        'state_dict': model.state_dict(),
+                        'optimizer': optimizer.state_dict(),
+                        'loss':loss,
+                        }
+                    model_save_name = F"DQN{counter}.tar"
+                    path = F"DQN_Saves/{model_save_name}"
+                    torch.save(model_state, path)
+
+                for state in range(game_state.shape[0]):
+                    current = game_state[state].data.cpu().numpy()
+                    try:
+                        s_next = game_state[state + 1].data.cpu().numpy()
+                    except:
+                        pass
+
+                    if self.learn_step_counter % 100 == 0:
+                        target.load_state_dict(model.state_dict())
+                        self.learn_step_counter += 1
+
+                    output = model(torch.from_numpy(current).to(device)).to(device)
+                    # initialise actions
+
+                    action = torch.zeros([model.number_of_actions], dtype=torch.float32)
+                    random_action = random.random() <= epsilon
+                    action_index = [torch.randint(model.number_of_actions, torch.Size([]), dtype=torch.int)
+                                    if random_action
+                                    else torch.argmax(output)][0]
+
+                    action[action_index] = 1
+
+                    # get next state and reward
+
+                    next_state = agent.calculateActionComputed(action,current,s_next)
+
+                    reward,terminal = CalculateReward(next_state,predictor)
+
+                    # if replay memory is full, remove the oldest transition
+                    if len(replay_memory) > model.replay_memory_size:
+                        replay_memory.pop(0)
+
+
+                    replay_memory.append((torch.Tensor(current).to(device), torch.Tensor(action).to(device), reward, torch.Tensor(next_state).to(device), terminal))
+
+
+                    epsilon = model.final_epsilon + (model.initial_epsilon - model.final_epsilon) * \
+                                     math.exp(-1. * counter / model.EPSILON_DECAY)
+
+                    minibatch = random.sample(replay_memory, min(len(replay_memory), model.minibatch_size))
+
+                    current_batch = torch.zeros(len(minibatch),20).to(device)
+                    action_batch = torch.zeros(len(minibatch),5).to(device)
+                    reward_batch = torch.zeros(len(minibatch)).to(device)
+                    next_state_batch = torch.zeros(len(minibatch),20).to(device)
+                    terminal_state_batch = []
+                    for idx,data_point in enumerate(minibatch):
+                        current_batch[idx] = data_point[0]
+                        action_batch[idx] = data_point[1]
+                        reward_batch[idx] = data_point[2]
+                        next_state_batch[idx] = data_point[3]
+                        terminal_state_batch.append(data_point[4])
+
+                    next_state_batch_output = torch.zeros(32,5).to(device)
+                    for idx in range(next_state_batch.shape[0]):
+                        next_state_batch_output[idx] = model(next_state_batch[idx]).to(device)[0]
+
+
+                    # No use of Target Network
+                    # # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
+                    # y_batch = tuple(reward_batch[i] if terminal_state_batch[i]
+                    #                     else reward_batch[i] + model.gamma * torch.max(next_state_batch_output[i])
+                    #                           for i in range(len(minibatch)))
+                    #
+                    # # extract Q-value
+                    # q_value = torch.sum(model(current_batch) * action_batch, dim=1)
+
+                    # Use of Target Network
+                    q_eval = torch.sum(model(current_batch).to(device) * action_batch, dim=1)  # shape (batch, 1)
+                    q_next = target(next_state_batch).to(device).detach()     # detach from graph, don't backpropagate
+                    q_target = reward_batch + 0.9 * q_next.max(1)[0]   # shape (batch, 1)
+                    loss = criterion(q_eval, q_target)
+
+
+
+                    # PyTorch accumulates gradients by default, so they need to be reset in each pass
+                    optimizer.zero_grad()
+
+                    # No use of Target Network
+                    # returns a new Tensor, detached from the current graph, the result will never require gradient
+                    # y_batch = torch.Tensor(y_batch).detach()
+
+                    # calculate loss
+                    # loss = criterion(q_value, y_batch)
+
+                    if(state % 70 == 0):
+                        print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}'.format(epoch,self.num_epochs,index,featuresTrain.shape[0],loss.item(),sum(reward_batch)/self.minibatch_size))
+
+                    # do backward pass
+                    loss.backward()
+                    optimizer.step()
+
+                    if terminal == True:
+                        break
+                    else:
                         try:
-                            s_next = game_state[state + 1].data.cpu().numpy()
+                            game_state[state + 1] = torch.Tensor(next_state)
                         except:
-                            pass
-
-                        if self.learn_step_counter % 100 == 0:
-                            target.load_state_dict(model.state_dict())
-                            self.learn_step_counter += 1
-
-
-                        output = model(torch.from_numpy(current).to(device)).to(device)
-                        # initialise actions
-
-                        action = torch.zeros([model.number_of_actions], dtype=torch.float32)
-                        random_action = random.random() <= epsilon
-                        action_index = [torch.randint(model.number_of_actions, torch.Size([]), dtype=torch.int)
-                                        if random_action
-                                        else torch.argmax(output)][0]
-
-                        action[action_index] = 1
-
-                        # get next state and reward
-
-                        next_state = agent.calculateActionComputed(action,current,s_next)
-
-                        reward,terminal = CalculateReward(next_state,predictor)
-
-                        # if replay memory is full, remove the oldest transition
-                        if len(replay_memory) > model.replay_memory_size:
-                            replay_memory.pop(0)
-
-
-                        replay_memory.append((torch.Tensor(current).to(device), torch.Tensor(action).to(device), reward, torch.Tensor(next_state).to(device), terminal))
-
-
-                        epsilon = model.final_epsilon + (model.initial_epsilon - model.final_epsilon) * \
-                                         math.exp(-1. * current_epoch / model.EPSILON_DECAY)
-
-                        minibatch = random.sample(replay_memory, min(len(replay_memory), model.minibatch_size))
-
-                        current_batch = torch.zeros(len(minibatch),20).to(device)
-                        action_batch = torch.zeros(len(minibatch),5).to(device)
-                        reward_batch = torch.zeros(len(minibatch)).to(device)
-                        next_state_batch = torch.zeros(len(minibatch),20).to(device)
-                        terminal_state_batch = []
-                        for idx,data_point in enumerate(minibatch):
-                            current_batch[idx] = data_point[0]
-                            action_batch[idx] = data_point[1]
-                            reward_batch[idx] = data_point[2]
-                            next_state_batch[idx] = data_point[3]
-                            terminal_state_batch.append(data_point[4])
-
-                        next_state_batch_output = torch.zeros(32,5).to(device)
-                        for idx in range(next_state_batch.shape[0]):
-                            next_state_batch_output[idx] = model(next_state_batch[idx]).to(device)[0]
-
-
-                        # No use of Target Network
-                        # # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
-                        # y_batch = tuple(reward_batch[i] if terminal_state_batch[i]
-                        #                     else reward_batch[i] + model.gamma * torch.max(next_state_batch_output[i])
-                        #                           for i in range(len(minibatch)))
-                        #
-                        # # extract Q-value
-                        # q_value = torch.sum(model(current_batch) * action_batch, dim=1)
-
-                        # Use of Target Network
-                        q_eval = torch.sum(model(current_batch).to(device) * action_batch, dim=1)  # shape (batch, 1)
-                        q_next = target(next_state_batch).to(device).detach()     # detach from graph, don't backpropagate
-                        q_target = reward_batch + 0.9 * q_next.max(1)[0]   # shape (batch, 1)
-                        loss = criterion(q_eval, q_target)
-
-
-
-                        # PyTorch accumulates gradients by default, so they need to be reset in each pass
-                        optimizer.zero_grad()
-
-                        # No use of Target Network
-                        # returns a new Tensor, detached from the current graph, the result will never require gradient
-                        # y_batch = torch.Tensor(y_batch).detach()
-
-                        # calculate loss
-                        # loss = criterion(q_value, y_batch)
-
-                        if state % 10 == 0:
-                            print('Epoch: {}, Runs: {}, Loss:   {:.4f}, Average Reward: {:.2f}'.format(epoch,index,loss.item(),sum(reward_batch)/self.minibatch_size))
-
-                        # do backward pass
-                        loss.backward()
-                        optimizer.step()
-
-                        if terminal == True:
+                            print("no more states (time) for maneuvers")
                             break
-                        else:
-                            try:
-                                game_state[state + 1] = torch.Tensor(next_state)
-                            except:
-                                print("no more states (time) for maneuvers")
-                                break
 
 
 def main():
