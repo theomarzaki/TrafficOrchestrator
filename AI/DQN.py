@@ -83,7 +83,7 @@ class DeepQLearning(nn.Module):
                             self.learn_step_counter += 1
 
 
-                        output = model(torch.from_numpy(current)).to(device)
+                        output = model(torch.from_numpy(current).to(device)).to(device)
                         # initialise actions
 
                         action = torch.zeros([model.number_of_actions], dtype=torch.float32)
@@ -105,7 +105,7 @@ class DeepQLearning(nn.Module):
                             replay_memory.pop(0)
 
 
-                        replay_memory.append((torch.Tensor(current), torch.Tensor(action), reward, torch.Tensor(next_state), terminal))
+                        replay_memory.append((torch.Tensor(current).to(device), torch.Tensor(action).to(device), reward, torch.Tensor(next_state).to(device), terminal))
 
 
                         epsilon = model.final_epsilon + (model.initial_epsilon - model.final_epsilon) * \
@@ -113,10 +113,10 @@ class DeepQLearning(nn.Module):
 
                         minibatch = random.sample(replay_memory, min(len(replay_memory), model.minibatch_size))
 
-                        current_batch = torch.zeros(len(minibatch),20)
-                        action_batch = torch.zeros(len(minibatch),5)
-                        reward_batch = torch.zeros(len(minibatch))
-                        next_state_batch = torch.zeros(len(minibatch),20)
+                        current_batch = torch.zeros(len(minibatch),20).to(device)
+                        action_batch = torch.zeros(len(minibatch),5).to(device)
+                        reward_batch = torch.zeros(len(minibatch)).to(device)
+                        next_state_batch = torch.zeros(len(minibatch),20).to(device)
                         terminal_state_batch = []
                         for idx,data_point in enumerate(minibatch):
                             current_batch[idx] = data_point[0]
@@ -125,9 +125,9 @@ class DeepQLearning(nn.Module):
                             next_state_batch[idx] = data_point[3]
                             terminal_state_batch.append(data_point[4])
 
-                        next_state_batch_output = torch.zeros(32,5)
+                        next_state_batch_output = torch.zeros(32,5).to(device)
                         for idx in range(next_state_batch.shape[0]):
-                            next_state_batch_output[idx] = model(torch.Tensor(next_state_batch[idx])).to(device)[0]
+                            next_state_batch_output[idx] = model(next_state_batch[idx]).to(device)[0]
 
 
                         # No use of Target Network
@@ -140,8 +140,8 @@ class DeepQLearning(nn.Module):
                         # q_value = torch.sum(model(current_batch) * action_batch, dim=1)
 
                         # Use of Target Network
-                        q_eval = torch.sum(model(current_batch) * action_batch, dim=1)  # shape (batch, 1)
-                        q_next = target(next_state_batch).detach()     # detach from graph, don't backpropagate
+                        q_eval = torch.sum(model(current_batch).to(device) * action_batch, dim=1)  # shape (batch, 1)
+                        q_next = target(next_state_batch).to(device).detach()     # detach from graph, don't backpropagate
                         q_target = reward_batch + 0.9 * q_next.max(1)[0]   # shape (batch, 1)
                         loss = criterion(q_eval, q_target)
 
