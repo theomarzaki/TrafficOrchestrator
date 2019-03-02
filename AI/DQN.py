@@ -36,6 +36,7 @@ from Agent import Agent
 from csv_data import Data
 from utils import CalculateReward,isCarTerminal
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class DeepQLearning(nn.Module):
     def __init__(self):
@@ -82,7 +83,7 @@ class DeepQLearning(nn.Module):
                             self.learn_step_counter += 1
 
 
-                        output = model(torch.from_numpy(current))
+                        output = model(torch.from_numpy(current)).to(device)
                         # initialise actions
 
                         action = torch.zeros([model.number_of_actions], dtype=torch.float32)
@@ -126,7 +127,7 @@ class DeepQLearning(nn.Module):
 
                         next_state_batch_output = torch.zeros(32,5)
                         for idx in range(next_state_batch.shape[0]):
-                            next_state_batch_output[idx] = model(torch.Tensor(next_state_batch[idx]))[0]
+                            next_state_batch_output[idx] = model(torch.Tensor(next_state_batch[idx])).to(device)[0]
 
 
                         # No use of Target Network
@@ -174,7 +175,6 @@ class DeepQLearning(nn.Module):
 
 
 def main():
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     data_wrapper = Data()
     data = data_wrapper.get_data()
@@ -186,8 +186,8 @@ def main():
     predictor = RandomForestPredictor(data_wrapper.get_RFC_dataset())
 
     #TRAIN RL
-    model = DeepQLearning()
-    target_network = DeepQLearning()
+    model = DeepQLearning().to(device)
+    target_network = DeepQLearning().to(device)
 
     model.train(model,target_network,featuresTrain,agent,predictor)
 

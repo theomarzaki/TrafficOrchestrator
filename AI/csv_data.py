@@ -12,7 +12,6 @@ from sklearn.preprocessing import MinMaxScaler
 class Data():
     def __init__(self):
         self.data = pd.read_csv("csv/lineMergeDataWithHeading.csv")
-        self.data.drop(['recommendation', 'recommendedAcceleration','widthMerging','lenghtMerging','spacingMerging','lengthPreceding','widthPreceding','widthFollowing','spacingFollowing'], axis=1, inplace=True)
         self.data = self.data[::-1]
         self.data.heading = (self.data.heading + 180) % 360
         self.train_data, self.test_data = train_test_split(self.data, test_size=0.2, random_state=1)
@@ -26,6 +25,7 @@ class Data():
 
     def get_training_data_tensor(self):
         self.featuresTrain = torch.zeros(math.ceil(self.train_data.shape[0]/70),70,20)
+        self.train_data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
         batch = torch.zeros(70,20)
         counter = 0
         for idx in range(self.train_data.shape[0]):
@@ -40,6 +40,7 @@ class Data():
 
     def get_testing_data_tensor(self):
         self.featuresTest = torch.zeros(math.ceil(self.test_data.shape[0]/70),70,20)
+        self.test_data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
         batch = torch.zeros(70,20)
         counter = 0
         for idx in range(self.test_data.shape[0]):
@@ -53,6 +54,7 @@ class Data():
         return self.featuresTest
 
     def get_training_lstm_data(self):
+        self.train_data.drop(['recommendation', 'recommendedAcceleration','widthMerging','lenghtMerging','spacingMerging','lengthPreceding','widthPreceding','widthFollowing','spacingFollowing'], axis=1, inplace=True)
         scaled = self.scaler.fit_transform(self.train_data)
         # scaled = self.train_data
         featuresTrain = torch.zeros(math.ceil(scaled.shape[0]/2),1,13)
@@ -69,6 +71,7 @@ class Data():
         return featuresTrain,targetsTrain
 
     def get_testing_lstm_data(self):
+        self.test_data.drop(['recommendation', 'recommendedAcceleration','widthMerging','lenghtMerging','spacingMerging','lengthPreceding','widthPreceding','widthFollowing','spacingFollowing'], axis=1, inplace=True)
         featuresTest = torch.zeros(math.ceil(self.train_data.shape[0]/2),1,13)
         targetsTest = torch.zeros(math.ceil(self.train_data.shape[0]/2),1,13)
         f_counter = 0

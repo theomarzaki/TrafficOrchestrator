@@ -27,11 +27,11 @@ def isCarTerminal(state):
 def CalculateReward(state,predictor):
     reward = 0,False
     if predictor.predict_possible_merge(state[:19]) == False:
-        reward = -1,False
+        reward = -1,True
     elif isCarTerminal(state) == True:
-        reward = 1,True
+        reward = 1,False
     else:
-        reward = 0.1,False
+        reward = -0.04,False
 
     return reward
 

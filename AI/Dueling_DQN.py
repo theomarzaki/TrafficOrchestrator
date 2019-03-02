@@ -42,7 +42,7 @@ class Dueling_DQN(nn.Module):
         self.final_epsilon = 0.01
         self.EPSILON_DECAY = 50
         self.initial_epsilon = 1.0
-        self.number_of_iterations = 1000
+        self.number_of_iterations = 1
         self.replay_memory_size = 10000
         self.minibatch_size = 32
         self.gamma = 0.9

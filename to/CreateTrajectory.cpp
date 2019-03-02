@@ -344,7 +344,7 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
   mergingManeuver->addWaypoint(waypoint);
 
 	at::Tensor previous_state = calculated_n_1_states;
-	for(int counter = 0;counter < 3; counter++){ //number of waypoints
+	for(int counter = 0;counter < 40; counter++){ //number of waypoints
 		auto timeCalculator = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 		std::vector<torch::jit::IValue> rl_n_inputs;
 
