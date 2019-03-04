@@ -26,7 +26,7 @@ private:
 	string type;
 	string context;
 	string origin;
-	string version = "1.1.0";
+	string version = "1.2.0";
 	uint64_t timestamp;
 	string uuid_vehicle; // Digital Identifier of RU that shall execute the maneuver.
 	string uuid_to; // Digital Identifier of the traffic orchestrator.
@@ -69,7 +69,6 @@ public:
 		origin = "traffic_orchestrator";
 		source_uuid = "traffic_orchestrator";
 		uuid_maneuver = to_string(10000000+(std::rand()%(99999999-10000000+1)));
-		source_uuid = "traffic_orchestrator";
 
 	}
 
@@ -79,7 +78,6 @@ public:
 		origin = "traffic_orchestrator";
 		source_uuid = "traffic_orchestrator";
 		uuid_maneuver = to_string(10000000 +(std::rand()%(99999999-10000000+1)));
-		source_uuid = "traffic_orchestrator";
 	}
 
 

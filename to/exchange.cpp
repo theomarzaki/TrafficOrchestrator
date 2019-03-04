@@ -181,6 +181,7 @@ int initiateSubscription(string sendAddress, int sendPort,string receiveAddress,
 	subscriptionReq->setTimestamp(timeSub.count());
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
 	auto socket = sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createSubscriptionRequestJSON(subscriptionReq));
+	write_to_log("Sent subscription request to " + sendAddress + ":"+ to_string(sendPort));
 	return socket;
 }
 
@@ -225,7 +226,7 @@ int filterExecution(string data) {
 	}
 	else if (filterNum == 3) {
 		maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(parse(data)));
-		write_to_log("Manueaver Feedback: " + maneuverFeed->getFeedback());
+		write_to_log("Maneuver Feedback: " + maneuverFeed->getFeedback());
 		if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
 			write_to_log("calculating new Trajectory for Vehicle");
 			return 3;
