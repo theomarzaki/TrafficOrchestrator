@@ -48,40 +48,40 @@ std::list<string> incomplete_messages;
 /* struct to represent fields found in JSON string. */
 struct Detected_Road_User {
 
-string type;
-string context;
-string origin;
-string version;
-uint64_t timestamp;
-string uuid;
-string its_station_type;
-bool connected;
-int32_t latitude;
-int32_t longitude;
-string position_type;
-uint16_t heading;
-uint16_t speed;
-uint16_t acceleration;
-uint16_t yaw_rate;
-float length;
-float width;
-float height;
-string color;
-uint4 lane_position;
-uint8_t existence_probability;
-uint16_t position_semi_major_confidence;
-uint16_t position_semi_minor_confidence;
-uint16_t position_semi_major_orientation;
-uint16_t heading_c;
-uint16_t speed_c;
-uint16_t acceleration_c;
-uint16_t yaw_rate_c;
-float length_c;
-float width_c;
-float height_c;
-string signature;
-string message_id;
-string source_uuid;
+  string type;
+  string context;
+  string origin;
+  string version;
+  uint64_t timestamp;
+  string uuid;
+  string its_station_type;
+  bool connected;
+  int32_t latitude;
+  int32_t longitude;
+  string position_type;
+  uint16_t heading;
+  uint16_t speed;
+  uint16_t acceleration;
+  uint16_t yaw_rate;
+  float length;
+  float width;
+  float height;
+  string color;
+  uint4 lane_position;
+  uint8_t existence_probability;
+  uint16_t position_semi_major_confidence;
+  uint16_t position_semi_minor_confidence;
+  uint16_t position_semi_major_orientation;
+  uint16_t heading_c;
+  uint16_t speed_c;
+  uint16_t acceleration_c;
+  uint16_t yaw_rate_c;
+  float length_c;
+  float width_c;
+  float height_c;
+  string signature;
+  string message_id;
+  string source_uuid;
 
 };
 
@@ -160,9 +160,9 @@ Document parse(string readFromServer) {
   }
 }
 
-Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notification detectedToNotification) {
+Detected_Road_User assignRoadUserVals(Document document) {
 	Detected_Road_User values;
-
+  //TODO: use int instead of double when possible
   values.type = document["type"].GetString();
   document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
   document.HasMember("origin") ? values.origin = document["origin"].GetString() : values.origin = "placeholder";
@@ -178,20 +178,26 @@ Detected_Road_User assignRoadUserVals(Document document, Detected_To_Notificatio
   document["message"].HasMember("speed") ? values.speed = document["message"]["speed"].GetDouble() : values.speed = 0.0;
   document["message"].HasMember("acceleration") ? values.acceleration = document["message"]["acceleration"].GetDouble() : values.acceleration = 0.0;
   document["message"].HasMember("yaw_rate") ? values.yaw_rate = document["message"]["yaw_rate"].GetDouble() : values.yaw_rate = 0.0;
-  document["message"]["size"].HasMember("length") ? values.length = document["message"]["size"]["length"].GetDouble() : values.length = 0.0;
-  document["message"]["size"].HasMember("width") ? values.width = document["message"]["size"]["width"].GetDouble() : values.width = 0.0;
-  document["message"]["size"].HasMember("height") ? values.height = document["message"]["size"]["height"].GetDouble() : values.height = 0.0;
+  if (document["message"].HasMember("size")) {
+    document["message"]["size"].HasMember("length") ? values.length = document["message"]["size"]["length"].GetDouble() : values.length = 0.0;
+    document["message"]["size"].HasMember("width") ? values.width = document["message"]["size"]["width"].GetDouble() : values.width = 0.0;
+    document["message"]["size"].HasMember("height") ? values.height = document["message"]["size"]["height"].GetDouble() : values.height = 0.0;
+  }
   document["message"].HasMember("existence_probability") ? values.existence_probability = document["message"]["existence_probability"].GetUint() : values.existence_probability = -1;
-  document["message"]["confidence"].HasMember("position_semi_major_confidence") ? values.position_semi_major_confidence = document["message"]["confidence"]["position_semi_major_confidence"].GetUint() : values.position_semi_major_confidence = -1;
-  document["message"]["confidence"].HasMember("position_semi_minor_confidence") ? values.position_semi_minor_confidence = document["message"]["confidence"]["position_semi_minor_confidence"].GetUint() : values.position_semi_minor_confidence = -1;
-  document["message"]["confidence"].HasMember("position_semi_major_orientation") ? values.position_semi_major_orientation = document["message"]["confidence"]["position_semi_major_orientation"].GetUint() : values.position_semi_major_orientation = -1;
-  document["message"]["confidence"].HasMember("heading") ? values.heading_c = document["message"]["confidence"]["heading"].GetUint() : values.heading_c = -1;
-  document["message"]["confidence"].HasMember("speed") ? values.speed_c = document["message"]["confidence"]["speed"].GetUint() : values.speed_c = -1;
-  document["message"]["confidence"].HasMember("acceleration") ? values.acceleration_c = document["message"]["confidence"]["acceleration"].GetUint() : values.acceleration_c = 0;
-  document["message"]["confidence"].HasMember("yaw_rate") ? values.yaw_rate_c = document["message"]["confidence"]["yaw_rate"].GetUint() : values.yaw_rate_c = 0;
-  document["message"]["confidence"]["size"].HasMember("length") ? values.length_c = document["message"]["confidence"]["size"]["length"].GetDouble() : values.length_c = 0.0;
-  document["message"]["confidence"]["size"].HasMember("width") ? values.width_c = document["message"]["confidence"]["size"]["width"].GetDouble() : values.width_c = 0.0;
-  document["message"]["confidence"]["size"].HasMember("height") ? values.height_c = document["message"]["confidence"]["size"]["height"].GetDouble() : values.height_c = 0.0;
+  if (document["message"].HasMember("accuracy")) {
+    document["message"]["accuracy"].HasMember("position_semi_major_confidence") ? values.position_semi_major_confidence = document["message"]["accuracy"]["position_semi_major_confidence"].GetUint() : values.position_semi_major_confidence = -1;
+    document["message"]["accuracy"].HasMember("position_semi_minor_confidence") ? values.position_semi_minor_confidence = document["message"]["accuracy"]["position_semi_minor_confidence"].GetUint() : values.position_semi_minor_confidence = -1;
+    document["message"]["accuracy"].HasMember("position_semi_major_orientation") ? values.position_semi_major_orientation = document["message"]["accuracy"]["position_semi_major_orientation"].GetUint() : values.position_semi_major_orientation = -1;
+    document["message"]["accuracy"].HasMember("heading") ? values.heading_c = document["message"]["accuracy"]["heading"].GetUint() : values.heading_c = -1;
+    document["message"]["accuracy"].HasMember("speed") ? values.speed_c = document["message"]["accuracy"]["speed"].GetUint() : values.speed_c = -1;
+    document["message"]["accuracy"].HasMember("acceleration") ? values.acceleration_c = document["message"]["accuracy"]["acceleration"].GetUint() : values.acceleration_c = 0;
+    document["message"]["accuracy"].HasMember("yaw_rate") ? values.yaw_rate_c = document["message"]["accuracy"]["yaw_rate"].GetUint() : values.yaw_rate_c = 0;
+    if (document["message"]["accuracy"].HasMember("size")) {
+      document["message"]["accuracy"]["size"].HasMember("length") ? values.length_c = document["message"]["accuracy"]["size"]["length"].GetDouble() : values.length_c = 0.0;
+      document["message"]["accuracy"]["size"].HasMember("width") ? values.width_c = document["message"]["accuracy"]["size"]["width"].GetDouble() : values.width_c = 0.0;
+      document["message"]["accuracy"]["size"].HasMember("height") ? values.height_c = document["message"]["accuracy"]["size"]["height"].GetDouble() : values.height_c = 0.0;
+    }
+  }
   document["message"].HasMember("color") ? values.color = document["message"]["color"].GetString() : values.color = "0x0000";
   document["message"].HasMember("lane_position") ? values.lane_position = document["message"]["lane_position"].GetUint() : values.lane_position = 15;
   document.HasMember("signature") ? values.signature = document["signature"].GetString() : values.signature = "placeholder";
@@ -213,12 +219,12 @@ Detected_To_Notification assignNotificationVals(Document document) {
   (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
   (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
   (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
-
+  write_to_log("received notification with timestamp=" + to_string(values.timestamp));
   for(auto& v : document["message"]["ru_description_list"].GetArray()) {
     StringBuffer sb;
     Writer<StringBuffer> writer(sb);
     v.Accept(writer);
-    values.ru_description_list.push_back(assignRoadUserVals(parse(sb.GetString()),values));
+    values.ru_description_list.push_back(assignRoadUserVals(parse(sb.GetString())));
     sb.Clear();
     writer.Reset(sb);
   }
@@ -358,5 +364,5 @@ string listenDataTCP(int socket_c) {
       return returning;
     }
 
-    }
   }
+}

@@ -18,7 +18,7 @@ class SubscriptionRequest {
 		string type;
 		string context;
 		string origin;
-		string version = "1.1.0";
+		string version = "1.2.0";
 		uint64_t timestamp;
 		bool filter;
 		string shape;
@@ -51,7 +51,7 @@ class SubscriptionRequest {
 			context = "subscriptions"; //changed from subscription_mechanism
 			origin = "traffic_orchestrator";
 			source_uuid = "traffic_orchestrator";
-			destination_uuid = "v2x gateway";
+			destination_uuid = "v2xgw";
 		}
 
 		SubscriptionRequest() {
@@ -59,7 +59,7 @@ class SubscriptionRequest {
 			context = "subscriptions"; // same as above
 			origin = "traffic_orchestrator";
 			source_uuid = "traffic_orchestrator"; // add to json format properly
-			destination_uuid = "v2x gateway";
+			destination_uuid = "v2xgw";
 		}
 
 	~SubscriptionRequest();
