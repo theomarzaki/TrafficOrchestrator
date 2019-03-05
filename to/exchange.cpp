@@ -209,11 +209,12 @@ int filterExecution(string data) {
 		return 0;
 	}
 	else if(filterNum == 4) {
-		int size = assignNotificationVals(parse(data)).ru_description_list.size();
-		RoadUser * road_users = detectedToRoadUserList(assignNotificationVals(parse(data)).ru_description_list);
-		for(int j = 0; j < size; j++) {
-			database->deleteRoadUser(road_users[j].getUuid());
-		}
+		auto roadUsersVector{assignNotificationVals(parse(data)).ru_description_list};
+		for_each(roadUsersVector.begin(), roadUsersVector.end(),
+						 [](Detected_Road_User ru)
+						 {
+								 database->deleteRoadUser(ru.uuid);
+						 });
 		return 4;
 	}
 	else if(filterNum == 1) {
