@@ -45,12 +45,12 @@ class DeepQLearning(nn.Module):
         self.learn_step_counter = 0
         self.num_epochs = 10000
         self.number_of_actions = 5
-        self.gamma = 0.99
+        self.gamma = 0.90
         self.final_epsilon = 0.01
         self.initial_epsilon = 1.0
         self.replay_memory_size = 10000 #may need to increase
         self.minibatch_size = 32 #TODO may need to change this
-        self.EPSILON_DECAY = 50
+        self.EPSILON_DECAY = 100000
 
         self.fc1 = nn.Linear(20,512)
         self.relu1 = nn.ReLU(inplace=True)
@@ -64,7 +64,7 @@ class DeepQLearning(nn.Module):
 
     def train(self,model,target,featuresTrain,agent,predictor):
         replay_memory = []
-        optimizer = torch.optim.Adam(model.parameters(), lr=1e-6)
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
         criterion = nn.MSELoss()
         epsilon = model.initial_epsilon
         counter = 0
@@ -72,18 +72,6 @@ class DeepQLearning(nn.Module):
             for index,game_run in enumerate(featuresTrain):
                 game_state = game_run
                 counter = counter + 1
-
-                if(counter % 500 == 0):
-                    model_state = {
-                        'epoch': counter,
-                        'state_dict': model.state_dict(),
-                        'optimizer': optimizer.state_dict(),
-                        'loss':loss,
-                        }
-                    model_save_name = F"DQN{counter}.tar"
-                    path = F"DQN_Saves/{model_save_name}"
-                    torch.save(model_state, path)
-
                 for state in range(game_state.shape[0]):
                     current = game_state[state].data.cpu().numpy()
                     try:
@@ -121,7 +109,7 @@ class DeepQLearning(nn.Module):
 
 
                     epsilon = model.final_epsilon + (model.initial_epsilon - model.final_epsilon) * \
-                                     math.exp(-1. * counter / model.EPSILON_DECAY)
+                                     math.exp(-1. * self.learn_step_counter / model.EPSILON_DECAY)
 
                     minibatch = random.sample(replay_memory, min(len(replay_memory), model.minibatch_size))
 
@@ -137,7 +125,7 @@ class DeepQLearning(nn.Module):
                         next_state_batch[idx] = data_point[3]
                         terminal_state_batch.append(data_point[4])
 
-                    next_state_batch_output = torch.zeros(32,5).to(device)
+                    next_state_batch_output = torch.zeros(self.minibatch_size,5).to(device)
                     for idx in range(next_state_batch.shape[0]):
                         next_state_batch_output[idx] = model(next_state_batch[idx]).to(device)[0]
 
@@ -168,6 +156,17 @@ class DeepQLearning(nn.Module):
 
                     # calculate loss
                     # loss = criterion(q_value, y_batch)
+
+                    if(self.learn_step_counter % 500 == 0):
+                        model_state = {
+                            'epoch': counter,
+                            'state_dict': model.state_dict(),
+                            'optimizer': optimizer.state_dict(),
+                            'loss':loss,
+                            }
+                        model_save_name = F"DQN{counter}.tar"
+                        path = F"DQN_Saves/{model_save_name}"
+                        torch.save(model_state, path)
 
                     if(state % 70 == 0):
                         print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}'.format(epoch,self.num_epochs,index,featuresTrain.shape[0],loss.item(),sum(reward_batch)/self.minibatch_size))
