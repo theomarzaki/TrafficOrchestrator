@@ -16,7 +16,7 @@ def isCarTerminal(state):
     x_diff = state[13] - state[7]
     if(round(x_diff,2) == 0 or round(y_diff,2) == 0):
         plus_c = int(state[8])
-        if ((round(int(state[1])) in range(round(slope * int(state[0]) + plus_c) - 1,round(slope * int(state[0]) + plus_c) + 1)) and int(state[6]) <= int(state[18]) and (int(state[7]) < int(state[0]) < int(state[13]) and int(state[8]) < int(state[1]) < int(state[14]))):
+        if ((round(state[1]) + 2 == round(plus_c) or round(state[1]) - 2 == round(plus_c)) and int(state[6]) <= int(state[18]) and (int(state[7]) < int(state[0]) < int(state[13]) and int(state[8]) < int(state[1]) < int(state[14]))):
             return True;
     else:
         slope = round(y_diff,2) / round(x_diff,2)
