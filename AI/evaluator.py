@@ -34,6 +34,7 @@ from matplotlib import cm
 from csv_data import Data
 from Agent import Agent
 import argparse
+from utils import isCarTerminal
 
 def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
     to_plot = []
@@ -52,20 +53,23 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
                     action_tensor[torch.argmax(output)] = 1
                     waypoint = agent.calculateActionComputed(action_tensor,current,next)
 
-                    if is_scatter:
-                        to_plot.append((waypoint[0],waypoint[1]))
+                    if not isCarTerminal(waypoint):
+                        if is_scatter:
+                            to_plot.append((waypoint[0],waypoint[1]))
+                        else:
+                            mergingX = waypoint[0]
+                            mergingY = waypoint[1]
+                            precedingX = waypoint[7]
+                            precedingY = waypoint[8]
+                            followingX = waypoint[13]
+                            followingY = waypoint[14]
+
+                            plots_X = [mergingX,precedingX,followingX]
+                            plots_Y = [mergingY,precedingY,followingY]
+                            to_plot.append((plots_X,plots_Y))
                     else:
-                        mergingX = waypoint[0]
-                        mergingY = waypoint[1]
-                        precedingX = waypoint[7]
-                        precedingY = waypoint[8]
-                        followingX = waypoint[13]
-                        followingY = waypoint[14]
-
-                        plots_X = [mergingX,precedingX,followingX]
-                        plots_Y = [mergingY,precedingY,followingY]
-                        to_plot.append((plots_X,plots_Y))
-
+                        print("reached goal")
+                        break
 
                     game_state[state + 1] = torch.Tensor(waypoint)
                 except:
@@ -77,14 +81,20 @@ def main():
     parser.add_argument("--scatter","--s",help="display vehicle trajectory of the merging car in a scatter plot",action='store_true')
     parser.add_argument("--heatmap","--h",help="display vehicle trajectory of the merging car in a heat map",action='store_true')
     parser.add_argument("--lstm","--lm",help="test the accuracy of the lstm model",action='store_true')
+    parser.add_argument("--dueling_dqn","--ddqn",help="test the accuracy of the dueling DQN model",action='store_true')
     args = parser.parse_args()
 
     agent = Agent()
-    model = torch.jit.load('../include/rl_model.pt')
-    lstm_model = torch.jit.load('../include/lstm_model.pt')
+    if args.dueling_dqn:
+        model = torch.jit.load('rl_model_deuling.pt')
+    elif args.lstm:
+        lstm_model = torch.jit.load('../include/lstm_model.pt')
+    else:
+        model = torch.jit.load('../include/rl_model.pt')
 
     data_wrapper = Data()
     data = data_wrapper.get_RFC_dataset()
+    data = data[::-1]
     data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
 
     featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,20)
