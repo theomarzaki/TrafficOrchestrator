@@ -80,8 +80,8 @@ class Dueling_DQN(nn.Module):
 
     def train_dueling(self,model,target,featuresTrain,agent,predictor):
         replay_memory = []
+        hist = []
         wins = 0
-        losses = 0
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)
         criterion = nn.MSELoss()
         epsilon = model.initial_epsilon
@@ -130,9 +130,7 @@ class Dueling_DQN(nn.Module):
 
                     reward,terminal = CalculateReward(next_state,predictor)
 
-                    if terminal and reward == -1:
-                        losses = losses + 1
-                    elif terminal and reward == 1:
+                    if terminal and reward == 1:
                         wins = wins + 1
                     else:
                         pass
@@ -194,8 +192,10 @@ class Dueling_DQN(nn.Module):
                     # calculate loss
                     loss = criterion(q_value, y_batch)
 
+                    hist.append(loss.item())
+
                     if(state % 70 == 0):
-                        print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}, Losses: {}, Wins: {}'.format(epoch,self.num_epochs,index,featuresTrain.shape[0],loss.item(),sum(reward_batch)/self.minibatch_size,losses,wins))
+                        print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}, Wins: {}'.format(epoch,self.num_epochs,index,featuresTrain.shape[0],loss.item(),sum(reward_batch)/self.minibatch_size,wins))
 
                     # do backward pass
                     loss.backward()
@@ -210,7 +210,7 @@ class Dueling_DQN(nn.Module):
                             print("no more states (time) for maneuvers")
                             break
 
-
+        return hist
 
 def main():
 
@@ -228,7 +228,10 @@ def main():
     model = Dueling_DQN().to(device)
     target_model = Dueling_DQN().to(device)
 
-    model.train_dueling(model,target_model,featuresTrain,agent,predictor)
+    loss_over_time = model.train_dueling(model,target_model,featuresTrain,agent,predictor)
+
+    plt.plot(loss_over_time)
+    plt.show()
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
     traced_script_module.save("rl_model_deuling.pt")
