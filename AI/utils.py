@@ -37,7 +37,7 @@ def CalculateReward(state,predictor):
     else:
         halfway = ((state[7] + state[13])/2,(state[8] + state[14])/2)
         quarterway = ((halfway[0] + state[13])/2,(halfway[1] + state[14]/2))
-        reward = (1/distance.euclidean((state[0],state[1]), quarterway)),False
+        reward = (1/distance.euclidean((state[0],state[1]),quarterway)),False
     return reward
 
 

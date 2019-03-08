@@ -235,7 +235,7 @@ def main():
     plt.show()
 
     # Load Model
-    # state = torch.load('rl_classifier.tar',map_location='cpu')
+    # state = torch.load('DQN6.tar',map_location='cpu')
     # model.load_state_dict(state['state_dict'])
 
 
