@@ -224,14 +224,21 @@ def main():
 
     predictor = RandomForestPredictor(data_wrapper.get_RFC_dataset())
 
-    #TRAIN RL
+
     model = Dueling_DQN().to(device)
     target_model = Dueling_DQN().to(device)
 
-    loss_over_time = model.train_dueling(model,target_model,featuresTrain,agent,predictor)
 
+    #TRAIN RL
+    loss_over_time = model.train_dueling(model,target_model,featuresTrain,agent,predictor)
     plt.plot(loss_over_time)
     plt.show()
+
+    # Load Model
+    # state = torch.load('rl_classifier.tar',map_location='cpu')
+    # model.load_state_dict(state['state_dict'])
+
+
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
     traced_script_module.save("rl_model_deuling.pt")

@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import random
 import math
+from scipy.spatial import distance
 
 
 
@@ -34,8 +35,9 @@ def CalculateReward(state,predictor):
     elif isCarTerminal(state) == True:
         reward = 1,True
     else:
-        reward = -0.04,False
-
+        halfway = ((state[7] + state[13])/2,(state[8] + state[14])/2)
+        quarterway = ((halfway[0] + state[13])/2,(halfway[1] + state[14]/2))
+        reward = (1/distance.euclidean((state[0],state[1]), quarterway)),False
     return reward
 
 

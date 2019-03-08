@@ -90,7 +90,7 @@ def main():
     elif args.lstm:
         lstm_model = torch.jit.load('../include/lstm_model.pt')
     else:
-        model = torch.jit.load('../include/rl_model.pt')
+        model = torch.jit.load('rl_model.pt')
 
     data_wrapper = Data()
     data = data_wrapper.get_RFC_dataset()
