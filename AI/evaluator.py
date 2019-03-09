@@ -34,9 +34,11 @@ from matplotlib import cm
 from csv_data import Data
 from Agent import Agent
 import argparse
-from utils import isCarTerminal
+from utils import isCarTerminal, CalculateReward
+from RandomForestClassifier import RandomForestPredictor
 
 def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
+    predictor = RandomForestPredictor(Data().get_RFC_dataset())
     to_plot = []
     counter = 0
     for index,game_run in enumerate(featuresTrain):
@@ -47,11 +49,14 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
             for state in range(game_state.shape[0]):
                 current = game_state[state].data.cpu().numpy()
                 try:
-                    next = game_state[state + 1].data.cpu().numpy()
-                    output = model(torch.from_numpy(current))
-                    action_tensor = torch.zeros(5)
-                    action_tensor[torch.argmax(output)] = 1
-                    waypoint = agent.calculateActionComputed(action_tensor,current,next)
+                    # next = game_state[state + 1].data.cpu().numpy()
+                    # output = model(torch.from_numpy(current))
+                    # action_tensor = torch.zeros(5)
+                    # action_tensor[torch.argmax(output)] = 1
+                    # waypoint = agent.calculateActionComputed(action_tensor,current,next)
+
+                    reward,terminal = CalculateReward(current,predictor)
+                    print(reward)
 
                     if not isCarTerminal(current):
                         if is_scatter:
@@ -71,7 +76,7 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
                         print("reached goal")
                         break
 
-                    game_state[state + 1] = torch.Tensor(waypoint)
+                    # game_state[state + 1] = torch.Tensor(waypoint)
                 except:
                     pass
     return to_plot

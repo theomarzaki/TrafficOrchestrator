@@ -230,13 +230,13 @@ def main():
 
 
     #TRAIN RL
-    loss_over_time = model.train_dueling(model,target_model,featuresTrain,agent,predictor)
-    plt.plot(loss_over_time)
-    plt.show()
+    # loss_over_time = model.train_dueling(model,target_model,featuresTrain,agent,predictor)
+    # plt.plot(loss_over_time)
+    # plt.show()
 
     # Load Model
-    # state = torch.load('DQN6.tar',map_location='cpu')
-    # model.load_state_dict(state['state_dict'])
+    state = torch.load('DQN14.tar',map_location='cpu')
+    model.load_state_dict(state['state_dict'])
 
 
 

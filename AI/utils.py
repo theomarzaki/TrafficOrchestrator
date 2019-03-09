@@ -36,8 +36,12 @@ def CalculateReward(state,predictor):
         reward = 1,True
     else:
         halfway = ((state[7] + state[13])/2,(state[8] + state[14])/2)
-        quarterway = ((halfway[0] + state[13])/2,(halfway[1] + state[14]/2))
-        reward = (1/distance.euclidean((state[0],state[1]),quarterway)),False
+        # quarterway = ((halfway[0] + state[7])/2,(halfway[1] + state[8]/2))
+        distance_merging_point = distance.euclidean((state[0],state[1]), halfway)
+        if(round(distance_merging_point,2) != 0):
+            reward = ((1/distance_merging_point)),False
+        else:
+            reward = 0
     return reward
 
 
