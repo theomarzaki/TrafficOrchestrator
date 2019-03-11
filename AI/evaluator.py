@@ -49,16 +49,15 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
             for state in range(game_state.shape[0]):
                 current = game_state[state].data.cpu().numpy()
                 try:
-                    # next = game_state[state + 1].data.cpu().numpy()
-                    # output = model(torch.from_numpy(current))
-                    # action_tensor = torch.zeros(5)
-                    # action_tensor[torch.argmax(output)] = 1
-                    # waypoint = agent.calculateActionComputed(action_tensor,current,next)
-
-                    reward,terminal = CalculateReward(current,predictor)
+                    next = game_state[state + 1].data.cpu().numpy()
+                    output = model(torch.from_numpy(current))
+                    action_tensor = torch.zeros(5)
+                    action_tensor[torch.argmax(output)] = 1
+                    waypoint = agent.calculateActionComputed(action_tensor,current,next)
+                    reward,terminal = CalculateReward(waypoint,predictor)
                     print(reward)
 
-                    if not isCarTerminal(current):
+                    if not isCarTerminal(waypoint):
                         if is_scatter:
                             to_plot.append((waypoint[0],waypoint[1]))
                         else:
@@ -76,7 +75,7 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
                         print("reached goal")
                         break
 
-                    # game_state[state + 1] = torch.Tensor(waypoint)
+                    game_state[state + 1] = torch.Tensor(waypoint)
                 except:
                     pass
     return to_plot
@@ -100,6 +99,7 @@ def main():
     data_wrapper = Data()
     data = data_wrapper.get_RFC_dataset()
     data = data[::-1]
+    data.heading = (data.heading + 180) % 360
     data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
 
     featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,20)

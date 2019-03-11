@@ -26,6 +26,7 @@ import logging
 from scipy.spatial import distance
 import random
 from torch.autograd import Variable
+import numpy as np
 
 class RandomForestPredictor():
     def __init__(self,data):
@@ -44,13 +45,13 @@ class RandomForestPredictor():
         self.train_data, self.test_data = train_test_split(self.data, test_size=0.2, random_state=1)
         self.train, self.validation = train_test_split(self.train_data, test_size=0.2, random_state=1)
 
-        self.X_trainRecommendation = self.train.drop(['recommendation', 'heading', 'recommendedAcceleration'], axis=1)
+        self.X_trainRecommendation = self.train.drop(['recommendation', 'heading', 'recommendedAcceleration','spacingMerging','spacingFollowing'], axis=1)
         self.Y_trainRecommendation = self.train['recommendation']
 
-        self.X_valRecommendation = self.validation.drop(["recommendation", 'heading', 'recommendedAcceleration'], axis=1).copy()
+        self.X_valRecommendation = self.validation.drop(["recommendation", 'heading', 'recommendedAcceleration','spacingMerging','spacingFollowing'], axis=1).copy()
         self.Y_valRecommendation = self.validation['recommendation']
 
-        self.X_testRecommendation = self.test_data.drop(['recommendation', 'heading', 'recommendedAcceleration'], axis=1)
+        self.X_testRecommendation = self.test_data.drop(['recommendation', 'heading', 'recommendedAcceleration','spacingMerging','spacingFollowing'], axis=1)
         self.Y_testRecommendation = self.test_data['recommendation']
 
         self.random_forest = RandomForestClassifier(n_estimators=100, max_depth=16, n_jobs=-1)
@@ -68,7 +69,13 @@ class RandomForestPredictor():
         print("Validation accuracy: ", acc_random_forest_val)
 
     def predict_possible_merge(self,prediction_variables):
-        prediction_array = self.random_forest.predict(prediction_variables.reshape(1,-1))
+        pred = []
+        for idx,data in enumerate(prediction_variables):
+            if idx == 6 or idx == 18:
+                pass
+            else:
+                pred.append(data)
+        prediction_array = self.random_forest.predict(np.array(pred).reshape(1,-1))
         if len(prediction_array) != 0:
             if prediction_array[0] == 1:
                 return True

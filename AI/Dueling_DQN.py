@@ -111,7 +111,7 @@ class Dueling_DQN(nn.Module):
 
                     if self.learn_step_counter % 100 == 0:
                         target.load_state_dict(model.state_dict())
-                        self.learn_step_counter += 1
+                    self.learn_step_counter += 1
 
                     output = model(torch.from_numpy(current).to(device)).to(device)
                     # initialise actions
@@ -235,9 +235,8 @@ def main():
     # plt.show()
 
     # Load Model
-    state = torch.load('DQN14.tar',map_location='cpu')
+    state = torch.load('DQN_Saves/DQN3.tar',map_location='cpu')
     model.load_state_dict(state['state_dict'])
-
 
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
