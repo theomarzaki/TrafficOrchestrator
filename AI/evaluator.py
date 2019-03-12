@@ -90,7 +90,7 @@ def main():
 
     agent = Agent()
     if args.dueling_dqn:
-        model = torch.jit.load('../include/rl_model_deuling.pt')
+        model = torch.jit.load('rl_model_deuling.pt')
     elif args.lstm:
         lstm_model = torch.jit.load('../include/lstm_model.pt')
     else:

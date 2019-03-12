@@ -27,22 +27,18 @@ using namespace rapidjson;
 using namespace std::chrono;
 using std::cout;
 
+int RoadUserSpeedtoProcessedSpeed(int speed){
+	return speed * 100;
+}
+
+int ProcessedSpeedtoRoadUserSpeed(int speed){
+	return speed / 100;
+}
 
 // TODO
 
 // 1. spacing for cars (remove for shorter training time)
 
-double distanceCalculate(double x1, double y1, double x2, double y2)
-{
-	double x = x1 - x2; //calculating number to square in next step
-	double y = y1 - y2;
-	double dist;
-
-	dist = x*x + y*y;       //calculating Euclidean distance
-	dist = sqrt(dist);
-
-	return dist;
-}
 
 pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * merging_car,std::vector<RoadUser*> close_by){
   RoadUser * closest_following = new RoadUser();
@@ -67,12 +63,12 @@ pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * mergin
 
   for(RoadUser * close_car : close_by){
     if(close_car->getLatitude() < merging_car->getLatitude() && close_car->getLongitude() < merging_car->getLongitude()){ //closest following
-      if(distanceCalculate(close_car->getLatitude(),close_car->getLongitude(),merging_car->getLatitude(),merging_car->getLongitude()) < minFollowing){
+      if(distanceEarth(close_car->getLatitude(),close_car->getLongitude(),merging_car->getLatitude(),merging_car->getLongitude()) < minFollowing){
           closest_following = close_car;
       }
     }
     if (close_car->getLatitude() > merging_car->getLatitude() && close_car->getLongitude() > merging_car->getLongitude()){ //closest preceeding
-      if(distanceCalculate(close_car->getLatitude(),close_car->getLongitude(),merging_car->getLatitude(),merging_car->getLongitude()) < minPreceeding){
+      if(distanceEarth(close_car->getLatitude(),close_car->getLongitude(),merging_car->getLatitude(),merging_car->getLongitude()) < minPreceeding){
         closest_preceeding = close_car;
       }
     }
@@ -240,21 +236,21 @@ vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,
     mergingCar.push_back(merging_car->getLongitude());
     mergingCar.push_back(merging_car->getLength());
     mergingCar.push_back(merging_car->getWidth());
-    mergingCar.push_back(merging_car->getSpeed());
+    mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(merging_car->getSpeed()));
     mergingCar.push_back(merging_car->getAcceleration());
-    mergingCar.push_back(distanceCalculate(merging_car->getLongitude(),merging_car->getLatitude(),x.first->getLongitude(),x.first->getLatitude())); // spacing
+    mergingCar.push_back(distanceEarth(merging_car->getLongitude(),merging_car->getLatitude(),x.first->getLongitude(),x.first->getLatitude())); // spacing
     mergingCar.push_back(x.first->getLatitude());
     mergingCar.push_back(x.first->getLongitude());
     mergingCar.push_back(x.first->getLength());
     mergingCar.push_back(x.first->getWidth());
-    mergingCar.push_back(x.first->getSpeed());
+    mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(x.first->getSpeed()));
     mergingCar.push_back(x.first->getAcceleration());
     mergingCar.push_back(x.second->getLatitude());
     mergingCar.push_back(x.second->getLongitude());
     mergingCar.push_back(x.second->getWidth());
-    mergingCar.push_back(x.second->getSpeed());
+    mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(x.second->getSpeed()));
     mergingCar.push_back(x.second->getAcceleration());
-    mergingCar.push_back(distanceCalculate(merging_car->getLongitude(),merging_car->getLatitude(),x.second->getLongitude(),x.second->getLatitude())); // spacing
+    mergingCar.push_back(distanceEarth(merging_car->getLongitude(),merging_car->getLatitude(),x.second->getLongitude(),x.second->getLatitude())); // spacing
 		mergingCar.push_back(merging_car->getHeading());
 
   return mergingCar;
@@ -282,7 +278,7 @@ vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,
 // 	auto calculated_n_1_states = GetStateFromActions(calculatedRL,calculatedLSTM);
 //
 // 	Waypoint * waypoint = new Waypoint();
-//   waypoint->setTimestamp(timeCalculator.count() + (distanceCalculate(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
+//   waypoint->setTimestamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
 //   waypoint->setLatitude(calculated_n_1_states[0][0].item<float>());
 //   waypoint->setLongitude(calculated_n_1_states[0][1].item<float>());
 //   waypoint->setSpeed(calculated_n_1_states[0][4].item<float>());
@@ -303,7 +299,7 @@ vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,
 // 		previous_state = calculated_waypoint;
 //
 // 		Waypoint * waypoint = new Waypoint();
-// 	  waypoint->setTimestamp(timeCalculator.count() + (distanceCalculate(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_waypoint[0][0].item<float>(),calculated_waypoint[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
+// 	  waypoint->setTimestamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_waypoint[0][0].item<float>(),calculated_waypoint[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
 // 	  waypoint->setLatitude(calculated_waypoint[0][0].item<float>());
 // 	  waypoint->setLongitude(calculated_waypoint[0][1].item<float>());
 // 	  waypoint->setSpeed(calculated_waypoint[0][4].item<float>());
@@ -327,7 +323,7 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
   mergingManeuver->setTimestampAction(timeCalculator.count());
   mergingManeuver->setLongitudeAction(mergingVehicle->getLongitude());
   mergingManeuver->setLatitudeAction(mergingVehicle->getLatitude());
-  mergingManeuver->setSpeedAction(mergingVehicle->getSpeed());
+  mergingManeuver->setSpeedAction(ProcessedSpeedtoRoadUserSpeed(mergingVehicle->getSpeed()));
   mergingManeuver->setLanePositionAction(mergingVehicle->getLanePosition());
 	mergingManeuver->setMessageID(std::string(mergingManeuver->getOrigin()) + "/" + std::string(mergingManeuver->getUuidManeuver()) + "/" + std::string(to_string(mergingManeuver->getTimestamp())));
 
@@ -336,10 +332,10 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
 	auto calculated_n_1_states = GetStateFromActions(calculatedRL,models_input);
 
 	Waypoint * waypoint = new Waypoint();
-  waypoint->setTimestamp(timeCalculator.count() + (distanceCalculate(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
+  waypoint->setTimestamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
   waypoint->setLatitude(calculated_n_1_states[0][0].item<float>());
   waypoint->setLongitude(calculated_n_1_states[0][1].item<float>());
-  waypoint->setSpeed(calculated_n_1_states[0][4].item<float>());
+  waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_n_1_states[0][4].item<float>()));
   waypoint->setLanePosition(mergingVehicle->getLanePosition()+1);
   mergingManeuver->addWaypoint(waypoint);
 
@@ -354,15 +350,14 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
 		previous_state = calculated_waypoint;
 
 		Waypoint * n_waypoint = new Waypoint();
-	  n_waypoint->setTimestamp(timeCalculator.count() + (distanceCalculate(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_waypoint[0][0].item<float>(),calculated_waypoint[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
+	  n_waypoint->setTimestamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_waypoint[0][0].item<float>(),calculated_waypoint[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
 	  n_waypoint->setLatitude(calculated_waypoint[0][0].item<float>());
 	  n_waypoint->setLongitude(calculated_waypoint[0][1].item<float>());
-	  n_waypoint->setSpeed(calculated_waypoint[0][4].item<float>());
+	  n_waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_waypoint[0][4].item<float>()));
 	  n_waypoint->setLanePosition(mergingVehicle->getLanePosition()+1);
 	  mergingManeuver->addWaypoint(n_waypoint);
 
 	}
-
   return mergingManeuver;
 }
 
