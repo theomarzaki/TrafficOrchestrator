@@ -200,7 +200,10 @@ def main():
     model = DeepQLearning().to(device)
     target_network = DeepQLearning().to(device)
 
-    model.train(model,target_network,featuresTrain,agent,predictor)
+    state = torch.load('rl_classifier.tar',map_location='cpu')
+    model.load_state_dict(state['state_dict'])
+
+    # model.train(model,target_network,featuresTrain,agent,predictor)
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
     traced_script_module.save("rl_model.pt")

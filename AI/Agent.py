@@ -24,14 +24,19 @@ class Agent():
 
     def calculateActionComputed(self,action_tensor,state,next):
         if torch.equal(action_tensor,self.accelerate_tensor):
+            print("accelerate")
             return self.accelerate_move(state,next)
         elif torch.equal(action_tensor,self.deccelerate_tensor):
+            print("deccelerate")
             return self.deccelerate_move(state,next)
         elif torch.equal(action_tensor,self.left_tensor):
+            print("left")
             return self.left_move(state,next)
         elif torch.equal(action_tensor,self.right_tensor):
+            print("right")
             return self.right_move(state,next)
         elif torch.equal(action_tensor,self.doNothing_tensor):
+            print("nothing")
             return self.passive_move(state,next)
         else:
             logging.warning('inappropriate action')

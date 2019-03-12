@@ -34,9 +34,11 @@ from matplotlib import cm
 from csv_data import Data
 from Agent import Agent
 import argparse
-from utils import isCarTerminal
+from utils import isCarTerminal, CalculateReward
+from RandomForestClassifier import RandomForestPredictor
 
 def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
+    predictor = RandomForestPredictor(Data().get_RFC_dataset())
     to_plot = []
     counter = 0
     for index,game_run in enumerate(featuresTrain):
@@ -52,6 +54,8 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
                     action_tensor = torch.zeros(5)
                     action_tensor[torch.argmax(output)] = 1
                     waypoint = agent.calculateActionComputed(action_tensor,current,next)
+                    reward,terminal = CalculateReward(waypoint,predictor)
+                    print(reward)
 
                     if not isCarTerminal(waypoint):
                         if is_scatter:
@@ -86,15 +90,16 @@ def main():
 
     agent = Agent()
     if args.dueling_dqn:
-        model = torch.jit.load('rl_model_deuling.pt')
+        model = torch.jit.load('../include/rl_model_deuling.pt')
     elif args.lstm:
         lstm_model = torch.jit.load('../include/lstm_model.pt')
     else:
-        model = torch.jit.load('../include/rl_model.pt')
+        model = torch.jit.load('rl_model.pt')
 
     data_wrapper = Data()
     data = data_wrapper.get_RFC_dataset()
     data = data[::-1]
+    data.heading = (data.heading + 180) % 360
     data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
 
     featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,20)

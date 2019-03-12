@@ -43,7 +43,7 @@ class Dueling_DQN(nn.Module):
         super(Dueling_DQN,self).__init__()
         self.number_of_actions = 5
         self.final_epsilon = 0.01
-        self.EPSILON_DECAY = 10000
+        self.EPSILON_DECAY = 1000000
         self.initial_epsilon = 1.0
         self.num_epochs = 50
         self.replay_memory_size = 10000
@@ -80,8 +80,8 @@ class Dueling_DQN(nn.Module):
 
     def train_dueling(self,model,target,featuresTrain,agent,predictor):
         replay_memory = []
+        hist = []
         wins = 0
-        losses = 0
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)
         criterion = nn.MSELoss()
         epsilon = model.initial_epsilon
@@ -111,7 +111,7 @@ class Dueling_DQN(nn.Module):
 
                     if self.learn_step_counter % 100 == 0:
                         target.load_state_dict(model.state_dict())
-                        self.learn_step_counter += 1
+                    self.learn_step_counter += 1
 
                     output = model(torch.from_numpy(current).to(device)).to(device)
                     # initialise actions
@@ -130,9 +130,7 @@ class Dueling_DQN(nn.Module):
 
                     reward,terminal = CalculateReward(next_state,predictor)
 
-                    if terminal and reward == -1:
-                        losses = losses + 1
-                    elif terminal and reward == 1:
+                    if terminal and reward == 1:
                         wins = wins + 1
                     else:
                         pass
@@ -194,8 +192,10 @@ class Dueling_DQN(nn.Module):
                     # calculate loss
                     loss = criterion(q_value, y_batch)
 
+                    hist.append(loss.item())
+
                     if(state % 70 == 0):
-                        print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}, Losses: {}, Wins: {}'.format(epoch,self.num_epochs,index,featuresTrain.shape[0],loss.item(),sum(reward_batch)/self.minibatch_size,losses,wins))
+                        print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}, Epsilon: {:.4f}, Wins: {}'.format(epoch,self.num_epochs,index,featuresTrain.shape[0],loss.item(),sum(reward_batch)/self.minibatch_size,epsilon,wins))
 
                     # do backward pass
                     loss.backward()
@@ -210,7 +210,7 @@ class Dueling_DQN(nn.Module):
                             print("no more states (time) for maneuvers")
                             break
 
-
+        return hist
 
 def main():
 
@@ -224,11 +224,20 @@ def main():
 
     predictor = RandomForestPredictor(data_wrapper.get_RFC_dataset())
 
-    #TRAIN RL
+
     model = Dueling_DQN().to(device)
     target_model = Dueling_DQN().to(device)
 
-    model.train_dueling(model,target_model,featuresTrain,agent,predictor)
+
+    #TRAIN RL
+    # loss_over_time = model.train_dueling(model,target_model,featuresTrain,agent,predictor)
+    # plt.plot(loss_over_time)
+    # plt.show()
+
+    # Load Model
+    state = torch.load('DQN_Saves/DQN7.tar',map_location='cpu')
+    model.load_state_dict(state['state_dict'])
+
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
     traced_script_module.save("rl_model_deuling.pt")
