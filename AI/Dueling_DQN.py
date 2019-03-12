@@ -43,7 +43,7 @@ class Dueling_DQN(nn.Module):
         super(Dueling_DQN,self).__init__()
         self.number_of_actions = 5
         self.final_epsilon = 0.01
-        self.EPSILON_DECAY = 10000
+        self.EPSILON_DECAY = 1000000
         self.initial_epsilon = 1.0
         self.num_epochs = 50
         self.replay_memory_size = 10000
@@ -195,7 +195,7 @@ class Dueling_DQN(nn.Module):
                     hist.append(loss.item())
 
                     if(state % 70 == 0):
-                        print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}, Wins: {}'.format(epoch,self.num_epochs,index,featuresTrain.shape[0],loss.item(),sum(reward_batch)/self.minibatch_size,wins))
+                        print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}, Epsilon: {:.4f}, Wins: {}'.format(epoch,self.num_epochs,index,featuresTrain.shape[0],loss.item(),sum(reward_batch)/self.minibatch_size,epsilon,wins))
 
                     # do backward pass
                     loss.backward()
@@ -235,7 +235,7 @@ def main():
     # plt.show()
 
     # Load Model
-    state = torch.load('DQN_Saves/DQN3.tar',map_location='cpu')
+    state = torch.load('DQN_Saves/DQN7.tar',map_location='cpu')
     model.load_state_dict(state['state_dict'])
 
 

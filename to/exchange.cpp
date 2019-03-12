@@ -289,7 +289,7 @@ int main() {
 
   if(lstm_model != nullptr) write_to_log("import of lstm model successful\n");
 
-	std::shared_ptr<torch::jit::script::Module> rl_model = torch::jit::load("../include/rl_model.pt");
+	std::shared_ptr<torch::jit::script::Module> rl_model = torch::jit::load("../include/rl_model_deuling.pt");
 
   if(rl_model != nullptr) write_to_log("import of rl model successful\n");
 
