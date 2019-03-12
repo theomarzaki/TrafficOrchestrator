@@ -31,19 +31,28 @@ def isCarTerminal(state):
 
 def CalculateReward(state,predictor):
     if predictor.predict_possible_merge(state[:19]) == False:
-        reward = -1,True
+        reward = -1,False
     elif isCarTerminal(state) == True:
         reward = 1,True
     else:
         halfway = ((state[7] + state[13])/2,(state[8] + state[14])/2)
         # quarterway = ((halfway[0] + state[7])/2,(halfway[1] + state[8]/2))
-        distance_merging_point = distance.euclidean((state[0],state[1]), halfway)
+        distance_merging_point = calculateDistance((state[0],state[1]), halfway)
         if(round(distance_merging_point,2) != 0):
             reward = -(1-(1/distance_merging_point)),False
         else:
             reward = 0,False
     return reward
 
+def calculateDistance(pointA,pointB):
+    EARTH_RADIUS_KM = 6371.0
+    lat1r = math.radians(pointA[0]);
+    lon1r = math.radians(pointA[1]);
+    lat2r = math.radians(pointB[0]);
+    lon2r = math.radians(pointB[1]);
+    u = math.sin((lat2r - lat1r)/2);
+    v = math.sin((lon2r - lon1r)/2);
+    return 2.0 * EARTH_RADIUS_KM * math.asin(math.sqrt(u * u + math.cos(lat1r) * math.cos(lat2r) * v * v));
 
 
 # ['globalXmerging', 'globalYmerging', 'lenghtMerging',

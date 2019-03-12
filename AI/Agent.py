@@ -44,7 +44,7 @@ class Agent():
     def left_move(self,state,next):
         displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
         angle = state[19]
-        angle = (angle + 5) % 360
+        angle = (angle + 1) % 360
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
         next[0] = new_x
@@ -55,7 +55,7 @@ class Agent():
     def right_move(self,state,next):
         displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
         angle = state[19]
-        angle = (angle - 5) % 360
+        angle = (angle - 1) % 360
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
         next[0] = new_x
