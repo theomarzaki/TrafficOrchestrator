@@ -61,12 +61,12 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
                         if is_scatter:
                             to_plot.append((waypoint[0],waypoint[1]))
                         else:
-                            mergingX = current[0]
-                            mergingY = current[1]
-                            precedingX = current[7]
-                            precedingY = current[8]
-                            followingX = current[13]
-                            followingY = current[14]
+                            mergingX = waypoint[0]
+                            mergingY = waypoint[1]
+                            precedingX = waypoint[7]
+                            precedingY = waypoint[8]
+                            followingX = waypoint[13]
+                            followingY = waypoint[14]
 
                             plots_X = [mergingX,precedingX,followingX]
                             plots_Y = [mergingY,precedingY,followingY]
