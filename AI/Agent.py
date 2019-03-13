@@ -21,6 +21,7 @@ class Agent():
         self.left_tensor = torch.Tensor([0,0,1,0,0])
         self.right_tensor = torch.Tensor([0,0,0,1,0])
         self.doNothing_tensor = torch.Tensor([0,0,0,0,1])
+        self.TIME_VARIANCE = 0.035
 
     def calculateActionComputed(self,action_tensor,state,next):
         if torch.equal(action_tensor,self.accelerate_tensor):
@@ -42,7 +43,7 @@ class Agent():
             logging.warning('inappropriate action')
 
     def left_move(self,state,next):
-        displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
+        displacement = state[4] * self.TIME_VARIANCE + 0.5 * (state[5] * self.TIME_VARIANCE * self.TIME_VARIANCE)
         angle = state[19]
         angle = (angle + 1) % 360
         new_x = state[0] + displacement * math.cos(math.radians(angle))
@@ -53,7 +54,7 @@ class Agent():
         return next
 
     def right_move(self,state,next):
-        displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
+        displacement = state[4] * self.TIME_VARIANCE + 0.5 * (state[5] * self.TIME_VARIANCE * self.TIME_VARIANCE)
         angle = state[19]
         angle = (angle - 1) % 360
         new_x = state[0] + displacement * math.cos(math.radians(angle))
@@ -64,9 +65,9 @@ class Agent():
         return next
 
     def accelerate_move(self,state,next):
-        final_velocity = state[4] + 0.035 * (state[4] + state[5] * 0.035)
-        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.035)
-        displacement = final_velocity * 0.035 + 0.5 * (final_acceleration * 0.035 * 0.035)
+        final_velocity = state[4] + self.TIME_VARIANCE * (state[4] + state[5] * self.TIME_VARIANCE)
+        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * self.TIME_VARIANCE)
+        displacement = final_velocity * self.TIME_VARIANCE + 0.5 * (final_acceleration * self.TIME_VARIANCE * self.TIME_VARIANCE)
         angle = state[19]
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
@@ -74,12 +75,13 @@ class Agent():
         next[1] = new_y
         next[4] = final_velocity
         next[5] = final_acceleration
+        next[19] = angle
         return next
 
     def deccelerate_move(self,state,next):
-        final_velocity = state[4] - 0.035 * (state[4] + state[5] * 0.035)
-        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * 0.035)
-        displacement = final_velocity * 0.035 + 0.5 * (final_acceleration * 0.035 * 0.035)
+        final_velocity = state[4] - self.TIME_VARIANCE * (state[4] + state[5] * self.TIME_VARIANCE)
+        final_acceleration = (math.pow(final_velocity,2) - math.pow(state[4],2)) / 2 * (0.5 * (state[4] + final_velocity) * self.TIME_VARIANCE)
+        displacement = final_velocity * self.TIME_VARIANCE + 0.5 * (final_acceleration * self.TIME_VARIANCE * self.TIME_VARIANCE)
         angle = state[19]
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
@@ -87,13 +89,15 @@ class Agent():
         next[1] = new_y
         next[4] = final_velocity
         next[5] = final_acceleration
+        next[19] = angle
         return next
 
     def passive_move(self,state,next):
-        displacement = state[4] * 0.035 + 0.5 * (state[5] * 0.035 * 0.035)
+        displacement = state[4] * self.TIME_VARIANCE + 0.5 * (state[5] * self.TIME_VARIANCE * self.TIME_VARIANCE)
         angle = state[19]
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
         next[0] = new_x
         next[1] = new_y
+        next[19] = state[19]
         return next

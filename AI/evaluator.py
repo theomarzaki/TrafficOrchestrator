@@ -37,8 +37,7 @@ import argparse
 from utils import isCarTerminal, CalculateReward
 from RandomForestClassifier import RandomForestPredictor
 
-def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
-    predictor = RandomForestPredictor(Data().get_RFC_dataset())
+def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent,predictor):
     to_plot = []
     counter = 0
     for index,game_run in enumerate(featuresTrain):
@@ -80,14 +79,68 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
                     pass
     return to_plot
 
+def ActionedMergeLaneScenario(actions,featuresTrain,agent,predictor):
+    to_plot = []
+
+    left = torch.Tensor([0,0,1,0,0])
+    right = torch.Tensor([0,0,0,1,0])
+    accelerate = torch.Tensor([1,0,0,0,0])
+    decelerate = torch.Tensor([0,1,0,0,0])
+    nothing = torch.Tensor([0,0,0,0,1])
+
+    for index,action in enumerate(actions):
+        game_state = (featuresTrain[0])[index]
+        next = (featuresTrain[0])[index+1]
+        next = next.cpu().numpy()
+        if action == "left":
+            waypoint = agent.calculateActionComputed(left,game_state,next)
+        elif action == "right":
+            waypoint = agent.calculateActionComputed(right,game_state,next)
+        elif action == "accelerate":
+            waypoint = agent.calculateActionComputed(accelerate,game_state,next)
+        elif action == "decelerate":
+            waypoint = agent.calculateActionComputed(decelerate,game_state,next)
+        else:
+            waypoint = agent.calculateActionComputed(nothing ,game_state,next)
+
+        reward,terminal = CalculateReward(waypoint,predictor)
+        try:
+            waypoint = waypoint.cpu().numpy()
+        except:
+            pass
+        print(reward)
+        if not isCarTerminal(waypoint):
+            mergingX = waypoint[0]
+            mergingY = waypoint[1]
+            precedingX = waypoint[7]
+            precedingY = waypoint[8]
+            followingX = waypoint[13]
+            followingY = waypoint[14]
+
+            plots_X = [mergingX,precedingX,followingX]
+            plots_Y = [mergingY,precedingY,followingY]
+            to_plot.append((plots_X,plots_Y))
+        else:
+            print("reached goal")
+            break
+
+        if index < 70:
+            (featuresTrain[0])[index+1] = torch.Tensor(waypoint)
+        else:
+            break
+    return to_plot
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--scatter","--s",help="display vehicle trajectory of the merging car in a scatter plot",action='store_true')
     parser.add_argument("--heatmap","--h",help="display vehicle trajectory of the merging car in a heat map",action='store_true')
     parser.add_argument("--lstm","--lm",help="test the accuracy of the lstm model",action='store_true')
     parser.add_argument("--dueling_dqn","--ddqn",help="test the accuracy of the dueling DQN model",action='store_true')
+    parser.add_argument("--actions","--a",help="show the movement of the agent with plain actions, requires array of actions",action='store_true')
     args = parser.parse_args()
 
+    predictor = RandomForestPredictor(Data().get_RFC_dataset())
     agent = Agent()
     if args.dueling_dqn:
         model = torch.jit.load('rl_model_deuling.pt')
@@ -132,6 +185,21 @@ def main():
                 score = score + 1
             total = total + 1
         print((score/total)*100)
+    elif args.actions == True:
+        actions = ["left","left","left","left","left","left","left","left","left","left","left","left",\
+            "left","left","left","left","left","left","nothing","nothing","nothing","nothing","nothing","nothing","nothing","nothing",\
+            "nothing","nothing","nothing","nothing","nothing","nothing","nothing","nothing","nothing","nothing","nothing","nothing",\
+            "nothing","nothing","left","left","left","left","left","left","left","left","left","left","left","accelerate",\
+            "deccelerate","deccelerate","deccelerate","deccelerate","accelerate","deccelerate","left","accelerate","deccelerate","accelerate","accelerate","left","left","accelerate","accelerate"]
+
+        to_plot = ActionedMergeLaneScenario(actions,featuresTrain,agent,predictor)
+        camera = Camera(plt.figure())
+        colors = cm.rainbow(np.linspace(0, 1, 3))
+        for plot_data in to_plot:
+            plt.scatter(plot_data[0],plot_data[1], c=colors, s=100)
+            camera.snap()
+        anim = camera.animate(blit=True)
+        anim.save('trial.mp4')
     else:
         to_plot = FullMergeLaneScenario(False,featuresTrain,model,agent)
         camera = Camera(plt.figure())

@@ -172,6 +172,7 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 			stateTensor[0][1] = new_y;
 			stateTensor[0][4] = final_velocity;
 			stateTensor[0][5] = final_velocity;
+			stateTensor[0][19] = angle;
 		return stateTensor;
 	} else if(deccelerate_tensor == actionTensor.item<int>()){
 		auto final_velocity = state[0][4].item<float>() - 0.035 * (state[0][4].item<float>() + state[0][5].item<float>() * 0.035);
@@ -184,6 +185,7 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 		stateTensor[0][1] = new_y;
 		stateTensor[0][4] = final_velocity;
 		stateTensor[0][5] = final_velocity;
+		stateTensor[0][19] = angle;
 	return stateTensor;
 	} else if(left_tensor == actionTensor.item<int>()){
 			float displacement = state[0][4].item<float>() * 0.035 + 0.5 * (state[0][5].item<float>() * 0.035 * 0.035);
@@ -212,6 +214,7 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 	    auto new_y = state[0][1].item<float>() + displacement * sin((angle * M_PI)/ 180);
 	    stateTensor[0][0] = new_x;
 	    stateTensor[0][1] = new_y;
+			stateTensor[0][19] = angle;
     return stateTensor;
 	} else cout << "ERROR: incomputing incorrect action tensor";
 
