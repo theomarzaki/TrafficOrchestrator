@@ -50,7 +50,7 @@ vector<pair<RoadUser*,vector<RoadUser*>>> mapNeighbours(Database * database, dou
 
 	else {
 
-		const shared_ptr<vector<RoadUser *>> &roadUsers = database->findAll();
+    const auto roadUsers{database->findAll()};
 		for(int i = 0; i < roadUsers->size(); ++i) {
 			for(int j = i; ++j != roadUsers->size(); ) {
 
