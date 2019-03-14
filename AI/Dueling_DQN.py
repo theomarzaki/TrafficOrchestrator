@@ -43,7 +43,7 @@ class Dueling_DQN(nn.Module):
         super(Dueling_DQN,self).__init__()
         self.number_of_actions = 5
         self.final_epsilon = 0.01
-        self.EPSILON_DECAY = 100000
+        self.EPSILON_DECAY = 1000000
         self.initial_epsilon = 1.0
         self.num_epochs = 10
         self.replay_memory_size = 10000
@@ -130,7 +130,7 @@ class Dueling_DQN(nn.Module):
 
                     reward,terminal = CalculateReward(next_state,predictor)
 
-                    if terminal and reward == 1:
+                    if terminal and reward == 10000:
                         wins = wins + 1
                     else:
                         pass
@@ -235,7 +235,7 @@ def main():
     plt.show()
 
     # Load Model
-    # state = torch.load('DQN_Saves/DQN2.tar',map_location='cpu')
+    # state = torch.load('DQN_Saves/DQN1.tar',map_location='cpu')
     # model.load_state_dict(state['state_dict'])
 
 
