@@ -50,22 +50,23 @@ vector<pair<RoadUser*,vector<RoadUser*>>> mapNeighbours(Database * database, dou
 
 	else {
 
-		for(int i = 0; i < database->getSize(); ++i) {
-			for(int j = i; ++j != database->getSize(); ) {
+		const shared_ptr<vector<RoadUser *>> &roadUsers = database->findAll();
+		for(int i = 0; i < roadUsers->size(); ++i) {
+			for(int j = i; ++j != roadUsers->size(); ) {
 
-				roadLong1 = database->getDatabase()->at(i)->getLongitude();
-				roadLat1 = database->getDatabase()->at(i)->getLatitude();
+				roadLong1 = roadUsers->at(i)->getLongitude();
+				roadLat1 = roadUsers->at(i)->getLatitude();
 
-				roadLong2 = database->getDatabase()->at(j)->getLongitude();
-				roadLat2 = database->getDatabase()->at(j)->getLatitude();
+				roadLong2 = roadUsers->at(j)->getLongitude();
+				roadLat2 = roadUsers->at(j)->getLatitude();
 				distanceCalc = distanceEarth(roadLat1, roadLong1, roadLat2, roadLong2);
 
 				// if(distanceCalc <= distanceRadius*0.001) { CHANGED TODO
-				closeBy.push_back(database->getDatabase()->at(j));
+				closeBy.push_back(roadUsers->at(j));
 				// }
 			}
 
-			pair = make_pair(database->getDatabase()->at(i),closeBy);
+			pair = make_pair(roadUsers->at(i), closeBy);
 			closeBy.clear();
 			neighbours.push_back(pair);
 		}
