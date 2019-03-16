@@ -1,22 +1,15 @@
 FROM ubuntu:latest
 
-RUN apt-get update -y
+RUN apt-get update
 
-RUN apt-get install g++ -y
-
-RUN apt install build-essential -y
-
-RUN apt install netcat -y
-
-RUN apt install wget -y
-
-RUN apt install nodejs  -y
-
-RUN apt install cmake -y
-
-RUN apt install unzip -y
-
-RUN apt install vim -y
+RUN apt-get install -y build-essential \
+							g++ \
+							netcat \
+							wget \
+							nodejs \
+							cmake \
+							unzip \
+							vim
 
 COPY . /communication_layer
 
