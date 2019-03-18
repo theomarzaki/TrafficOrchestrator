@@ -167,6 +167,13 @@ int generateReqID(){
 	return x;
 }
 
+void sendTrajectoryRecommendations(vector<ManeuverRecommendation*> v,int socket) {
+	for(ManeuverRecommendation * m : v) {
+		cout << createManeuverJSON(m) << endl;
+		write_to_log(createManeuverJSON(m));
+		sendDataTCP(socket,sendAddress, sendPort,receiveAddress,receivePort, createManeuverJSON(m));
+	}
+}
 
 int initiateSubscription(string sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter,int radius,uint32_t longitude, uint32_t latitude) {
 	milliseconds timeSub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
@@ -194,50 +201,46 @@ void initiateUnsubscription(string sendAddress, int sendPort, SubscriptionRespon
 	sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createUnsubscriptionRequestJSON(unsubscriptionReq));
 }
 
-int filterExecution(string data) {
-	int filterNum = filterInput(parse(data));
+SubscriptionResponse * handleSubscriptionResponse(Document &document) {
+	write_to_log("Subscription Response Received.");
+	return detectedToSubscription(assignSubResponseVals(document));
+}
 
-	if(filterNum == -1) {
-		return -1;
-	}
-	else if(filterNum == 0) {
-		int size = assignNotificationVals(parse(data)).ru_description_list.size();
-		RoadUser * road_users = detectedToRoadUserList(assignNotificationVals(parse(data)).ru_description_list);
-		for(int j = 0; j < size; j++) {
-			database->insertRoadUser(&road_users[j]);
-		}
-		return 0;
-	}
-	else if(filterNum == 4) {
-		auto roadUsersVector{assignNotificationVals(parse(data)).ru_description_list};
-		for_each(roadUsersVector.begin(), roadUsersVector.end(),
-						 [](Detected_Road_User ru)
-						 {
-								 database->deleteRoadUser(ru.uuid);
-						 });
-		return 4;
-	}
-	else if(filterNum == 1) {
-		subscriptionResp = detectedToSubscription(assignSubResponseVals(parse(data)));
-		return 1;
-	}
-	else if (filterNum == 2) {
-		unsubscriptionResp = detectedToUnsubscription(assignUnsubResponseVals(parse(data)));
-		return 2;
-	}
-	else if (filterNum == 3) {
-		maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(parse(data)));
-		write_to_log("Maneuver Feedback: " + maneuverFeed->getFeedback());
-		if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
-			write_to_log("calculating new Trajectory for Vehicle");
-			return 3;
-		}
-		return -2;
-	}
+UnsubscriptionResponse * handleUnSubscriptionResponse(Document &document) {
+	write_to_log("unsubscription response Received.");
+	return detectedToUnsubscription(assignUnsubResponseVals(document));
+}
 
-	else {
-		return -100;
+void handleNotifyAdd(Document &document) {
+	write_to_log("Notify Add Received.");
+	const vector<Detected_Road_User> &roadUsers = assignNotificationVals(document).ru_description_list;
+	int size = roadUsers.size();
+	RoadUser * road_users = detectedToRoadUserList(roadUsers);
+	for(int j = 0; j < size; j++) {
+		database->upsert(&road_users[j]);
 	}
+}
+
+bool handleTrajectoryFeedback(Document &document) {
+	cout << "\n\n\n\n\n\n\n *********************************** Received Trajectory Feedback *********************************** \n\n\n\n\n\n\n";
+	maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
+	write_to_log("Maneuver Feedback: " + maneuverFeed->getFeedback());
+	if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
+		write_to_log("calculating new Trajectory for Vehicle");
+		return false;
+	}
+  return true;
+}
+
+void handleNotifyDelete(Document &document) {
+	write_to_log("Notify delete Received.");
+	auto uuidsVector{assignNotificationDeleteVals(document)};
+	for_each(uuidsVector.begin(), uuidsVector.end(),
+					 [](string uuid)
+					 {
+							 database->deleteRoadUser(uuid);
+							 write_to_log("Deleted road user " + uuid);
+					 });
 
 }
 
@@ -266,16 +269,20 @@ void inputDistanceRadius(int radius) {
 	distanceRadius = radius;
 }
 
-void sendTrajectoryRecommendations(vector<ManeuverRecommendation*> v,int socket) {
-	for(ManeuverRecommendation * m : v) {
-		cout << createManeuverJSON(m) << endl;
-		write_to_log(createManeuverJSON(m));
-		sendDataTCP(socket,sendAddress, sendPort,receiveAddress,receivePort, createManeuverJSON(m));
-	}
-}
-
 void initaliseDatabase() {
 	database = new Database();
+}
+
+void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
+                      const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
+  vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
+  if(!recommendations.empty()) {
+					write_to_log("<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>");
+					write_to_log("\n\n\n\n\n\n\n ***********************************  Sending  ***********************************");
+					sendTrajectoryRecommendations(recommendations,socket);
+				} else {
+					write_to_log("No Trajectories Calculated.\n");
+				}
 }
 
 int main() {
@@ -316,23 +323,33 @@ int main() {
 
 	do {
 		auto captured_data = listenDataTCP(socket);
-		int filterValue = filterExecution(captured_data);
+		Document document = parse(captured_data);
+
+		message_type messageType = filterInput(document);
+		switch (messageType){
+			case message_type::notify_add:
+				handleNotifyAdd(document);
+        computeManeuvers(lstm_model, rl_model, socket);
+				break;
+			case message_type::notify_delete:
+				handleNotifyDelete(document);
+				break;
+			case message_type::subscription_response:
+				subscriptionResp = handleSubscriptionResponse(document);
+				break;
+			case message_type::unsubscription_response:
+				unsubscriptionResp = handleUnSubscriptionResponse(document);
+				break;
+			case message_type::trajectory_feedback:
+				if (!handleTrajectoryFeedback(document)) {
+          computeManeuvers(lstm_model, rl_model, socket);
+				}
+        break;
+			default:
+				write_to_log("error: Couldn't handle message.");
+				break;
+		}
 		reconnect_flag = captured_data;
-		if(filterValue == 1) {
-			write_to_log("Subscription Response Received.\n");
-			listening = true;
-		}
-		if(filterValue == 0 || filterValue == 3) {
-			vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
-			if(recommendations.size() > 0) {
-				write_to_log("<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>");
-				write_to_log("\n\n\n\n\n\n\n ***********************************  Sending  ***********************************");
-				sendTrajectoryRecommendations(recommendations,socket);
-			}else	write_to_log("No Trajectories Calculated.\n");
-		}
-		if(filterValue == 4) {
-			write_to_log("Road User Deleted.\n");
-		}
 	} while(reconnect_flag != reconnect);
 	listening = false;
 	while(!listening){

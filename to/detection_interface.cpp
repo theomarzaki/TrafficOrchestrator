@@ -36,6 +36,10 @@ using std::vector;
 
 typedef uint32_t uint4;
 
+enum class message_type {
+    notify_add, notify_delete, subscription_response, unsubscription_response, trajectory_feedback, unknown
+};
+
 #define NOTIFY_ADD "notify_add"
 #define NOTIFY_DELETE "notify_delete"
 #define SUBSCRIPTION_RESPONSE "subscription_response"
@@ -155,19 +159,22 @@ void write_to_log(const string & text){
 Document parse(string readFromServer) {
   Document document;
   if(readFromServer.length() != 0){
-    ParseResult result = document.Parse(readFromServer.c_str());
-    return document;
+    document.Parse(readFromServer.c_str());
   }
+  return document;
 }
 
-Detected_Road_User assignRoadUserVals(Document document) {
+Detected_Road_User assignRoadUserVals(Document &document) {
 	Detected_Road_User values;
+  if(!(document.IsObject())){
+    return values;
+  }
   //TODO: use int instead of double when possible
   values.type = document["type"].GetString();
   document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
   document.HasMember("origin") ? values.origin = document["origin"].GetString() : values.origin = "placeholder";
   document.HasMember("version") ? values.version = document["version"].GetString() : values.version = "placeholder";
-  document.HasMember("timestamp") ? values.timestamp = document["timestamp"].GetUint64() : values.timestamp = -1;
+  document.HasMember("timestamp") ? values.timestamp = document["timestamp"].GetUint64() : values.timestamp = 0;
   document["message"].HasMember("uuid") ? values.uuid = document["message"]["uuid"].GetString() : values.uuid = "placeholder";
   document["message"].HasMember("its_station_type") ? values.its_station_type = document["message"]["its_station_type"].GetString() : values.its_station_type = "placeholder";
   document["message"].HasMember("connected") ? values.connected = document["message"]["connected"].GetBool() : values.connected = false;
@@ -208,7 +215,20 @@ Detected_Road_User assignRoadUserVals(Document document) {
 
 }
 
-Detected_To_Notification assignNotificationVals(Document document) {
+std::vector<string> assignNotificationDeleteVals(Document &document) {
+  std::vector<string> values;
+  if (document["message"].HasMember("ru_uuid_list") && document["message"]["ru_uuid_list"].IsArray()) {
+    const rapidjson::Value &array = document["message"]["ru_uuid_list"].GetArray();
+    for (rapidjson::SizeType i = 0; i < array.Size(); i++) {
+      values.emplace_back(array[i].GetString());
+    }
+  } else {
+    write_to_log("error: notify_delete do not contain member ru_uuid_list.");
+  }
+  return values;
+}
+
+Detected_To_Notification assignNotificationVals(Document &document) {
   Detected_To_Notification values;
   values.type = document["type"].GetString();
   document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
@@ -224,7 +244,13 @@ Detected_To_Notification assignNotificationVals(Document document) {
     StringBuffer sb;
     Writer<StringBuffer> writer(sb);
     v.Accept(writer);
-    values.ru_description_list.push_back(assignRoadUserVals(parse(sb.GetString())));
+    Document ruDocument = parse(sb.GetString());
+    const Detected_Road_User &ru = assignRoadUserVals(ruDocument);
+    if (ru.timestamp == 0){
+      write_to_log("received invalid road user description in notify_add");
+    } else {
+      values.ru_description_list.push_back(ru);
+    }
     sb.Clear();
     writer.Reset(sb);
   }
@@ -233,7 +259,7 @@ Detected_To_Notification assignNotificationVals(Document document) {
   return values;
 }
 
-Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document document) {
+Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document &document) {
   Detected_Trajectory_Feedback values;
 
   document.HasMember("type") ? values.type = document["type"].GetString() : values.type = "placeholder";
@@ -254,7 +280,7 @@ Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document document) {
 }
 
 
-Detected_Subscription_Response assignSubResponseVals(Document document) {
+Detected_Subscription_Response assignSubResponseVals(Document &document) {
 
   Detected_Subscription_Response values;
 
@@ -274,7 +300,7 @@ Detected_Subscription_Response assignSubResponseVals(Document document) {
 
 }
 
-Detected_Unsubscription_Response assignUnsubResponseVals(Document document) {
+Detected_Unsubscription_Response assignUnsubResponseVals(Document &document) {
 
   Detected_Unsubscription_Response values;
 
@@ -293,35 +319,34 @@ Detected_Unsubscription_Response assignUnsubResponseVals(Document document) {
 
 }
 
-int filterInput(Document document) {
-
+message_type filterInput(Document &document) {
   if(!(document.IsObject())){
-    return -1;
+    write_to_log("error: received message that is not an object");
+    return message_type::unknown;
   }
-
   if(document["type"] == NOTIFY_ADD) {
-    return 0;
+    return message_type::notify_add;
   }
 
   else if(document["type"] == SUBSCRIPTION_RESPONSE) {
-    return 1;
+    return message_type::subscription_response;
   }
 
   else if(document["type"] == UNSUBSCRIPTION_RESPONSE) {
-    return 2;
+    return message_type::unsubscription_response;
   }
 
   else if(document["type"] == TRAJECTORY_FEEDBACK) {
-    cout << "\n\n\n\n\n\n\n *********************************** Received Trajectory Feedback *********************************** \n\n\n\n\n\n\n";
-    return 3;
+    return message_type::trajectory_feedback;
   }
 
   else if(document["type"] == NOTIFY_DELETE) {
-      return 4;
+      return message_type::notify_delete;
   }
 
   else {
-    return -1;
+    write_to_log("error: received message with unknown type: " + string(document["type"].GetString()));
+    return message_type::unknown;
   }
 
 }

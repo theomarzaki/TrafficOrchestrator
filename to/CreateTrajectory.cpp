@@ -373,7 +373,8 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
 
 vector<ManeuverRecommendation*> ManeuverParser(Database * database, double distanceRadius,std::shared_ptr<torch::jit::script::Module> lstm_model,std::shared_ptr<torch::jit::script::Module> rl_model){
   vector<ManeuverRecommendation*> recommendations;
-  for(RoadUser * r : *database->getDatabase()) {
+	const shared_ptr<vector<RoadUser *>> &ptr = database->findAll();
+  for(auto r : *ptr) {
 		if(r->getConnected() == true && r->getLanePosition() == 0) {
 			// printf("CAR IN LANE 0.\n");
 			auto neighbours = mapNeighbours(database,distanceRadius);

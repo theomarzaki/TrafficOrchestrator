@@ -7,65 +7,49 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
-using std::string;
-using std::cout;
-using std::vector;
+#include <unordered_map>
+#include <memory>
+#include <algorithm>
 
 using namespace std;
 
 class Database {
 
 private:
-
-  vector<RoadUser*> * database; // Pointer to vector of RoadUser pointers.
+    unordered_map<string, RoadUser*> database;
 
 public:
 
-Database() {
+  Database() {
+  }
 
-  database = new vector<RoadUser*>();
-
-}
-
-/* General access and display functions. */
-void displayDatabase();
-void insertRoadUser(RoadUser *);
-void deleteRoadUser(string uuid);
-void deleteAll();
-RoadUser * getRoadUser(string uuid);
-bool findRoadUser(string uuid);
-int getSize();
-vector<RoadUser*> * getDatabase();
-
-~Database();
-
+  /* General access and display functions. */
+  void displayDatabase();
+  void upsert(RoadUser *roadUser);
+  void deleteRoadUser(string uuid);
+  void deleteAll();
+  bool findRoadUser(string uuid);
+  int getSize();
+  shared_ptr<vector<RoadUser*>> findAll();
 };
 
-Database::~Database() {}
 
 /**
 *   @description Displays all RoadUsers in the database.
 */
 void Database::displayDatabase() {
-    for(vector<RoadUser*>::iterator it = database->begin(); it != database->end(); ++it) {
-        cout << *it;
-    }
+  for_each(database.begin(), database.end() , [](pair<string, RoadUser*> element){
+      cout << element.first << " :: " << element.second << endl;
+  });
 }
 
 /**
-*   @description Inserts a RoadUser pointer into the database.
+*   @description Update or Insert a RoadUser pointer into the database.
 *   @param roadUser is a RoadUser pointer.
 */
-void Database::insertRoadUser(RoadUser * roadUser) {
-  if(findRoadUser(roadUser->getUuid())) {
-    deleteRoadUser(roadUser->getUuid());
-    database->push_back(roadUser);
-  }
-  else {
-    database->push_back(roadUser);
-  }
 
+void Database::upsert(RoadUser *roadUser) {
+  database[roadUser->getUuid()] = roadUser;
 }
 
 /**
@@ -73,10 +57,11 @@ void Database::insertRoadUser(RoadUser * roadUser) {
 *   @param roadUser is a RoadUser pointer.
 */
 void Database::deleteRoadUser(string uuid) {
-  for(vector<RoadUser*>::iterator it = database->begin(); it != database->end(); ++it) {
-    if((*it)->getUuid() == uuid) {
-      database->erase(it);
-    }
+  const auto &iterator{database.find(uuid)};
+  if (iterator != database.end()) {
+    //FIXME: huge memory leak. Need to find how to delete a pointer in a map
+//    delete iterator->second; // NOT WORKING
+    database.erase(uuid);
   }
 }
 
@@ -84,37 +69,23 @@ void Database::deleteRoadUser(string uuid) {
 *   @description Removes all RoadUser pointers in the database.
 */
 void Database::deleteAll() {
-  database->clear();
-}
-
-/**
-*   @description Searches the vector of pointers for a certain RoadUser.
-*   @param uuid is a unique [id] field associated with each RoadUser (pointer).
-*   @return a pointer to a RoadUser associated with the parameter.
+/*
+  //FIXME: huge memory leak. Need to find how to delete a pointer in a map
+  for_each(database.begin(), database.end() , [](pair<string, RoadUser*> element){
+      delete element.second;
+  });
 */
-RoadUser * Database::getRoadUser(string uuid) {
-  for(vector<RoadUser*>::iterator it = database->begin(); it != database->end(); ++it) {
-    if((*it)->getUuid() == uuid) {
-      return *it;
-    }
-  }
-}
-
-bool Database::findRoadUser(string uuid) {
-  for(vector<RoadUser*>::iterator it = database->begin(); it != database->end(); ++it) {
-    if((*it)->getUuid() == uuid) {
-      return true;
-    }
-    else {
-      return false;
-    }
-  }
+  database.clear();
 }
 
 int Database::getSize() {
-  return database->size();
+  return database.size();
 }
 
-vector<RoadUser*> * Database::getDatabase() {
-  return database;
+shared_ptr<vector<RoadUser*>> Database::findAll() {
+  auto values = make_shared<vector<RoadUser*>>();
+  for(auto elem : database) {
+    values->push_back(elem.second);
+  }
+  return values;
 }
