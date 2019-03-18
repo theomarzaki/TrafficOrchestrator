@@ -201,7 +201,7 @@ def main():
         anim = camera.animate(blit=True)
         anim.save('trial.mp4')
     else:
-        to_plot = FullMergeLaneScenario(False,featuresTrain,model,agent)
+        to_plot = FullMergeLaneScenario(False,featuresTrain,model,agent,predictor)
         camera = Camera(plt.figure())
         colors = cm.rainbow(np.linspace(0, 1, 3))
         for plot_data in to_plot:
