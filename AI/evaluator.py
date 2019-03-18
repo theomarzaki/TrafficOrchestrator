@@ -186,10 +186,10 @@ def main():
             total = total + 1
         print((score/total)*100)
     elif args.actions == True:
-        actions = ["accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate",\
-            "accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate",\
-            "accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","nothing","nothing",\
-            "nothing","nothing","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate",\
+        actions = ["left","left","left","decelerate","left","left","left","left","left","left","left","left",\
+            "left","left","left","left","left","left","left","left","left","left","left","left","left","left",\
+            "left","left","left","left","left","left","left","left","left","left","nothing","nothing",\
+            "nothing","nothing","left","left","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate",\
             "deccelerate","deccelerate","deccelerate","deccelerate","accelerate","deccelerate","accelerate","accelerate","deccelerate","accelerate","accelerate","left","left","accelerate","accelerate"]
 
         to_plot = ActionedMergeLaneScenario(actions,featuresTrain,agent,predictor)
