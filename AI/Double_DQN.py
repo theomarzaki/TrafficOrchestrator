@@ -23,14 +23,14 @@ from AI.utils import CalculateReward,isCarTerminal
 
 parser = argparse.ArgumentParser(description="TO RL : Double DQN trainer")
 
-parser.add_argument("-e","--num-epochs", type=int, default=10000, help="number of epochs to train (default: 10000)")
+parser.add_argument("-e","--num-epochs", type=int, default=25, help="number of epochs to train (default: 10000)")
 parser.add_argument("-o","--learn-step-counter", type=int, default=0)
 parser.add_argument("-n","--number-of-actions", type=int, default=5)
 parser.add_argument("-m","--replay-memory-size", type=int, default=128000)
 parser.add_argument("-d","--epsilon-decay", type=int, default=100000)
 parser.add_argument("-b","--minibatch-size", type=int, default=32) # TODO may need to change this
 
-parser.add_argument("-l","--learning-rate", type=float, default=0.001)
+parser.add_argument("-l","--learning-rate", type=float, default=0.0001)
 parser.add_argument("-g","--gamma", type=float, default=0.9)
 parser.add_argument("-f","--final-epsilon", type=float, default=0.01)
 parser.add_argument("-i","--initial-epsilon", type=float, default=1.0)
@@ -53,9 +53,9 @@ class DeepQLearning(nn.Module):
     def __init__(self):
         super(DeepQLearning,self).__init__()
 
-        self.fc1 = nn.Linear(20,512)
+        self.fc1 = nn.Linear(20,256)
         self.relu1 = nn.ReLU(inplace=True)
-        self.fc2 = nn.Linear(512, args.number_of_actions)
+        self.fc2 = nn.Linear(256, args.number_of_actions)
 
     def forward(self, x):
         out = self.fc1(x)
@@ -84,7 +84,7 @@ def train(model,target,featuresTrain,agent,predictor):
 
                 if args.learn_step_counter % 100 == 0:
                     target.load_state_dict(model.state_dict())
-                    args.learn_step_counter += 1
+                args.learn_step_counter += 1
 
                 output = model(torch.from_numpy(current).to(device)).to(device)
                 # initialise actions
