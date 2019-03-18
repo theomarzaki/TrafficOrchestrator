@@ -20,6 +20,7 @@
 #include <torch/torch.h>
 #include <torch/script.h>
 #include <math.h>
+#include <memory>
 
 using namespace std;
 using namespace rapidjson;
@@ -273,22 +274,24 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
   return mergingManeuver;
 }
 
-vector<ManeuverRecommendation*> ManeuverParser(Database * database, double distanceRadius,std::shared_ptr<torch::jit::script::Module> lstm_model,std::shared_ptr<torch::jit::script::Module> rl_model){
-  vector<ManeuverRecommendation*> recommendations;
-	const shared_ptr<vector<RoadUser *>> &ptr = database->findAll();
-  for(auto r : *ptr) {
-		if(r->getConnected() == true && r->getLanePosition() == 0) {
-			auto neighbours = mapNeighbours(database,distanceRadius);
-      auto input_values = RoadUsertoModelInput(r,neighbours);
+vector<ManeuverRecommendation *>
+ManeuverParser(Database *database, double distanceRadius, std::shared_ptr<torch::jit::script::Module> lstm_model,
+               std::shared_ptr<torch::jit::script::Module> rl_model) {
+  vector<ManeuverRecommendation *> recommendations;
+  const auto road_users{database->findAll()};
+  for (auto r : road_users) {
+    if (r->getConnected() && r->getLanePosition() == 0) {
+      auto neighbours = mapNeighbours(database, distanceRadius);
+      auto input_values = RoadUsertoModelInput(r.get(), neighbours);
       auto models_input = torch::tensor(input_values).unsqueeze(0);
-			recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
-			// auto models_input = torch::tensor(input_values).unsqueeze(0).unsqueeze(0);
-			// if(!isCarTerminal(models_input)){
-			// 	recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
-			// } else {
-			// 	r->setLanePosition(r->getLanePosition()+1);
-			// }
-		}
-	}
+      recommendations.push_back(calculatedTrajectories(r.get(), models_input, lstm_model, rl_model));
+      // auto models_input = torch::tensor(input_values).unsqueeze(0).unsqueeze(0);
+      // if(!isCarTerminal(models_input)){
+      // 	recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
+      // } else {
+      // 	r->setLanePosition(r->getLanePosition()+1);
+      // }
+    }
+  }
   return recommendations;
 }

@@ -51,17 +51,17 @@ string uuidTo;
 bool filter = true;
 
 
-RoadUser * detectedToRoadUserList(vector<Detected_Road_User> v) {
+vector<shared_ptr<RoadUser>> detectedToRoadUserList(vector<Detected_Road_User> v) {
 
 	write_to_log("Detected number of RoadUsers: " + string(to_string(v.size())) + ".\n");
 
-	RoadUser * road_users = new RoadUser[v.size()];
+	vector<shared_ptr<RoadUser>> road_users;
 
 	for(int i = 0; i < v.size(); i++) {
 
 		Detected_Road_User d = v[i];
 
-		RoadUser * roadUser = new RoadUser(); // Declares and initalises a RoadUser pointer.
+		auto roadUser{std::make_shared<RoadUser>()}; // Declares and initalises a RoadUser pointer.
 		roadUser->setType(d.type);
 		roadUser->setContext(d.context);
 		roadUser->setOrigin(d.origin);
@@ -95,7 +95,7 @@ RoadUser * detectedToRoadUserList(vector<Detected_Road_User> v) {
 		roadUser->setHeightConfidence(d.height_c);
 		roadUser->setSignature(d.signature);
 
-		road_users[i] = *roadUser;
+		road_users.push_back(roadUser);
 
 	}
 
@@ -217,9 +217,11 @@ void handleNotifyAdd(Document &document) {
 	write_to_log("Notify Add Received.");
 	const vector<Detected_Road_User> &roadUsers = assignNotificationVals(document).ru_description_list;
 	int size = roadUsers.size();
-	RoadUser * road_users = detectedToRoadUserList(roadUsers);
-	for(int j = 0; j < size; j++) {
-		database->upsert(&road_users[j]);
+
+	auto road_users{detectedToRoadUserList(roadUsers)};
+
+	for(auto road_user : road_users) {
+		database->upsert(road_user);
 	}
 }
 
