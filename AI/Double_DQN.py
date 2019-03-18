@@ -15,10 +15,10 @@ import random
 import argparse
 import time
 
-from AI.Agent import Agent
-from AI.RandomForestClassifier import RandomForestPredictor
-from AI.csv_data import Data
-from AI.utils import CalculateReward,isCarTerminal
+from Agent import Agent
+from RandomForestClassifier import RandomForestPredictor
+from csv_data import Data
+from utils import CalculateReward,isCarTerminal
 
 
 parser = argparse.ArgumentParser(description="TO RL : Double DQN trainer")
@@ -28,7 +28,7 @@ parser.add_argument("-o","--learn-step-counter", type=int, default=0)
 parser.add_argument("-n","--number-of-actions", type=int, default=5)
 parser.add_argument("-m","--replay-memory-size", type=int, default=128000)
 parser.add_argument("-d","--epsilon-decay", type=int, default=100000)
-parser.add_argument("-b","--minibatch-size", type=int, default=32) # TODO may need to change this
+parser.add_argument("-b","--minibatch-size", type=int, default=32) 
 
 parser.add_argument("-l","--learning-rate", type=float, default=0.0001)
 parser.add_argument("-g","--gamma", type=float, default=0.9)
@@ -56,6 +56,16 @@ class DeepQLearning(nn.Module):
         self.fc1 = nn.Linear(20,256)
         self.relu1 = nn.ReLU(inplace=True)
         self.fc2 = nn.Linear(256, args.number_of_actions)
+        self.number_of_actions = 5
+        self.final_epsilon = 0.01
+        self.EPSILON_DECAY = 100000
+        self.initial_epsilon = 1.0
+        self.num_epochs = 10
+        self.replay_memory_size = 10000
+        self.minibatch_size = 32
+        self.gamma = 0.9
+        self.learn_step_counter = 0
+        self.learning_rate = 1e-4
 
     def forward(self, x):
         out = self.fc1(x)
@@ -71,6 +81,7 @@ def train(model,target,featuresTrain,agent,predictor):
     criterion = nn.MSELoss()
     epsilon = args.initial_epsilon
     counter = 0
+    wins = 0
     for epoch in range(args.num_epochs):
         for index,game_run in enumerate(featuresTrain):
             game_state = game_run
@@ -172,12 +183,12 @@ def train(model,target,featuresTrain,agent,predictor):
                     torch.save(model_state, path)
 
                 if(state % 70 == 0):
-                    print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}'.format(epoch,
+                    print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}, Wins: {}'.format(epoch,
                                                                                                   args.num_epochs,
                                                                                                   index,
                                                                                                   featuresTrain.shape[0],
                                                                                                   loss.item(),
-                                                                                                  sum(reward_batch)/args.minibatch_size))
+                                                                                                  sum(reward_batch)/args.minibatch_size,wins))
                 bufftime = time.time()
                 delta_time = bufftime - current_time
                 print("+ {:.4f} Secs".format(delta_time))
@@ -189,6 +200,7 @@ def train(model,target,featuresTrain,agent,predictor):
                 optimizer.step()
 
                 if terminal == True:
+                    wins = wins + 1
                     break
                 else:
                     try:
@@ -203,22 +215,22 @@ def main():
     data_wrapper = Data()
     # data = data_wrapper.get_data()
     #
-    # agent = Agent()
+    agent = Agent()
     #
-    # featuresTrain = data_wrapper.get_training_data_tensor()
+    featuresTrain = data_wrapper.get_training_data_tensor()
     #
-    # predictor = RandomForestPredictor(data_wrapper.get_RFC_dataset())
+    predictor = RandomForestPredictor(data_wrapper.get_RFC_dataset())
 
     model = DeepQLearning().to(device)
-    # target_network = DeepQLearning().to(device)
+    target_network = DeepQLearning().to(device)
 
-    state = torch.load('rl_classifier.tar',map_location='cpu')
-    model.load_state_dict(state['state_dict'])
+    # state = torch.load('rl_classifier.tar',map_location='cpu')
+    # model.load_state_dict(state['state_dict'])
 
-    # train(model,target_network,featuresTrain,agent,predictor)
+    train(model,target_network,featuresTrain,agent,predictor)
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
-    traced_script_module.save("rl_model.pt")
+    traced_script_module.save("rl_model_double.pt")
 
 if __name__ == '__main__':
     main()
