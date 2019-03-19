@@ -248,7 +248,7 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
   waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][0].item<float>()));
   waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][1].item<float>()));
   waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_n_1_states[0][4].item<float>()));
-  waypoint->setLanePosition(mergingVehicle->getLanePosition()+1);
+  waypoint->setLanePosition(mergingVehicle->getLanePosition());
   mergingManeuver->addWaypoint(waypoint);
 
 	at::Tensor previous_state = calculated_n_1_states;
@@ -266,7 +266,7 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
 	  n_waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_waypoint[0][0].item<float>()));
 	  n_waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_waypoint[0][1].item<float>()));
 	  n_waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_waypoint[0][4].item<float>()));
-	  n_waypoint->setLanePosition(mergingVehicle->getLanePosition()+1);
+	  n_waypoint->setLanePosition(mergingVehicle->getLanePosition());
 	  mergingManeuver->addWaypoint(n_waypoint);
 
 	}
@@ -282,7 +282,11 @@ vector<ManeuverRecommendation*> ManeuverParser(Database * database, double dista
       auto input_values = RoadUsertoModelInput(r,neighbours);
       auto models_input = torch::tensor(input_values).unsqueeze(0);
 			// auto models_input = torch::tensor(input_values).unsqueeze(0).unsqueeze(0);
-      recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
+			if(!isCarTerminal(models_input)){
+				recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
+			} else {
+				r->setLanePosition(r->getLanePosition()+1);
+			}
 		}
 	}
   return recommendations;
