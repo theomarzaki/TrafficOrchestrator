@@ -196,7 +196,7 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 	return stateTensor;
 	} else if(left_tensor == actionTensor.item<int>()){
 			float displacement = state[0][4].item<float>() * 0.035 + 0.5 * (state[0][5].item<float>() * 0.035 * 0.035);
-			auto angle = (int(state[0][19].item<float>()) + 180) % 360;
+			auto angle = int(state[0][19].item<float>());
 			angle = (angle + 5) % 360;
 			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
 			auto new_y = state[0][1].item<float>()  + displacement * sin((angle * M_PI)/ 180);
@@ -206,7 +206,7 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 		return stateTensor;
 	} else if(right_tensor == actionTensor.item<int>()){
 			auto displacement = state[0][4].item<float>() * 0.035 + 0.5 * (state[0][5].item<float>() * 0.035 * 0.035);
-			auto angle = (int(state[0][19].item<float>()) + 180) % 360;
+			auto angle = int(state[0][19].item<float>())
 			angle = (angle - 5) % 360;
 			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
 			auto new_y = state[0][1].item<float>()  + displacement * sin((angle * M_PI)/ 180);
