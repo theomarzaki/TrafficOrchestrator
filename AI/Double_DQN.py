@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#   Double DQN implementation for the Traffic Orchestrator
+#   Double Q-Learning implementation for the Traffic Orchestrator
 #
 #   This Script provides a way to approximate the best actions for the agent to undertake in order lane merge
 #   Contains Random Forest Classifier to assign rewards to agent.
@@ -21,19 +21,21 @@ from csv_data import Data
 from utils import CalculateReward,isCarTerminal
 
 
-parser = argparse.ArgumentParser(description="TO RL : Double DQN trainer")
+parser = argparse.ArgumentParser(description="TO RL : Double Q-Learning trainer")
 
-parser.add_argument("-e","--num-epochs", type=int, default=25, help="number of epochs to train (default: 10000)")
-parser.add_argument("-o","--learn-step-counter", type=int, default=0)
-parser.add_argument("-n","--number-of-actions", type=int, default=5)
-parser.add_argument("-m","--replay-memory-size", type=int, default=128000)
-parser.add_argument("-d","--epsilon-decay", type=int, default=100000)
-parser.add_argument("-b","--minibatch-size", type=int, default=32) 
+parser.add_argument("-e", "--num-epochs", type=int, default=25, help="number of epochs to train (default: 10000)")
+parser.add_argument("-o", "--learn-step-counter", type=int, default=0)
+parser.add_argument("-n", "--number-of-actions", type=int, default=5)
+parser.add_argument("-i", "--number-of-inputs", type=int, default=20)
+parser.add_argument("-m", "--replay-memory-size", type=int, default=128000)
+parser.add_argument("-d", "--epsilon-decay", type=int, default=100000)
+parser.add_argument("-b", "--minibatch-size", type=int, default=32)
+parser.add_argument("-z", "--hidden-layer-size", type=int, default=256)
 
-parser.add_argument("-l","--learning-rate", type=float, default=0.0001)
-parser.add_argument("-g","--gamma", type=float, default=0.9)
-parser.add_argument("-f","--final-epsilon", type=float, default=0.01)
-parser.add_argument("-i","--initial-epsilon", type=float, default=1.0)
+parser.add_argument("-l", "--learning-rate", type=float, default=0.0001)
+parser.add_argument("-g", "--gamma", type=float, default=0.9)
+parser.add_argument("-f", "--final-epsilon", type=float, default=0.01)
+parser.add_argument("-y", "--initial-epsilon", type=float, default=1.0)
 
 args = parser.parse_args()
 
@@ -50,22 +52,12 @@ device = torch.device(dev_type)
 
 
 class DeepQLearning(nn.Module):
-    def __init__(self):
-        super(DeepQLearning,self).__init__()
+    def __init__(self, number_of_inputs, hidden_layer_size, number_of_actions):
+        super(DeepQLearning, self).__init__()
 
-        self.fc1 = nn.Linear(20,256)
+        self.fc1 = nn.Linear(number_of_inputs, hidden_layer_size)
         self.relu1 = nn.ReLU(inplace=True)
-        self.fc2 = nn.Linear(256, args.number_of_actions)
-        self.number_of_actions = 5
-        self.final_epsilon = 0.01
-        self.EPSILON_DECAY = 100000
-        self.initial_epsilon = 1.0
-        self.num_epochs = 10
-        self.replay_memory_size = 10000
-        self.minibatch_size = 32
-        self.gamma = 0.9
-        self.learn_step_counter = 0
-        self.learning_rate = 1e-4
+        self.fc2 = nn.Linear(hidden_layer_size, number_of_actions)
 
     def forward(self, x):
         out = self.fc1(x)
@@ -74,7 +66,8 @@ class DeepQLearning(nn.Module):
         return out
 
 
-def train(model,target,featuresTrain,agent,predictor):
+def train(model, target, features_train, agent, predictor):
+
     current_time = time.time()
     replay_memory = []
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
@@ -82,11 +75,17 @@ def train(model,target,featuresTrain,agent,predictor):
     epsilon = args.initial_epsilon
     counter = 0
     wins = 0
+
+    print("Go !")
+
     for epoch in range(args.num_epochs):
-        for index,game_run in enumerate(featuresTrain):
+        for index, game_run in enumerate(features_train):
+
             game_state = game_run
             counter = counter + 1
+
             for state in range(game_state.shape[0]):
+
                 current = game_state[state].data.cpu().numpy()
                 try:
                     s_next = game_state[state + 1].data.cpu().numpy()
@@ -184,11 +183,11 @@ def train(model,target,featuresTrain,agent,predictor):
 
                 if(state % 70 == 0):
                     print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}, Wins: {}'.format(epoch,
-                                                                                                  args.num_epochs,
-                                                                                                  index,
-                                                                                                  featuresTrain.shape[0],
-                                                                                                  loss.item(),
-                                                                                                  sum(reward_batch)/args.minibatch_size,wins))
+                                                                                                            args.num_epochs,
+                                                                                                            index,
+                                                                                                            features_train.shape[0],
+                                                                                                            loss.item(),
+                                                                                                            sum(reward_batch)/args.minibatch_size,wins))
                 bufftime = time.time()
                 delta_time = bufftime - current_time
                 print("+ {:.4f} Secs".format(delta_time))
@@ -200,7 +199,7 @@ def train(model,target,featuresTrain,agent,predictor):
                 optimizer.step()
 
                 if terminal == True:
-                    wins = wins + 1
+                    wins += 1
                     break
                 else:
                     try:
@@ -209,28 +208,34 @@ def train(model,target,featuresTrain,agent,predictor):
                         print("no more states (time) for maneuvers")
                         break
 
+        bufftime = time.time()
+        delta_time = bufftime - current_time
+        print("+ {:.4f} Secs".format(delta_time))
+        print("Perf: {:.4f} Epoch/s\n".format(1 / delta_time))
+        current_time = bufftime
+
 
 def main():
 
     data_wrapper = Data()
-    # data = data_wrapper.get_data()
-    #
+
     agent = Agent()
-    #
-    featuresTrain = data_wrapper.get_training_data_tensor()
-    #
+
+    features_train = data_wrapper.get_training_data_tensor()
+
     predictor = RandomForestPredictor(data_wrapper.get_RFC_dataset())
 
-    model = DeepQLearning().to(device)
-    target_network = DeepQLearning().to(device)
+    model = DeepQLearning(args.number_of_inputs, args.hidden_layer_size, args.number_of_actions).to(device)
+    target_network = DeepQLearning(args.number_of_inputs, args.hidden_layer_size, args.number_of_actions).to(device)
 
-    # state = torch.load('rl_classifier.tar',map_location='cpu')
+    # state = torch.load('rl_classifier.tar', map_location='cpu')
     # model.load_state_dict(state['state_dict'])
 
-    train(model,target_network,featuresTrain,agent,predictor)
+    train(model, target_network, features_train, agent, predictor)
 
-    traced_script_module = torch.jit.trace(model, torch.rand(20))
+    traced_script_module = torch.jit.trace(model, torch.rand(args.number_of_inputs))
     traced_script_module.save("rl_model_double.pt")
+
 
 if __name__ == '__main__':
     main()
