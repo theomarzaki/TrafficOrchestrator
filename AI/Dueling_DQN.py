@@ -43,9 +43,9 @@ class Dueling_DQN(nn.Module):
         super(Dueling_DQN,self).__init__()
         self.number_of_actions = 5
         self.final_epsilon = 0.01
-        self.EPSILON_DECAY = 100000
+        self.EPSILON_DECAY = 1000000
         self.initial_epsilon = 1.0
-        self.num_epochs = 10
+        self.num_epochs = 25
         self.replay_memory_size = 10000
         self.minibatch_size = 32
         self.gamma = 0.9
@@ -81,6 +81,7 @@ class Dueling_DQN(nn.Module):
     def train_dueling(self,model,target,featuresTrain,agent,predictor):
         replay_memory = []
         hist = []
+        rewards = []
         wins = 0
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)
         criterion = nn.MSELoss()
@@ -101,7 +102,6 @@ class Dueling_DQN(nn.Module):
 
             for index,game_run in enumerate(featuresTrain):
                 game_state = game_run
-                # counter = counter + 1
                 for state in range(game_state.shape[0]):
                     current = game_state[state].data.cpu().numpy()
                     try:
@@ -130,7 +130,9 @@ class Dueling_DQN(nn.Module):
 
                     reward,terminal = CalculateReward(next_state,predictor)
 
-                    if terminal and reward == 1:
+                    rewards.append((reward,self.learn_step_counter))
+
+                    if terminal and reward == 10000:
                         wins = wins + 1
                     else:
                         pass
@@ -210,7 +212,7 @@ class Dueling_DQN(nn.Module):
                             print("no more states (time) for maneuvers")
                             break
 
-        return hist
+        return hist,rewards
 
 def main():
 
@@ -230,12 +232,18 @@ def main():
 
 
     #TRAIN RL
-    loss_over_time = model.train_dueling(model,target_model,featuresTrain,agent,predictor)
+    loss_over_time,rewards_over_time = model.train_dueling(model,target_model,featuresTrain,agent,predictor)
     plt.plot(loss_over_time)
     plt.show()
 
+    plt.plot(rewards_over_time)
+    plt.show()
+
+    np.savetxt('loss.out',loss_over_time)
+    np.savetxt('rewards.out',rewards_over_time,delimiter=',')
+
     # Load Model
-    # state = torch.load('DQN_Saves/DQN2.tar',map_location='cpu')
+    # state = torch.load('DQN_Saves/DQN1.tar',map_location='cpu')
     # model.load_state_dict(state['state_dict'])
 
 

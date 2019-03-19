@@ -28,14 +28,16 @@ class Data():
         self.train_data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
         batch = torch.zeros(70,20)
         counter = 0
-        for idx in range(self.train_data.shape[0]):
-            if idx % 70 != 0 or idx == 0:
+        for idx in range(0,self.train_data.values.shape[0]):
+            if idx % 69 != 0 or idx == 0:
                 batch[idx % 70]= torch.Tensor(self.train_data.values[idx])
             else:
-                self.featuresTrain[counter] = batch
-                counter = counter + 1
-                batch = torch.zeros(70,20)
-
+                try:
+                    self.featuresTrain[counter] = batch
+                    counter = counter + 1
+                    batch = torch.zeros(70,20)
+                except:
+                    pass
         return self.featuresTrain
 
     def get_testing_data_tensor(self):
@@ -43,13 +45,16 @@ class Data():
         self.test_data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
         batch = torch.zeros(70,20)
         counter = 0
-        for idx in range(self.test_data.shape[0]):
-            if idx % 70 != 0 or idx == 0:
+        for idx in range(self.test_data.values.shape[0]):
+            if idx % 69 != 0 or idx == 0:
                 batch[idx % 70]= torch.Tensor(self.test_data.values[idx])
             else:
-                self.featuresTest[counter] = batch
-                counter = counter + 1
-                batch = torch.zeros(70,20)
+                try:
+                    self.featuresTest[counter] = batch
+                    counter = counter + 1
+                    batch = torch.zeros(70,20)
+                except:
+                    pass
 
         return self.featuresTest
 
