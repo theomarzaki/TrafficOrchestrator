@@ -379,6 +379,7 @@ string listenDataTCP(int socket_c) {
         }else{
           incomplete_message += chrc;
         }
+      }
     }
 
     if(incomplete_messages.size() != 0){
