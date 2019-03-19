@@ -18,7 +18,7 @@ def isCarTerminal(state):
 
     try:
         slope = round(y_diff,2) / round(x_diff,2)
-        if(slope == float('inf') or slope == float('-inf')) : slope = 0
+        if(slope == float('inf') or slope == float('-inf') or slope == math.isnan(slope)) : slope = 0
         plus_c = state[8] - (slope * state[7])
         print("Slope: {}, X_Pos: {}, Y_Pos: {}, plus_c: {}, PreceedingX: {}, PrecedingY: {}, followingX: {}, followingY: {}".format(slope,state[0],state[1],plus_c,state[13],state[14],state[8],state[7]))
         if(state[0] != float('inf') and state[0] != float('-inf') and state[1] != float('inf') and state[1] != float('-inf')):

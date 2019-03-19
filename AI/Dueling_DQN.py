@@ -81,6 +81,7 @@ class Dueling_DQN(nn.Module):
     def train_dueling(self,model,target,featuresTrain,agent,predictor):
         replay_memory = []
         hist = []
+        rewards = []
         wins = 0
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)
         criterion = nn.MSELoss()
@@ -101,7 +102,6 @@ class Dueling_DQN(nn.Module):
 
             for index,game_run in enumerate(featuresTrain):
                 game_state = game_run
-                # counter = counter + 1
                 for state in range(game_state.shape[0]):
                     current = game_state[state].data.cpu().numpy()
                     try:
@@ -129,6 +129,8 @@ class Dueling_DQN(nn.Module):
                     next_state = agent.calculateActionComputed(action,current,s_next)
 
                     reward,terminal = CalculateReward(next_state,predictor)
+
+                    rewards.append((reward,self.learn_step_counter))
 
                     if terminal and reward == 10000:
                         wins = wins + 1
@@ -210,7 +212,7 @@ class Dueling_DQN(nn.Module):
                             print("no more states (time) for maneuvers")
                             break
 
-        return hist
+        return hist,rewards
 
 def main():
 
@@ -230,9 +232,15 @@ def main():
 
 
     #TRAIN RL
-    loss_over_time = model.train_dueling(model,target_model,featuresTrain,agent,predictor)
+    loss_over_time,rewards_over_time = model.train_dueling(model,target_model,featuresTrain,agent,predictor)
     plt.plot(loss_over_time)
     plt.show()
+
+    plt.plot(rewards_over_time)
+    plt.show()
+
+    np.savetxt('loss.out',loss_over_time)
+    np.savetxt('rewards.out',rewards_over_time,delimiter=',')
 
     # Load Model
     # state = torch.load('DQN_Saves/DQN1.tar',map_location='cpu')
