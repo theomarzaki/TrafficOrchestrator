@@ -212,7 +212,7 @@ void setSourceUUID(string);
 
 };
 
-RoadUser::~RoadUser(){}
+// RoadUser::~RoadUser(){}
 
 string RoadUser::getType(){return type;}
 string RoadUser::getContext(){return context;}
