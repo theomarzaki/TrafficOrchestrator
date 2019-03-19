@@ -51,9 +51,9 @@ else:
 device = torch.device(dev_type)
 
 
-class DeepQLearning(nn.Module):
+class DoubleQLearning(nn.Module):
     def __init__(self, number_of_inputs, hidden_layer_size, number_of_actions):
-        super(DeepQLearning, self).__init__()
+        super(DoubleQLearning, self).__init__()
 
         self.fc1 = nn.Linear(number_of_inputs, hidden_layer_size)
         self.relu1 = nn.ReLU(inplace=True)
@@ -82,7 +82,7 @@ def train(model, target, features_train, agent, predictor):
         for index, game_run in enumerate(features_train):
 
             game_state = game_run
-            counter = counter + 1
+            counter += 1
 
             for state in range(game_state.shape[0]):
 
@@ -124,7 +124,7 @@ def train(model, target, features_train, agent, predictor):
                 epsilon = args.final_epsilon + (args.initial_epsilon - args.final_epsilon) * \
                                  math.exp(-1. * args.learn_step_counter / args.epsilon_decay)
 
-                minibatch = random.sample(replay_memory, min(len(replay_memory), model.minibatch_size))
+                minibatch = random.sample(replay_memory, min(len(replay_memory), args.minibatch_size))
 
                 current_batch = torch.zeros(len(minibatch),20).to(device)
                 action_batch = torch.zeros(len(minibatch),5).to(device)
@@ -188,11 +188,6 @@ def train(model, target, features_train, agent, predictor):
                                                                                                             features_train.shape[0],
                                                                                                             loss.item(),
                                                                                                             sum(reward_batch)/args.minibatch_size,wins))
-                bufftime = time.time()
-                delta_time = bufftime - current_time
-                print("+ {:.4f} Secs".format(delta_time))
-                print("Perf: {:.4f} Epoch/s\n".format(1/delta_time))
-                current_time = bufftime
 
                 # do backward pass
                 loss.backward()
@@ -225,8 +220,8 @@ def main():
 
     predictor = RandomForestPredictor(data_wrapper.get_RFC_dataset())
 
-    model = DeepQLearning(args.number_of_inputs, args.hidden_layer_size, args.number_of_actions).to(device)
-    target_network = DeepQLearning(args.number_of_inputs, args.hidden_layer_size, args.number_of_actions).to(device)
+    model = DoubleQLearning(args.number_of_inputs, args.hidden_layer_size, args.number_of_actions).to(device)
+    target_network = DoubleQLearning(args.number_of_inputs, args.hidden_layer_size, args.number_of_actions).to(device)
 
     # state = torch.load('rl_classifier.tar', map_location='cpu')
     # model.load_state_dict(state['state_dict'])
