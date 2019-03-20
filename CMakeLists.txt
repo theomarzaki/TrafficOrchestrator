@@ -13,6 +13,6 @@ find_package(Torch REQUIRED)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/)
 add_executable(exchange to/exchange.cpp)
 target_link_libraries(exchange "${TORCH_LIBRARIES}")
-set_property(TARGET exchange PROPERTY CXX_STANDARD 11)
+set_property(TARGET exchange PROPERTY CXX_STANDARD 17)
 
 target_include_directories(exchange PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
