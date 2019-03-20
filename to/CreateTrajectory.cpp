@@ -281,6 +281,7 @@ vector<ManeuverRecommendation*> ManeuverParser(Database * database, double dista
 			auto neighbours = mapNeighbours(database,distanceRadius);
       auto input_values = RoadUsertoModelInput(r,neighbours);
       auto models_input = torch::tensor(input_values).unsqueeze(0);
+			recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
 			// auto models_input = torch::tensor(input_values).unsqueeze(0).unsqueeze(0);
 			// if(!isCarTerminal(models_input)){
 			// 	recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
