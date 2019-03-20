@@ -48,32 +48,32 @@ bool inRange(int low, int high, int x){
     return ((x-high)*(x-low) <= 0);
 }
 
-bool isCarTerminal(at::Tensor state){
-  float y_diff = state[0][14].item<float>() - state[0][8].item<float>();
-  float x_diff = state[0][13].item<float>() - state[0][7].item<float>();
-
-  try{
-    float slope = round(y_diff) / round(x_diff);
-    if(isinf(slope) || isnan(slope)) slope = 0;
-    float plus_c = state[0][8].item<float>() - (slope * state[0][7].item<float>());
-    if(!isinf(state[0][0].item<float>()) && !isinf(state[0][1].item<float>())){
-        if(inRange(round(slope * int(state[0][0].item<float>()) + plus_c) - 1, round(slope * int(state[0][0].item<float>()) + plus_c) + 1,round(int(state[0][1].item<float>())))){
-            if(int(state[0][7].item<float>()) > int(state[0][0].item<float>()) && int(state[0][0].item<float>()) > int(state[0][13].item<float>()) && int(state[0][8].item<float>()) < int(state[0][1].item<float>()) && int(state[0][1].item<float>()) < int(state[0][14].item<float>())){
-                return true;
-						}
-				}
-		}
-	}
-  catch(...){
-    float plus_c = int(state[0][8].item<float>());
-    if ((round(state[0][1].item<float>()) + 1 == round(plus_c) or round(state[0][1].item<float>()) - 1 == round(plus_c))){
-         if(int(state[0][7].item<float>()) > int(state[0][0].item<float>()) && int(state[0][0].item<float>()) > int(state[0][13].item<float>()) && int(state[0][8].item<float>()) < int(state[0][1].item<float>()) && int(state[0][1].item<float>()) < int(state[0][14].item<float>())){
-             return true;
-					 }
-		}
-	}
-  return false;
-}
+// bool isCarTerminal(at::Tensor state){
+//   float y_diff = state[0][14].item<float>() - state[0][8].item<float>();
+//   float x_diff = state[0][13].item<float>() - state[0][7].item<float>();
+//
+//   try{
+//     float slope = round(y_diff) / round(x_diff);
+//     if(isinf(slope) || isnan(slope)) slope = 0;
+//     float plus_c = state[0][8].item<float>() - (slope * state[0][7].item<float>());
+//     if(!isinf(state[0][0].item<float>()) && !isinf(state[0][1].item<float>())){
+//         if(inRange(round(slope * int(state[0][0].item<float>()) + plus_c) - 1, round(slope * int(state[0][0].item<float>()) + plus_c) + 1,round(int(state[0][1].item<float>())))){
+//             if(int(state[0][7].item<float>()) > int(state[0][0].item<float>()) && int(state[0][0].item<float>()) > int(state[0][13].item<float>()) && int(state[0][8].item<float>()) < int(state[0][1].item<float>()) && int(state[0][1].item<float>()) < int(state[0][14].item<float>())){
+//                 return true;
+// 						}
+// 				}
+// 		}
+// 	}
+//   catch(...){
+//     float plus_c = int(state[0][8].item<float>());
+//     if ((round(state[0][1].item<float>()) + 1 == round(plus_c) or round(state[0][1].item<float>()) - 1 == round(plus_c))){
+//          if(int(state[0][7].item<float>()) > int(state[0][0].item<float>()) && int(state[0][0].item<float>()) > int(state[0][13].item<float>()) && int(state[0][8].item<float>()) < int(state[0][1].item<float>()) && int(state[0][1].item<float>()) < int(state[0][14].item<float>())){
+//              return true;
+// 					 }
+// 		}
+// 	}
+//   return false;
+// }
 // TODO
 
 // 1. spacing for cars (remove for shorter training time)
@@ -282,11 +282,11 @@ vector<ManeuverRecommendation*> ManeuverParser(Database * database, double dista
       auto input_values = RoadUsertoModelInput(r,neighbours);
       auto models_input = torch::tensor(input_values).unsqueeze(0);
 			// auto models_input = torch::tensor(input_values).unsqueeze(0).unsqueeze(0);
-			if(!isCarTerminal(models_input)){
-				recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
-			} else {
-				r->setLanePosition(r->getLanePosition()+1);
-			}
+			// if(!isCarTerminal(models_input)){
+			// 	recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
+			// } else {
+			// 	r->setLanePosition(r->getLanePosition()+1);
+			// }
 		}
 	}
   return recommendations;
