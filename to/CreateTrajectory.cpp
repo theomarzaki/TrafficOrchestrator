@@ -251,25 +251,25 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
   waypoint->setLanePosition(mergingVehicle->getLanePosition());
   mergingManeuver->addWaypoint(waypoint);
 
-	at::Tensor previous_state = calculated_n_1_states;
-	for(int counter = 0;counter < 4; counter++){ //number of waypoints
-		auto timeCalculator = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-		std::vector<torch::jit::IValue> rl_n_inputs;
-
-		rl_n_inputs.push_back(previous_state);
-		auto calculated_next_state = rl_model->forward(rl_n_inputs).toTensor();
-		auto calculated_waypoint = GetStateFromActions(calculated_next_state,previous_state);
-		previous_state = calculated_waypoint;
-
-		Waypoint * n_waypoint = new Waypoint();
-	  n_waypoint->setTimestamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_waypoint[0][0].item<float>(),calculated_waypoint[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
-	  n_waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_waypoint[0][0].item<float>()));
-	  n_waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_waypoint[0][1].item<float>()));
-	  n_waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_waypoint[0][4].item<float>()));
-	  n_waypoint->setLanePosition(mergingVehicle->getLanePosition());
-	  mergingManeuver->addWaypoint(n_waypoint);
-
-	}
+	// at::Tensor previous_state = calculated_n_1_states;
+	// for(int counter = 0;counter < 4; counter++){ //number of waypoints
+	// 	auto timeCalculator = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+	// 	std::vector<torch::jit::IValue> rl_n_inputs;
+	//
+	// 	rl_n_inputs.push_back(previous_state);
+	// 	auto calculated_next_state = rl_model->forward(rl_n_inputs).toTensor();
+	// 	auto calculated_waypoint = GetStateFromActions(calculated_next_state,previous_state);
+	// 	previous_state = calculated_waypoint;
+	//
+	// 	Waypoint * n_waypoint = new Waypoint();
+	//   n_waypoint->setTimestamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_waypoint[0][0].item<float>(),calculated_waypoint[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
+	//   n_waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_waypoint[0][0].item<float>()));
+	//   n_waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_waypoint[0][1].item<float>()));
+	//   n_waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_waypoint[0][4].item<float>()));
+	//   n_waypoint->setLanePosition(mergingVehicle->getLanePosition());
+	//   mergingManeuver->addWaypoint(n_waypoint);
+	//
+	// }
   return mergingManeuver;
 }
 
