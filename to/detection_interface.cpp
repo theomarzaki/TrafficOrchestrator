@@ -37,10 +37,12 @@ using std::vector;
 typedef uint32_t uint4;
 
 enum class message_type {
-    notify_add, notify_delete, subscription_response, unsubscription_response, trajectory_feedback, unknown
+    notify_add, notify_delete, subscription_response, unsubscription_response, trajectory_feedback, unknown, heart_beat, reconnect
 };
 
 #define NOTIFY_ADD "notify_add"
+#define RECONNECT "RECONNECT"
+#define HEART_BEAT "heart_beat"
 #define NOTIFY_DELETE "notify_delete"
 #define SUBSCRIPTION_RESPONSE "subscription_response"
 #define UNSUBSCRIPTION_RESPONSE "unsubscription_response"
@@ -158,7 +160,16 @@ void write_to_log(const string & text){
 
 Document parse(string readFromServer) {
   Document document;
-  if(readFromServer.length() != 0){
+  Document::AllocatorType& allocator = document.GetAllocator();
+  if(readFromServer == "RECONNECT"){
+    document.SetObject();
+    document.AddMember("type",Value().SetString(string("RECONNECT").c_str(),allocator),allocator);
+  }
+  else if(readFromServer == "\n"){
+    document.SetObject();
+    document.AddMember("type",Value().SetString(string("heart_beat").c_str(),allocator),allocator);
+  }
+  else{
     document.Parse(readFromServer.c_str());
   }
   return document;
@@ -321,11 +332,18 @@ Detected_Unsubscription_Response assignUnsubResponseVals(Document &document) {
 
 message_type filterInput(Document &document) {
   if(!(document.IsObject())){
-    write_to_log("error: received message that is not an object");
     return message_type::unknown;
   }
   if(document["type"] == NOTIFY_ADD) {
     return message_type::notify_add;
+  }
+
+  else if(document["type"] == RECONNECT) {
+    return message_type::reconnect;
+  }
+
+  else if(document["type"] == HEART_BEAT) {
+    return message_type::heart_beat;
   }
 
   else if(document["type"] == SUBSCRIPTION_RESPONSE) {
@@ -343,7 +361,6 @@ message_type filterInput(Document &document) {
   else if(document["type"] == NOTIFY_DELETE) {
       return message_type::notify_delete;
   }
-
   else {
     write_to_log("error: received message with unknown type: " + string(document["type"].GetString()));
     return message_type::unknown;
@@ -366,7 +383,6 @@ string listenDataTCP(int socket_c) {
     }
     else if(i == 0) {
       printf("Socket closed from the remote server.\n");
-      printf("trying to reconnect ....\n");
       return "RECONNECT";
     }
     else if(i > 0){

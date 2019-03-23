@@ -42,19 +42,20 @@ class DeepQLearning(nn.Module):
     def __init__(self):
         super(DeepQLearning,self).__init__()
 
-        self.learn_step_counter = 0
-        self.num_epochs = 10000
         self.number_of_actions = 5
-        self.gamma = 0.90
         self.final_epsilon = 0.01
+        self.EPSILON_DECAY = 1000000
         self.initial_epsilon = 1.0
-        self.replay_memory_size = 10000 #may need to increase
-        self.minibatch_size = 32 #TODO may need to change this
-        self.EPSILON_DECAY = 100000
+        self.num_epochs = 5
+        self.replay_memory_size = 10000
+        self.minibatch_size = 32
+        self.gamma = 0.9
+        self.learn_step_counter = 0
+        self.learning_rate = 1e-4
 
-        self.fc1 = nn.Linear(20,512)
+        self.fc1 = nn.Linear(20,128)
         self.relu1 = nn.ReLU(inplace=True)
-        self.fc2 = nn.Linear(512, self.number_of_actions)
+        self.fc2 = nn.Linear(128, self.number_of_actions)
 
     def forward(self, x):
         out = self.fc1(x)
@@ -64,14 +65,28 @@ class DeepQLearning(nn.Module):
 
     def train(self,model,target,featuresTrain,agent,predictor):
         replay_memory = []
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+        hist = []
+        rewards = []
+        wins = 0
+        optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)
         criterion = nn.MSELoss()
         epsilon = model.initial_epsilon
-        counter = 0
+        loss = 0
+
         for epoch in range(self.num_epochs):
+
+            model_state = {
+                'epoch': epoch,
+                'state_dict': model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'loss':loss,
+                }
+            model_save_name = F"DQN{epoch}.tar"
+            path = F"DQN_Saves/{model_save_name}"
+            torch.save(model_state, path)
+
             for index,game_run in enumerate(featuresTrain):
                 game_state = game_run
-                counter = counter + 1
                 for state in range(game_state.shape[0]):
                     current = game_state[state].data.cpu().numpy()
                     try:
@@ -81,7 +96,7 @@ class DeepQLearning(nn.Module):
 
                     if self.learn_step_counter % 100 == 0:
                         target.load_state_dict(model.state_dict())
-                        self.learn_step_counter += 1
+                    self.learn_step_counter += 1
 
                     output = model(torch.from_numpy(current).to(device)).to(device)
                     # initialise actions
@@ -99,6 +114,8 @@ class DeepQLearning(nn.Module):
                     next_state = agent.calculateActionComputed(action,current,s_next)
 
                     reward,terminal = CalculateReward(next_state,predictor)
+
+                    rewards.append((reward,self.learn_step_counter))
 
                     # if replay memory is full, remove the oldest transition
                     if len(replay_memory) > model.replay_memory_size:
@@ -131,19 +148,19 @@ class DeepQLearning(nn.Module):
 
 
                     # No use of Target Network
-                    # # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
-                    # y_batch = tuple(reward_batch[i] if terminal_state_batch[i]
-                    #                     else reward_batch[i] + model.gamma * torch.max(next_state_batch_output[i])
-                    #                           for i in range(len(minibatch)))
-                    #
-                    # # extract Q-value
-                    # q_value = torch.sum(model(current_batch) * action_batch, dim=1)
+                    # set y_j to r_j for terminal state, otherwise to r_j + gamma*max(Q)
+                    y_batch = tuple(reward_batch[i] if terminal_state_batch[i]
+                                        else reward_batch[i] + model.gamma * torch.max(next_state_batch_output[i])
+                                              for i in range(len(minibatch)))
+
+                    # extract Q-value
+                    q_value = torch.sum(model(current_batch) * action_batch, dim=1)
 
                     # Use of Target Network
-                    q_eval = torch.sum(model(current_batch).to(device) * action_batch, dim=1)  # shape (batch, 1)
-                    q_next = target(next_state_batch).to(device).detach()     # detach from graph, don't backpropagate
-                    q_target = reward_batch + 0.9 * q_next.max(1)[0]   # shape (batch, 1)
-                    loss = criterion(q_eval, q_target)
+                    # q_eval = torch.sum(model(current_batch).to(device) * action_batch, dim=1)  # shape (batch, 1)
+                    # q_next = target(next_state_batch).to(device).detach()     # detach from graph, don't backpropagate
+                    # q_target = reward_batch + 0.9 * q_next.max(1)[0]   # shape (batch, 1)
+                    # loss = criterion(q_eval, q_target)
 
 
 
@@ -152,37 +169,32 @@ class DeepQLearning(nn.Module):
 
                     # No use of Target Network
                     # returns a new Tensor, detached from the current graph, the result will never require gradient
-                    # y_batch = torch.Tensor(y_batch).detach()
+                    y_batch = torch.Tensor(y_batch).detach().to(device)
 
                     # calculate loss
-                    # loss = criterion(q_value, y_batch)
+                    loss = criterion(q_value, y_batch)
 
-                    if(self.learn_step_counter % 500 == 0):
-                        model_state = {
-                            'epoch': counter,
-                            'state_dict': model.state_dict(),
-                            'optimizer': optimizer.state_dict(),
-                            'loss':loss,
-                            }
-                        model_save_name = F"DQN{counter}.tar"
-                        path = F"DQN_Saves/{model_save_name}"
-                        torch.save(model_state, path)
+                    hist.append(loss.item())
 
                     if(state % 70 == 0):
-                        print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}'.format(epoch,self.num_epochs,index,featuresTrain.shape[0],loss.item(),sum(reward_batch)/self.minibatch_size))
+                        print('Epoch: {}/{},Runs: {}/{}, Loss: {:.6f}, Average Reward: {:.2f}, Epsilon: {:.4f}, Wins: {}'.format(epoch,self.num_epochs,index,featuresTrain.shape[0],loss.item(),sum(reward_batch)/self.minibatch_size,epsilon,wins))
 
                     # do backward pass
                     loss.backward()
                     optimizer.step()
 
                     if terminal == True:
+                        wins = wins + 1
                         break
                     else:
                         try:
-                            game_state[state + 1] = torch.Tensor(next_state)
+                            game_state[state + 1] = torch.Tensor(next_state).to(device)
                         except:
                             print("no more states (time) for maneuvers")
                             break
+
+        return hist,rewards
+
 
 
 def main():
@@ -200,10 +212,20 @@ def main():
     model = DeepQLearning().to(device)
     target_network = DeepQLearning().to(device)
 
-    state = torch.load('rl_classifier.tar',map_location='cpu')
-    model.load_state_dict(state['state_dict'])
+    loss_over_time,rewards_over_time = model.train(model,target_network,featuresTrain,agent,predictor)
 
-    # model.train(model,target_network,featuresTrain,agent,predictor)
+    plt.plot(loss_over_time)
+    plt.show()
+
+    plt.plot(rewards_over_time)
+    plt.show()
+
+    np.savetxt('loss.out',loss_over_time)
+    np.savetxt('rewards.out',rewards_over_time,delimiter=',')
+
+    # state = torch.load('rl_classifier.tar',map_location='cpu')
+    # model.load_state_dict(state['state_dict'])
+
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
     traced_script_module.save("rl_model.pt")

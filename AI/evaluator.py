@@ -36,6 +36,46 @@ from Agent import Agent
 import argparse
 from utils import isCarTerminal, CalculateReward
 from RandomForestClassifier import RandomForestPredictor
+import json
+
+def GenerateJsonFiles(featuresTrain,model,agent,predictor):
+    data = {}
+    data['Waypoint'] = []
+    counter = 0
+    for index,game_run in enumerate(featuresTrain):
+        for current_epoch in range(game_run.shape[0]):
+            game_state = game_run
+            if counter > 1: break
+            counter = counter + 1
+            for state in range(game_state.shape[0]):
+                current = game_state[state].data.cpu().numpy()
+                try:
+                    next = game_state[state + 1].data.cpu().numpy()
+                    output = model(torch.from_numpy(current))
+                    action_tensor = torch.zeros(5)
+                    action_tensor[torch.argmax(output)] = 1
+                    waypoint = agent.calculateActionComputed(action_tensor,current,next)
+                    reward,terminal = CalculateReward(waypoint,predictor)
+
+                    if not isCarTerminal(waypoint):
+                        data['Waypoint'].append({
+                            'longitude':float(waypoint[0]),
+                            'latitude':float(waypoint[1]),
+                            'preceeding_longitude':float(waypoint[7]),
+                            'preceeding_latitude':float(waypoint[8]),
+                            'following_longitude':float(waypoint[13]),
+                            'following_latitude':float(waypoint[14])
+                        })
+                    else:
+                        print("reached goal")
+                        break
+
+                    game_state[state + 1] = torch.Tensor(waypoint)
+                except:
+                    pass
+
+    with open('data.txt', 'w') as outfile:
+        json.dump(data, outfile)
 
 def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent,predictor):
     to_plot = []
@@ -138,6 +178,7 @@ def main():
     parser.add_argument("--lstm","--lm",help="test the accuracy of the lstm model",action='store_true')
     parser.add_argument("--dueling_dqn","--ddqn",help="test the accuracy of the dueling DQN model",action='store_true')
     parser.add_argument("--actions","--a",help="show the movement of the agent with plain actions, requires array of actions",action='store_true')
+    parser.add_argument("--gen_json","--json",help="generate json to be shown on map using simulator",action='store_true')
     args = parser.parse_args()
 
     predictor = RandomForestPredictor(Data().get_RFC_dataset())
@@ -173,6 +214,8 @@ def main():
         plt.show()
     elif args.heatmap == True:
         print("coming soon ...")
+    elif args.gen_json == True:
+        GenerateJsonFiles(featuresTrain,model,agent,predictor)
     elif args.lstm == True:
         score = 0
         total = 0
