@@ -46,7 +46,7 @@ class DeepQLearning(nn.Module):
         self.final_epsilon = 0.01
         self.EPSILON_DECAY = 1000000
         self.initial_epsilon = 1.0
-        self.num_epochs = 25
+        self.num_epochs = 5
         self.replay_memory_size = 10000
         self.minibatch_size = 32
         self.gamma = 0.9
@@ -71,7 +71,7 @@ class DeepQLearning(nn.Module):
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)
         criterion = nn.MSELoss()
         epsilon = model.initial_epsilon
-        loss = None
+        loss = 0
 
         for epoch in range(self.num_epochs):
 
@@ -116,11 +116,6 @@ class DeepQLearning(nn.Module):
                     reward,terminal = CalculateReward(next_state,predictor)
 
                     rewards.append((reward,self.learn_step_counter))
-
-                    if terminal and reward == 10000:
-                        wins = wins + 1
-                    else:
-                        pass
 
                     # if replay memory is full, remove the oldest transition
                     if len(replay_memory) > model.replay_memory_size:
@@ -189,6 +184,7 @@ class DeepQLearning(nn.Module):
                     optimizer.step()
 
                     if terminal == True:
+                        wins = wins + 1
                         break
                     else:
                         try:

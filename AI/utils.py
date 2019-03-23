@@ -20,7 +20,7 @@ def isCarTerminal(state):
         slope = round(y_diff,2) / round(x_diff,2)
         if(slope == float('inf') or slope == float('-inf') or slope == math.isnan(slope)) : slope = 0
         plus_c = state[8] - (slope * state[7])
-        print("Slope: {}, X_Pos: {}, Y_Pos: {}, plus_c: {}, PreceedingX: {}, PrecedingY: {}, followingX: {}, followingY: {}".format(slope,state[0],state[1],plus_c,state[13],state[14],state[8],state[7]))
+        # print("Slope: {}, X_Pos: {}, Y_Pos: {}, plus_c: {}, PreceedingX: {}, PrecedingY: {}, followingX: {}, followingY: {}".format(slope,state[0],state[1],plus_c,state[13],state[14],state[8],state[7]))
         if(state[0] != float('inf') and state[0] != float('-inf') and state[1] != float('inf') and state[1] != float('-inf') and not math.isnan(state[0]) and not math.isnan(state[1])):
             if(round(int(state[1])) in range(round(slope * int(state[0]) + plus_c) - 1, round(slope * int(state[0]) + plus_c) + 1)):
                 if(int(state[7]) > int(state[0]) and int(state[0]) > int(state[13]) and int(state[8]) < int(state[1]) and int(state[1]) < int(state[14])):
@@ -42,19 +42,21 @@ def CalculateReward(state,predictor):
     #     reward = -1,False
 
     if isCarTerminal(state) == True:
-        return 10000,True
+        return 1,True
     else:
         y_diff = state[14] - state[8]
         x_diff = state[13] - state[7]
 
-        if(round(x_diff,2) != 0 and round(y_diff,2) != 0 and (state[0] != float('inf') and state[0] != float('-inf')) and (state[1] != float('inf') and state[1] != float('-inf'))):
+        if(round(x_diff,2) != 0 and round(y_diff,2) != 0 and (state[0] != float('inf') and state[0] != float('-inf')) and (state[1] != float('inf') and state[1] != float('-inf')) and not math.isnan(state[0]) and not math.isnan(state[1])):
             slope = round((state[14] - state[8])/(state[13] - state[7]),2)
             plus_c = state[8] - (slope * state[7])
             y_val = round(slope * int(state[0]) + plus_c)
             distance_merging_point = calculateDistance((state[0],state[1]), (state[0],y_val))
-            return (distance_merging_point * -0.04),False
+            if (round(distance_merging_point) == 0):
+                return 0,False
+            return -(1-(1/(distance_merging_point))),False
         else:
-            return 1e5 * -0.04,False
+            return -1,False
 
 def calculateDistance(pointA,pointB):
     EARTH_RADIUS_KM = 6371.0

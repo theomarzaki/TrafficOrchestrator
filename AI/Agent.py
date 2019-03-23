@@ -25,19 +25,19 @@ class Agent():
 
     def calculateActionComputed(self,action_tensor,state,next):
         if torch.equal(action_tensor,self.accelerate_tensor):
-            print("accelerate")
+            # print("accelerate")
             return self.accelerate_move(state,next)
         elif torch.equal(action_tensor,self.deccelerate_tensor):
-            print("deccelerate")
+            # print("deccelerate")
             return self.deccelerate_move(state,next)
         elif torch.equal(action_tensor,self.left_tensor):
-            print("left")
+            # print("left")
             return self.left_move(state,next)
         elif torch.equal(action_tensor,self.right_tensor):
-            print("right")
+            # print("right")
             return self.right_move(state,next)
         elif torch.equal(action_tensor,self.doNothing_tensor):
-            print("nothing")
+            # print("nothing")
             return self.passive_move(state,next)
         else:
             logging.warning('inappropriate action')
@@ -48,8 +48,8 @@ class Agent():
         angle = (angle + 1) % 360
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
-        next[0] = new_x
-        next[1] = new_y
+        next[0] = min(new_x,1e10)
+        next[1] = min(new_y,1e10)
         next[19] = angle
         return next
 
@@ -59,8 +59,8 @@ class Agent():
         angle = (angle - 1) % 360
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
-        next[0] = new_x
-        next[1] = new_y
+        next[0] = min(new_x,1e10)
+        next[1] = min(new_y,1e10)
         next[19] = angle
         return next
 
@@ -71,8 +71,8 @@ class Agent():
         angle = state[19]
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
-        next[0] = new_x
-        next[1] = new_y
+        next[0] = min(new_x,1e10)
+        next[1] = min(new_y,1e10)
         next[4] = final_velocity
         next[5] = final_acceleration
         next[19] = angle
@@ -85,8 +85,8 @@ class Agent():
         angle = state[19]
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
-        next[0] = new_x
-        next[1] = new_y
+        next[0] = min(new_x,1e10)
+        next[1] = min(new_y,1e10)
         next[4] = final_velocity
         next[5] = final_acceleration
         next[19] = angle
@@ -97,7 +97,7 @@ class Agent():
         angle = state[19]
         new_x = state[0] + displacement * math.cos(math.radians(angle))
         new_y = state[1] + displacement * math.sin(math.radians(angle))
-        next[0] = new_x
-        next[1] = new_y
+        next[0] = min(new_x,1e10)
+        next[1] = min(new_y,1e10)
         next[19] = state[19]
         return next

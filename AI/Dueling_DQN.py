@@ -132,11 +132,6 @@ class Dueling_DQN(nn.Module):
 
                     rewards.append((reward,self.learn_step_counter))
 
-                    if terminal and reward == 10000:
-                        wins = wins + 1
-                    else:
-                        pass
-
                     # if replay memory is full, remove the oldest transition
                     if len(replay_memory) > model.replay_memory_size:
                         replay_memory.pop(0)
@@ -204,6 +199,7 @@ class Dueling_DQN(nn.Module):
                     optimizer.step()
 
                     if terminal == True:
+                        wins = wins + 1
                         break
                     else:
                         try:
