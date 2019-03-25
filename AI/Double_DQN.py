@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 #   Double Q-Learning implementation for the Traffic Orchestrator
 #
 #   This Script provides a way to approximate the best actions for the agent to undertake in order lane merge
@@ -30,7 +28,7 @@ parser.add_argument("-i", "--number-of-inputs", type=int, default=20)
 parser.add_argument("-m", "--replay-memory-size", type=int, default=128000)
 parser.add_argument("-d", "--epsilon-decay", type=int, default=100000)
 parser.add_argument("-b", "--minibatch-size", type=int, default=32)
-parser.add_argument("-z", "--hidden-layer-size", type=int, default=256)
+parser.add_argument("-z", "--hidden-layer-size", type=int, default=128)
 
 parser.add_argument("-l", "--learning-rate", type=float, default=0.0001)
 parser.add_argument("-g", "--gamma", type=float, default=0.9)
@@ -66,7 +64,7 @@ class DoubleQLearning(nn.Module):
         return out
 
 
-def train(model, target, features_train, agent, predictor):
+def train_double_qn(model, target, features_train, agent, predictor):
 
     current_time = time.time()
     replay_memory = []
@@ -181,13 +179,14 @@ def train(model, target, features_train, agent, predictor):
                     path = F"DQN_Saves/{model_save_name}"
                     torch.save(model_state, path)
 
-                if(state % 70 == 0):
+                if(state % 500 == 0):
                     print('Epoch: {}/{},Runs: {}/{}, Loss: {:.4f}, Average Reward: {:.2f}, Wins: {}'.format(epoch,
                                                                                                             args.num_epochs,
                                                                                                             index,
                                                                                                             features_train.shape[0],
                                                                                                             loss.item(),
-                                                                                                            sum(reward_batch)/args.minibatch_size,wins))
+                                                                                                            sum(reward_batch)/args.minibatch_size,
+                                                                                                            wins))
 
                 # do backward pass
                 loss.backward()
@@ -203,11 +202,6 @@ def train(model, target, features_train, agent, predictor):
                         print("no more states (time) for maneuvers")
                         break
 
-        bufftime = time.time()
-        delta_time = bufftime - current_time
-        print("+ {:.4f} Secs".format(delta_time))
-        print("Perf: {:.4f} Epoch/s\n".format(1 / delta_time))
-        current_time = bufftime
 
 
 def main():
@@ -226,7 +220,7 @@ def main():
     # state = torch.load('rl_classifier.tar', map_location='cpu')
     # model.load_state_dict(state['state_dict'])
 
-    train(model, target_network, features_train, agent, predictor)
+    train_double_qn(model, target_network, features_train, agent, predictor)
 
     traced_script_module = torch.jit.trace(model, torch.rand(args.number_of_inputs))
     traced_script_module.save("rl_model_double.pt")
