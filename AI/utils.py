@@ -22,7 +22,7 @@ def isCarTerminal(state):
         plus_c = state[8] - (slope * state[7])
         # print("Slope: {}, X_Pos: {}, Y_Pos: {}, plus_c: {}, PreceedingX: {}, PrecedingY: {}, followingX: {}, followingY: {}".format(slope,state[0],state[1],plus_c,state[13],state[14],state[8],state[7]))
         if(state[0] != float('inf') and state[0] != float('-inf') and state[1] != float('inf') and state[1] != float('-inf') and not math.isnan(state[0]) and not math.isnan(state[1])):
-            if(round(int(state[1])) in range(round(slope * int(state[0]) + plus_c) - 1, round(slope * int(state[0]) + plus_c) + 1)):
+            if(round(int(state[1])) in range(round(slope * int(state[0]) + plus_c) - 2, round(slope * int(state[0]) + plus_c) + 2)):
                 if(int(state[7]) > int(state[0]) and int(state[0]) > int(state[13]) and int(state[8]) < int(state[1]) and int(state[1]) < int(state[14])):
                     return True # C is on the line.
         else:
@@ -30,7 +30,7 @@ def isCarTerminal(state):
     except:
         plus_c = int(state[8])
         if(state[0] != float('inf') and state[0] != float('-inf') and state[1] != float('inf') and state[1] != float('-inf') and not math.isnan(state[0]) and not math.isnan(state[1])):
-            if ((round(state[1]) + 1 == round(plus_c) or round(state[1]) - 1 == round(plus_c))):
+            if ((round(state[1]) + 2 == round(plus_c) or round(state[1]) - 2 == round(plus_c))):
                  if(int(state[7]) > int(state[0]) and int(state[0]) > int(state[13]) and int(state[8]) < int(state[1]) and int(state[1]) < int(state[14])):
                      return True
 

@@ -39,32 +39,30 @@ from RandomForestClassifier import RandomForestPredictor
 import json
 
 
-def DetermineAccuracy(featuresTrain,model,agent,predictor):
+def DetermineAccuracy(featuresTest,model,agent,predictor):
     total = 0
     correct = 0
-    for index,game_run in enumerate(featuresTrain):
-        for current_epoch in range(game_run.shape[0]):
-            game_state = game_run
-            total = total + 1
-            for state in range(game_state.shape[0]):
-                current = game_state[state].data.cpu().numpy()
-                try:
-                    next = game_state[state + 1].data.cpu().numpy()
-                    output = model(torch.from_numpy(current))
-                    action_tensor = torch.zeros(5)
-                    action_tensor[torch.argmax(output)] = 1
-                    waypoint = agent.calculateActionComputed(action_tensor,current,next)
-                    reward,terminal = CalculateReward(waypoint,predictor)
+    for index,game_run in enumerate(featuresTest):
+        for current_epoch,state in enumerate(game_run):
+            current = state
+            next = (featuresTest[index])[current_epoch]
 
-                    if isCarTerminal(waypoint):
-                        print("reached goal")
-                        correct = correct + 1
-                        break
+            output = model(current)
+            action_tensor = torch.zeros(5)
+            action_tensor[torch.argmax(output)] = 1
+            waypoint = agent.calculateActionComputed(action_tensor,current,next)
+            reward,terminal = CalculateReward(waypoint.data.cpu().numpy(),predictor)
 
-                    game_state[state + 1] = torch.Tensor(waypoint)
-                except:
-                    pass
+            if isCarTerminal(waypoint):
+                correct = correct + 1
+                break
 
+            try:
+                game_run[current_epoch + 1] = torch.Tensor(waypoint)
+            except:
+                pass
+        total = total + 1
+        print("Right: {}, Total: {}".format(correct,total))
     return correct/total * 100
 
 def GenerateJsonFiles(featuresTrain,model,agent,predictor):
@@ -227,6 +225,7 @@ def main():
     data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
 
     featuresTrain = data_wrapper.get_training_data_tensor()
+    featuresTest = data_wrapper.get_testing_data_tensor()
 
     if args.scatter == True:
         to_plot = FullMergeLaneScenario(True,featuresTrain,model,agent)
@@ -235,7 +234,7 @@ def main():
     elif args.heatmap == True:
         print("coming soon ...")
     elif args.accuracy == True:
-        accuracy = DetermineAccuracy(featuresTrain,model,agent,predictor)
+        accuracy = DetermineAccuracy(featuresTest,model,agent,predictor)
         print(accuracy)
     elif args.gen_json == True:
         GenerateJsonFiles(featuresTrain,model,agent,predictor)

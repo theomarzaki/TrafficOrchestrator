@@ -323,8 +323,11 @@ int main() {
 	do {
 		auto captured_data = listenDataTCP(socket);
 		Document document = parse(captured_data);
-
 		message_type messageType = filterInput(document);
+		if(captured_data == "\n" || captured_data == string()){
+			messageType = message_type::heart_beat;
+		}
+
 		switch (messageType){
 			case message_type::notify_add:
 				handleNotifyAdd(document);
@@ -351,6 +354,7 @@ int main() {
 		    write_to_log("Reconnecting");
 				break;
 			default:
+				cout << "Captured Data leading to Error Message:" << captured_data  << "End "<< endl;
 				write_to_log("error: Couldn't handle message.");
 				break;
 		}
