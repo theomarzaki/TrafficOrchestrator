@@ -222,7 +222,7 @@ void handleNotifyAdd(Document &document) {
 }
 
 bool handleTrajectoryFeedback(Document &document) {
-	cout << "\n\n\n\n\n\n\n *********************************** Received Trajectory Feedback *********************************** \n\n\n\n\n\n\n";
+	cout << "\n*********************************** Received Trajectory Feedback *********************************** \n";
 	maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
 	write_to_log("Maneuver Feedback: " + maneuverFeed->getFeedback());
 	if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
@@ -277,8 +277,7 @@ void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
                       const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
   vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
   if(!recommendations.empty()) {
-					write_to_log("<<<<<<<<<<<<<<<<<< Predicting Vehicle States/RL TR >>>>>>>>>>>>>>>>>>>");
-					write_to_log("\n\n\n\n\n\n\n ***********************************  Sending  ***********************************");
+					write_to_log("\n ***********************************  Sending  *********************************** \n");
 					sendTrajectoryRecommendations(recommendations,socket);
 				} else {
 					write_to_log("No Trajectories Calculated.\n");
@@ -345,6 +344,12 @@ int main() {
           computeManeuvers(lstm_model, rl_model, socket);
 				}
         break;
+			case message_type::heart_beat:
+		    write_to_log("Recieved HeartBeat");
+				break;
+			case message_type::reconnect:
+		    write_to_log("Reconnecting");
+				break;
 			default:
 				write_to_log("error: Couldn't handle message.");
 				break;

@@ -12,11 +12,12 @@ import math
 import random
 import argparse
 import time
+import copy
 
 from Agent import Agent
 from RandomForestClassifier import RandomForestPredictor
 from csv_data import Data
-from utils import CalculateReward,isCarTerminal
+from utils import CalculateReward
 
 
 parser = argparse.ArgumentParser(description="TO RL : Double Q-Learning trainer")
@@ -25,7 +26,7 @@ parser.add_argument("-e", "--num-epochs", type=int, default=25, help="number of 
 parser.add_argument("-o", "--learn-step-counter", type=int, default=0)
 parser.add_argument("-n", "--number-of-actions", type=int, default=5)
 parser.add_argument("-i", "--number-of-inputs", type=int, default=20)
-parser.add_argument("-m", "--replay-memory-size", type=int, default=128000)
+parser.add_argument("-m", "--replay-memory-size", type=int, default=100000)
 parser.add_argument("-d", "--epsilon-decay", type=int, default=100000)
 parser.add_argument("-b", "--minibatch-size", type=int, default=32)
 parser.add_argument("-z", "--hidden-layer-size", type=int, default=128)
@@ -40,11 +41,11 @@ args = parser.parse_args()
 
 dev_type = 'cpu'
 
-if torch.cuda.is_available():
-    dev_type = 'cuda'
-    print("NVIDIA GPU detected and use !")
-else:
-    print("/!\ No NVIDIA GPU detected, we stick to the CPU !")
+# if torch.cuda.is_available():
+#     dev_type = 'cuda'
+#     print("NVIDIA GPU detected and use !")
+# else:
+#     print("/!\ No NVIDIA GPU detected, we stick to the CPU !")
 
 device = torch.device(dev_type)
 
@@ -64,7 +65,7 @@ class DoubleQLearning(nn.Module):
         return out
 
 
-def train_double_qn(model, target, features_train, agent, predictor):
+def train_double_qn(model, local, features_train, agent, predictor):
 
     current_time = time.time()
     replay_memory = []
@@ -73,6 +74,8 @@ def train_double_qn(model, target, features_train, agent, predictor):
     epsilon = args.initial_epsilon
     counter = 0
     wins = 0
+
+    target = copy.deepcopy(local)
 
     print("Go !")
 
@@ -91,7 +94,7 @@ def train_double_qn(model, target, features_train, agent, predictor):
                     pass
 
                 if args.learn_step_counter % 100 == 0:
-                    target.load_state_dict(model.state_dict())
+                    local.load_state_dict(model.state_dict())
                 args.learn_step_counter += 1
 
                 output = model(torch.from_numpy(current).to(device)).to(device)
@@ -141,7 +144,7 @@ def train_double_qn(model, target, features_train, agent, predictor):
                     next_state_batch_output[idx] = model(next_state_batch[idx]).to(device)[0]
 
 
-                # No use of Target Network
+                # No use of local Network
                 # # set y_j to r_j for terminal state, otherwise to r_j +args.gamma*max(Q)
                 # y_batch = tuple(reward_batch[i] if terminal_state_batch[i]
                 #                     else reward_batch[i] + model.gamma * torch.max(next_state_batch_output[i])
@@ -150,18 +153,18 @@ def train_double_qn(model, target, features_train, agent, predictor):
                 # # extract Q-value
                 # q_value = torch.sum(model(current_batch) * action_batch, dim=1)
 
-                # Use of Target Network
+                # Use of local Network
                 q_eval = torch.sum(model(current_batch).to(device) * action_batch, dim=1)  # shape (batch, 1)
-                q_next = target(next_state_batch).to(device).detach()     # detach from graph, don't backpropagate
-                q_target = reward_batch + 0.9 * q_next.max(1)[0]   # shape (batch, 1)
-                loss = criterion(q_eval, q_target)
+                q_next = local(next_state_batch).to(device).detach()     # detach from graph, don't backpropagate
+                q_local = reward_batch + args.gamma * q_next.max(1)[0]   # shape (batch, 1)  r + y MAX(t+1)
+                loss = criterion(q_eval, q_local)
 
 
 
                 # PyTorch accumulates gradients by default, so they need to be reset in each pass
                 optimizer.zero_grad()
 
-                # No use of Target Network
+                # No use of local Network
                 # returns a new Tensor, detached from the current graph, the result will never require gradient
                 # y_batch = torch.Tensor(y_batch).detach()
 
@@ -175,8 +178,8 @@ def train_double_qn(model, target, features_train, agent, predictor):
                         'optimizer': optimizer.state_dict(),
                         'loss': loss,
                     }
-                    model_save_name = F"DQN{counter}.tar"
-                    path = F"DQN_Saves/{model_save_name}"
+                    model_save_name = "DQN"+str(counter)+".tar"
+                    path = "DQN_Saves/"+model_save_name
                     torch.save(model_state, path)
 
                 if(state % 500 == 0):
@@ -199,7 +202,10 @@ def train_double_qn(model, target, features_train, agent, predictor):
                     try:
                         game_state[state + 1] = torch.Tensor(next_state)
                     except:
-                        print("no more states (time) for maneuvers")
+                        bufftime = time.time()
+                        delta_time = bufftime - current_time
+                        print("+ {} Secs\nPerf: {} Step/s\n".format(delta_time,1/delta_time))
+                        current_time = bufftime
                         break
 
 
@@ -215,12 +221,12 @@ def main():
     predictor = RandomForestPredictor(data_wrapper.get_RFC_dataset())
 
     model = DoubleQLearning(args.number_of_inputs, args.hidden_layer_size, args.number_of_actions).to(device)
-    target_network = DoubleQLearning(args.number_of_inputs, args.hidden_layer_size, args.number_of_actions).to(device)
+    local_network = DoubleQLearning(args.number_of_inputs, args.hidden_layer_size, args.number_of_actions).to(device)
 
     # state = torch.load('rl_classifier.tar', map_location='cpu')
     # model.load_state_dict(state['state_dict'])
 
-    train_double_qn(model, target_network, features_train, agent, predictor)
+    train_double_qn(model, local_network, features_train, agent, predictor)
 
     traced_script_module = torch.jit.trace(model, torch.rand(args.number_of_inputs))
     traced_script_module.save("rl_model_double.pt")

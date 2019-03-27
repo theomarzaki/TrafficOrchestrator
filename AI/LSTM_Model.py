@@ -164,7 +164,7 @@ def test(model):
                     correct += 1
 
             # correct += (predicted.long() == labels.long()).sum().item()
-            
+
         print('Test Accuracy of the model of the model: {} %'.format(100 * correct / total))
 
 def main():
