@@ -52,9 +52,10 @@ def CalculateReward(state,predictor):
             plus_c = state[8] - (slope * state[7])
             y_val = round(slope * int(state[0]) + plus_c)
             distance_merging_point = calculateDistance((state[0],state[1]), (state[0],y_val))
-            if (round(distance_merging_point) == 0):
-                return 0,False
-            return -(1-(1/(distance_merging_point))),False
+            if (round(distance_merging_point) <= 1):
+                return 0.9,False
+            return (1/(distance_merging_point)),False
+            # return -0.04,False
         else:
             return -1,False
 

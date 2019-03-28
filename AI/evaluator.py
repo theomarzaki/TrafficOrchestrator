@@ -202,6 +202,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--scatter","--s",help="display vehicle trajectory of the merging car in a scatter plot",action='store_true')
     parser.add_argument("--heatmap","--h",help="display vehicle trajectory of the merging car in a heat map",action='store_true')
+    parser.add_argument("--double_dqn","--double",help="double dqn for car merging ",action='store_true')
     parser.add_argument("--lstm","--lm",help="test the accuracy of the lstm model",action='store_true')
     parser.add_argument("--dueling_dqn","--ddqn",help="test the accuracy of the dueling DQN model",action='store_true')
     parser.add_argument("--accuracy", "--acc", help ="Determing accuracy of the algorithm",action='store_true')
@@ -215,6 +216,8 @@ def main():
         model = torch.jit.load('rl_model_deuling.pt')
     elif args.lstm:
         lstm_model = torch.jit.load('../include/lstm_model.pt')
+    elif args.double_dqn:
+        model = torch.jit.load('rl_model_double.pt')
     else:
         model = torch.jit.load('rl_model.pt')
 
