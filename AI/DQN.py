@@ -115,7 +115,7 @@ class DeepQLearning(nn.Module):
 
                     reward,terminal = CalculateReward(next_state,predictor)
 
-                    rewards.append((reward,self.learn_step_counter))
+                    rewards.append(reward)
 
                     # if replay memory is full, remove the oldest transition
                     if len(replay_memory) > model.replay_memory_size:
@@ -208,23 +208,24 @@ def main():
 
     predictor = RandomForestPredictor(data_wrapper.get_RFC_dataset())
 
-    #TRAIN RL
+
     model = DeepQLearning().to(device)
     target_network = DeepQLearning().to(device)
 
-    loss_over_time,rewards_over_time = model.train(model,target_network,featuresTrain,agent,predictor)
+    #TRAIN RL
+    # loss_over_time,rewards_over_time = model.train(model,target_network,featuresTrain,agent,predictor)
+    #
+    # plt.plot(loss_over_time)
+    # plt.show()
+    #
+    # plt.plot(rewards_over_time)
+    # plt.show()
+    #
+    # np.savetxt('loss.out',loss_over_time)
+    # np.savetxt('rewards.out',rewards_over_time,delimiter=',')
 
-    plt.plot(loss_over_time)
-    plt.show()
-
-    plt.plot(rewards_over_time)
-    plt.show()
-
-    np.savetxt('loss.out',loss_over_time)
-    np.savetxt('rewards.out',rewards_over_time,delimiter=',')
-
-    # state = torch.load('rl_classifier.tar',map_location='cpu')
-    # model.load_state_dict(state['state_dict'])
+    state = torch.load('DQN2.tar',map_location='cpu')
+    model.load_state_dict(state['state_dict'])
 
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))

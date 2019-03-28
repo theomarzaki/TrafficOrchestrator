@@ -36,6 +36,8 @@ cmake-build-*/
 
 logs/
 
+.DS_Store
+
 AI/DQN_Saves/
 
 *.mp4
