@@ -95,11 +95,6 @@ class RNN(nn.Module):
         return (torch.zeros(num_layers, batch_size, hidden_size),
             torch.zeros(num_layers, batch_size, hidden_size))
 
-    def init_hidden(self):
-    # This is what we'll initialise our hidden state as
-        return (torch.zeros(self.num_layers, self.batch_size, self.hidden_size),
-            torch.zeros(self.num_layers, self.batch_size, self.hidden_size))
-
     def forward(self, x):
         # Set initial hidden and cell states
         h0 = torch.zeros(num_layers, x.size(0), hidden_size).to(device)
