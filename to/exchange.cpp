@@ -24,6 +24,8 @@
 #include <string>
 #include <sstream>
 #include <thread>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
@@ -160,10 +162,8 @@ void generateUuidTo() {
 }
 
 int generateReqID(){
-	uuidTo = to_string(10000000 + ( std::rand() % ( 99999999 - 10000000 + 1 )));
-	stringstream geek(uuidTo);
-	int x = 0;
-	geek >> x;
+	srand(time(NULL));
+	int x = std::rand();
 	return x;
 }
 
@@ -178,13 +178,15 @@ void sendTrajectoryRecommendations(vector<ManeuverRecommendation*> v,int socket)
 int initiateSubscription(string sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter,int radius,uint32_t longitude, uint32_t latitude) {
 	milliseconds timeSub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	SubscriptionRequest * subscriptionReq = new SubscriptionRequest();
+	int request_id = generateReqID();
+	subscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 	subscriptionReq->setFilter(filter);
 	subscriptionReq->setRadius(radius);
 	subscriptionReq->setLongitude(longitude);
 	subscriptionReq->setLatitude(latitude);
 	subscriptionReq->setShape("circle");
 	subscriptionReq->setSignature("TEMPLATE");
-	subscriptionReq->setRequestId(generateReqID());
+	subscriptionReq->setRequestId(request_id);
 	subscriptionReq->setTimestamp(timeSub.count());
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
 	auto socket = sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createSubscriptionRequestJSON(subscriptionReq));
@@ -323,8 +325,11 @@ int main() {
 	do {
 		auto captured_data = listenDataTCP(socket);
 		Document document = parse(captured_data);
-
 		message_type messageType = filterInput(document);
+		if(captured_data == "\n" || captured_data == string()){
+			messageType = message_type::heart_beat;
+		}
+
 		switch (messageType){
 			case message_type::notify_add:
 				handleNotifyAdd(document);
@@ -351,6 +356,7 @@ int main() {
 		    write_to_log("Reconnecting");
 				break;
 			default:
+				cout << "Captured Data leading to Error Message:" << captured_data  << "End "<< endl;
 				write_to_log("error: Couldn't handle message.");
 				break;
 		}

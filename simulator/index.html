@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head
+<title></title>
+<link rel="stylesheet" href="stylesheets/style.css">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+</head>
+<body>
+  <h1>Road User description visualizer </h1>
+  <div class="row"><p>Select a file and click on the play button to visualize how the cars are moving on the map. <br>Road user descriptions are read in order of appearance and not respecting their timestamp.</p></div>
+  <div class="row">
+    <div class="col-md-3 form-group">
+      <select id="fileName" class="form-control">
+        <option value="Injector_data.json">Injector_data.json</option>
+        <option value="US101_data.json">US101_data.json</option>
+        <option value="montlhery_data.json">montlhery_data.json</option>
+      </select>
+    </div>
+    <div class="col-md-3 form-group">
+      <button onclick="onStart();" class="btn btn-primary">Start</button>
+    </div></div><div class="row">
+      <div id="mapdiv" class="col-md-8 col-sm-12"></div>
+      <div id="info" class="col-md-4">
+        <h2>info</h2>
+      </div>
+    </div>
+    <div>Icons made by <a href="https://www.flaticon.com/authors/roundicons" title="Roundicons">Roundicons</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
+    <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+    <script src="utils.js"></script>
+    <script src="map.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+</body>
+</html>

@@ -38,6 +38,33 @@ from utils import isCarTerminal, CalculateReward
 from RandomForestClassifier import RandomForestPredictor
 import json
 
+
+def DetermineAccuracy(featuresTest,model,agent,predictor):
+    total = 0
+    correct = 0
+    for index,game_run in enumerate(featuresTest):
+        for current_epoch,state in enumerate(game_run):
+            current = state
+            next = (featuresTest[index])[current_epoch]
+
+            output = model(current)
+            action_tensor = torch.zeros(5)
+            action_tensor[torch.argmax(output)] = 1
+            waypoint = agent.calculateActionComputed(action_tensor,current,next)
+            reward,terminal = CalculateReward(waypoint.data.cpu().numpy(),predictor)
+
+            if isCarTerminal(waypoint):
+                correct = correct + 1
+                break
+
+            try:
+                game_run[current_epoch + 1] = torch.Tensor(waypoint)
+            except:
+                pass
+        total = total + 1
+        print("Right: {}, Total: {}".format(correct,total))
+    return correct/total * 100
+
 def GenerateJsonFiles(featuresTrain,model,agent,predictor):
     data = {}
     data['Waypoint'] = []
@@ -175,8 +202,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--scatter","--s",help="display vehicle trajectory of the merging car in a scatter plot",action='store_true')
     parser.add_argument("--heatmap","--h",help="display vehicle trajectory of the merging car in a heat map",action='store_true')
+    parser.add_argument("--double_dqn","--double",help="double dqn for car merging ",action='store_true')
     parser.add_argument("--lstm","--lm",help="test the accuracy of the lstm model",action='store_true')
     parser.add_argument("--dueling_dqn","--ddqn",help="test the accuracy of the dueling DQN model",action='store_true')
+    parser.add_argument("--accuracy", "--acc", help ="Determing accuracy of the algorithm",action='store_true')
     parser.add_argument("--actions","--a",help="show the movement of the agent with plain actions, requires array of actions",action='store_true')
     parser.add_argument("--gen_json","--json",help="generate json to be shown on map using simulator",action='store_true')
     args = parser.parse_args()
@@ -187,6 +216,8 @@ def main():
         model = torch.jit.load('rl_model_deuling.pt')
     elif args.lstm:
         lstm_model = torch.jit.load('../include/lstm_model.pt')
+    elif args.double_dqn:
+        model = torch.jit.load('rl_model_double.pt')
     else:
         model = torch.jit.load('rl_model.pt')
 
@@ -196,17 +227,8 @@ def main():
     data.heading = (data.heading + 180) % 360
     data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
 
-    featuresTrain = torch.zeros(math.ceil(data.shape[0]/70),70,20)
-
-    batch = torch.zeros(70,20)
-    counter = 0
-    for idx in range(data.shape[0]):
-        if idx % 70 != 0 or idx == 0:
-            batch[idx % 70]= torch.Tensor(data.values[idx])
-        else:
-            featuresTrain[counter] = batch
-            counter = counter + 1
-            batch = torch.zeros(70,20)
+    featuresTrain = data_wrapper.get_training_data_tensor()
+    featuresTest = data_wrapper.get_testing_data_tensor()
 
     if args.scatter == True:
         to_plot = FullMergeLaneScenario(True,featuresTrain,model,agent)
@@ -214,6 +236,9 @@ def main():
         plt.show()
     elif args.heatmap == True:
         print("coming soon ...")
+    elif args.accuracy == True:
+        accuracy = DetermineAccuracy(featuresTest,model,agent,predictor)
+        print(accuracy)
     elif args.gen_json == True:
         GenerateJsonFiles(featuresTrain,model,agent,predictor)
     elif args.lstm == True:
