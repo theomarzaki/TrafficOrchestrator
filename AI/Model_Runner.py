@@ -2,11 +2,13 @@ import torch
 import torch.nn as nn
 import argparse
 import numpy as np
+import matplotlib.pyplot as plt
 
 from Agent import Agent
 from csv_data import Data
 from RL_Model import DQN,Dueling_DQN,DoubleQLearning
 from trainer import train_model
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -39,9 +41,20 @@ def load_checkpoint(model):
     traced_script_module.save("rl_model_deuling.pt")
 
 def main():
-    train(Dueling_DQN().to(device),Dueling_DQN().to(device),"Dueling_DQN")
-    # train(DQN().to(device),DQN().to(device),"DQN")
-    # train(DoubleQLearning().to(device),DoubleQLearning().to(device),"Double_DQN")
+    parser = argparse.ArgumentParser(description="TO RL : Double Q-Learning trainer")
+
+    parser.add_argument("--dqn", action='store_true')
+    parser.add_argument("--dueling", action='store_true')
+    parser.add_argument("--double", action='store_true')
+
+    args = parser.parse_args()
+
+    if args.dqn:
+        train(DQN().to(device),DQN().to(device),"DQN")
+    elif args.dueling:
+        train(Dueling_DQN().to(device),Dueling_DQN().to(device),"Dueling_DQN")
+    else:
+        train(DoubleQLearning().to(device),DoubleQLearning().to(device),"Double_DQN")
 
 if __name__== "__main__":
     main()

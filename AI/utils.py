@@ -37,24 +37,23 @@ def isCarTerminal(state):
     return False
 
 
-def CalculateReward(state):
-    if isCarTerminal(state) == True:
-        return 1,False
-    else:
-        y_diff = state[14] - state[8]
-        x_diff = state[13] - state[7]
+def CalculateReward(state,current_epoch):
+    # if isCarTerminal(state) == True:
+    #     return 1 * 1/(current_epoch + 2),True
+    # else:
+    y_diff = state[14] - state[8]
+    x_diff = state[13] - state[7]
 
-        if(round(x_diff,2) != 0 and round(y_diff,2) != 0 and (state[0] != float('inf') and state[0] != float('-inf')) and (state[1] != float('inf') and state[1] != float('-inf')) and not math.isnan(state[0]) and not math.isnan(state[1])):
-            slope = round((state[14] - state[8])/(state[13] - state[7]),2)
-            plus_c = state[8] - (slope * state[7])
-            y_val = round(slope * int(state[0]) + plus_c)
-            distance_merging_point = calculateDistance((state[0],state[1]), (state[0],y_val))
-            if (round(distance_merging_point) <= 1):
-                return 0.8,False
-            return (1/(distance_merging_point)),False
-            # return -0.04,False
-        else:
-            return -1,True
+    if(round(x_diff,2) != 0 and round(y_diff,2) != 0 and (state[0] != float('inf') and state[0] != float('-inf')) and (state[1] != float('inf') and state[1] != float('-inf')) and not math.isnan(state[0]) and not math.isnan(state[1])):
+        slope = round((state[14] - state[8])/(state[13] - state[7]),2)
+        plus_c = state[8] - (slope * state[7])
+        y_val = round(slope * int(state[0]) + plus_c)
+        distance_merging_point = calculateDistance((state[0],state[1]), (state[0],y_val))
+        if (round(distance_merging_point) <= 1):
+            return 100000 * 1/(current_epoch+1),True
+        return 1/(current_epoch + 1) * (distance_merging_point),False
+    else:
+        return 0,True
 
 def calculateDistance(pointA,pointB):
     EARTH_RADIUS_KM = 6371.0
