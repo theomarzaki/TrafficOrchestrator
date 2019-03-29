@@ -74,7 +74,7 @@ def train_model(model_network,target_network,train_data,agent):
 
 
     optimizer = torch.optim.Adam(model_network.parameters())
-    criterion = nn.MSELoss()
+    criterion = nn.SmoothL1Loss()
     epsilon = INITIAL_EPSILON
 
     for epoch in range(NUMBER_OF_EPOCHS):
@@ -90,7 +90,7 @@ def train_model(model_network,target_network,train_data,agent):
                 else:
                     break
 
-                if learn_step_counter % 70 == 0:
+                if learn_step_counter % 100 == 0:
                     target_network.load_state_dict(model_network.state_dict())
                 learn_step_counter += 1
 
@@ -99,11 +99,15 @@ def train_model(model_network,target_network,train_data,agent):
 
                 action = torch.zeros([NUMBER_OF_ACTIONS], dtype=torch.float32)
                 random_action = random.random() < epsilon
-                action_index = [torch.randint(NUMBER_OF_ACTIONS, torch.Size([]), dtype=torch.int)
-                                if random_action
-                                else torch.argmax(output)][0]
+                # action_index = [torch.randint(NUMBER_OF_ACTIONS, torch.Size([]), dtype=torch.int)
+                #                 if random_action
+                #                 else torch.argmax(output)][0]
 
-                action[action_index] = 1
+                if random_action:
+                    action[random.randrange(0,5)] = 1
+                else:
+                    action[torch.argmax(output).item()] = 1
+
 
                 # get next state and reward
 

@@ -33,12 +33,12 @@ def train(model,target_model,type):
     traced_script_module = torch.jit.trace(model, torch.rand(20))
     traced_script_module.save("rl_model_deuling.pt")
 
-def load_checkpoint(model):
-    state = torch.load('DQN_Saves/DQN2.tar',map_location='cpu')
+def load_checkpoint(model,model_name,save_number):
+    state = torch.load(F'DQN{save_number}.tar',map_location='cpu')
     model.load_state_dict(state['state_dict'])
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
-    traced_script_module.save("rl_model_deuling.pt")
+    traced_script_module.save(F"rl_model_{model_name}.pt")
 
 def main():
     parser = argparse.ArgumentParser(description="TO RL : Double Q-Learning trainer")
@@ -46,15 +46,25 @@ def main():
     parser.add_argument("--dqn", action='store_true')
     parser.add_argument("--dueling", action='store_true')
     parser.add_argument("--double", action='store_true')
+    parser.add_argument("--load","--l", action='store_true')
+    parser.add_argument("--checkpoint_number","--cn",type=int,default=3,help="checkpiont number to load")
 
     args = parser.parse_args()
 
     if args.dqn:
-        train(DQN().to(device),DQN().to(device),"DQN")
+        model_network = target_network = DQN()
+        model_name = "DQN"
     elif args.dueling:
-        train(Dueling_DQN().to(device),Dueling_DQN().to(device),"Dueling_DQN")
+        model_network = target_network = Dueling_DQN()
+        model_name = "Dueling"
     else:
-        train(DoubleQLearning().to(device),DoubleQLearning().to(device),"Double_DQN")
+        model_network = target_network = DoubleQLearning()
+        model_name = "Double"
+
+    if args.load:
+        load_checkpoint(model_network,model_name,args.checkpoint_number)
+    else:
+        train(model_network.to(device),target_network.to(device),model_name)
 
 if __name__== "__main__":
     main()
