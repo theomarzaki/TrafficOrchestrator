@@ -52,7 +52,7 @@ def CalculateReward(state,current_epoch):
         print(distance_merging_point)
         if (round(distance_merging_point) <= 1):
             return 100000 * 1/(current_epoch+1),True
-        return -((distance_merging_point)) * max(0.01,1/(state[4])),False
+        return (-((distance_merging_point)) * max(0.01,1/(state[4]))) if state[4] != 0 else (-((distance_merging_point)) * 0.01),False
     else:
         return -100000,True
 
