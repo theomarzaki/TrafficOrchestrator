@@ -116,6 +116,7 @@ def train_model(model_network,target_network,train_data,agent):
                 reward,terminal = CalculateReward(next_state.data.cpu().numpy(),current_epoch)
 
                 rewards.append((learn_step_counter,reward))
+                print(reward)
                 if terminal and reward > 1:
                     wins = wins + 1
 

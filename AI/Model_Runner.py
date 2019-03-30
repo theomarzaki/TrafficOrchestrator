@@ -31,10 +31,10 @@ def train(model,target_model,type):
     np.savetxt(F'{type}_rewards.csv',rewards_over_time,delimiter=',')
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))
-    traced_script_module.save("rl_model_deuling.pt")
+    traced_script_module.save(F"rl_model_{type}.pt")
 
 def load_checkpoint(model,model_name,save_number):
-    state = torch.load(F'DQN{save_number}.tar',map_location='cpu')
+    state = torch.load(F'DQN_Saves/DQN{save_number}.tar',map_location='cpu')
     model.load_state_dict(state['state_dict'])
 
     traced_script_module = torch.jit.trace(model, torch.rand(20))

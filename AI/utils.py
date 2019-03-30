@@ -48,13 +48,13 @@ def CalculateReward(state,current_epoch):
         slope = round((state[14] - state[8])/(state[13] - state[7]),2)
         plus_c = state[8] - (slope * state[7])
         y_val = round(slope * int(state[0]) + plus_c)
-        distance_merging_point = distance.chebyshev((state[0],state[1]), (state[0],y_val))
+        distance_merging_point = distance.sqeuclidean((state[0],state[1]), (state[0],y_val))
         print(distance_merging_point)
         if (round(distance_merging_point) <= 1):
             return 100000 * 1/(current_epoch+1),True
-        return -(1/(current_epoch + 1) * (distance_merging_point)),False
+        return -((distance_merging_point)) * max(0.01,1/(state[4])),False
     else:
-        return -100,True
+        return -100000,True
 
 def calculateDistance(pointA,pointB):
     EARTH_RADIUS_KM = 6371.0
