@@ -290,16 +290,16 @@ void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
 
 int main() {
 
-	FILE* file = fopen("../include/TO_config.json", "r");
+	FILE* file = fopen("include/TO_config.json", "r");
 	if(file == 0) {
     std::cout << "Config File failed to load." << std::endl;
 	}
 
-	std::shared_ptr<torch::jit::script::Module> lstm_model = torch::jit::load("../include/lstm_model.pt");
+	std::shared_ptr<torch::jit::script::Module> lstm_model = torch::jit::load("include/lstm_model.pt");
 
   if(lstm_model != nullptr) write_to_log("import of lstm model successful\n");
 
-	std::shared_ptr<torch::jit::script::Module> rl_model = torch::jit::load("../include/rl_model_deuling.pt");
+	std::shared_ptr<torch::jit::script::Module> rl_model = torch::jit::load("include/rl_model_deuling.pt");
 
   if(rl_model != nullptr) write_to_log("import of rl model successful\n");
 
