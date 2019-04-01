@@ -1,11 +1,10 @@
 #!/bin/bash
 
+set -eux
+
+mkdir -p build
+rm -rf build/*
 cd build
-
-rm -rf *
-
 cmake ..
-
 make
-
 ./exchange
