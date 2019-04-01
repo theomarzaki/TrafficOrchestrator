@@ -60,15 +60,15 @@ def DetermineAccuracy(featuresTest,model,agent):
                         correct = correct + 1
                         break
 
-                    if state < 89:
+                    if state < 69:
                         game_run[current_epoch + 1] = torch.Tensor(waypoint)
                     else:
                         break
                 except:
                     pass
 
-            total = total + 1
-            print("Right: {}, Total: {}".format(correct,total))
+        total = total + 1
+        print("Right: {}, Total: {}".format(correct,total))
     return correct/total * 100
 
 def GenerateJsonFiles(featuresTrain,model,agent,predictor):
@@ -112,16 +112,15 @@ def GenerateJsonFiles(featuresTrain,model,agent,predictor):
 
 def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
     to_plot = []
-    counter = 0
+    # featuresTrain = featuresTrain.data.numpy()[::-1]
+    featuresTrain = featuresTrain.data.numpy()
     for index,game_run in enumerate(featuresTrain):
         for current_epoch in range(game_run.shape[0]):
             game_state = game_run
-            if counter > 3: break
-            counter = counter + 1
             for state in range(game_state.shape[0]):
-                current = game_state[state].data.cpu().numpy()
+                current = game_state[state]
                 try:
-                    next = game_state[state + 1].data.cpu().numpy()
+                    next = game_state[state + 1]
                     output = model(torch.from_numpy(current))
                     action_tensor = torch.zeros(5)
                     action_tensor[torch.argmax(output).item()] = 1
@@ -149,6 +148,8 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
                     game_state[state + 1] = torch.Tensor(waypoint)
                 except:
                     pass
+            break
+        break
     return to_plot
 
 def ActionedMergeLaneScenario(actions,featuresTrain,agent):
@@ -209,7 +210,7 @@ def main():
     parser.add_argument("--heatmap","--h",help="display vehicle trajectory of the merging car in a heat map",action='store_true')
     parser.add_argument("--double_dqn","--double",help="double dqn for car merging ",action='store_true')
     parser.add_argument("--lstm","--lm",help="test the accuracy of the lstm model",action='store_true')
-    parser.add_argument("--dueling_dqn","--ddqn",help="test the accuracy of the dueling DQN model",action='store_true')
+    parser.add_argument("--dueling_dqn","--dueling",help="test the accuracy of the dueling DQN model",action='store_true')
     parser.add_argument("--accuracy", "--acc", help ="Determing accuracy of the algorithm",action='store_true')
     parser.add_argument("--actions","--a",help="show the movement of the agent with plain actions, requires array of actions",action='store_true')
     parser.add_argument("--gen_json","--json",help="generate json to be shown on map using simulator",action='store_true')
@@ -254,7 +255,7 @@ def main():
         elif args.heatmap == True:
             print("coming soon ...")
         elif args.accuracy == True:
-            accuracy = DetermineAccuracy(featuresTrain,model,agent)
+            accuracy = DetermineAccuracy(featuresTest,model,agent)
             print(accuracy)
         elif args.gen_json == True:
             GenerateJsonFiles(featuresTrain,model,agent,predictor)

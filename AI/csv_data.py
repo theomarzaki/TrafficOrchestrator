@@ -25,13 +25,13 @@ class Data():
         return pd.read_csv("csv/lineMergeDataWithHeading.csv")
 
     def get_training_data_tensor(self):
-        featuresTrain = torch.zeros(round(self.train_data.shape[0]/90),90,20)
+        featuresTrain = torch.zeros(round(self.train_data.shape[0]/70),70,20)
 
-        batch = torch.zeros(90,20)
+        batch = torch.zeros(70,20)
         counter = 0
         index = 0
         for idx in range(self.train_data.shape[0]):
-            if idx % 90 != 0 or idx == 0:
+            if idx % 70 != 0 or idx == 0:
                 batch[index] = torch.Tensor(self.train_data.values[idx])
                 index = index + 1
             else:
@@ -39,19 +39,19 @@ class Data():
                     featuresTrain[counter] = batch
                     counter = counter + 1
                     index = 0
-                    batch = torch.zeros(90,20)
+                    batch = torch.zeros(70,20)
                 except:
                     pass
         return featuresTrain
 
     def get_testing_data_tensor(self):
-        self.featuresTest = torch.zeros(round(self.test_data.shape[0]/90),90,20)
+        self.featuresTest = torch.zeros(round(self.test_data.shape[0]/70),70,20)
 
-        batch = torch.zeros(90,20)
+        batch = torch.zeros(70,20)
         counter = 0
         index = 0
         for idx in range(self.test_data.shape[0]):
-            if idx % 90 != 0 or idx == 0:
+            if idx % 70 != 0 or idx == 0:
                 batch[index] = torch.Tensor(self.test_data.values[idx])
                 index = index + 1
             else:
@@ -59,7 +59,7 @@ class Data():
                     self.featuresTest[counter] = batch
                     counter = counter + 1
                     index = 0
-                    batch = torch.zeros(90,20)
+                    batch = torch.zeros(70,20)
                 except:
                     pass
         return self.featuresTest

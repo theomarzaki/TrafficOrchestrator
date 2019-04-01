@@ -18,12 +18,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 NUMBER_OF_ACTIONS = 5
 NUMBER_OF_INPUTS = 20
 FINAL_EPSILON = 0.01
-EPSILON_DECAY = 100000
+EPSILON_DECAY = 500000
 INITIAL_EPSILON = 1.0
 REPLAY_MEMORY_SIZE = 1000000
-NUMBER_OF_EPOCHS = 5
+NUMBER_OF_EPOCHS = 50
 MINIBATCH_SIZE = 32
-GAMMA = 0.7
+GAMMA = 0.9
 LEARNING_RATE = 1e-3
 
 def save_model_checkpoint(epoch,model_network,optimizer,loss):
