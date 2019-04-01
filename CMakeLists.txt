@@ -18,7 +18,7 @@ find_package(Torch REQUIRED)
 
 add_executable(exchange to/exchange.cpp)
 
-target_link_libraries(exchange "${TORCH_LIBRARIES}")
+target_link_libraries(exchange "${TORCH_LIBRARIES}" stdc++fs)
 
 target_include_directories(exchange PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

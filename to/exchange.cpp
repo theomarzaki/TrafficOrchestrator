@@ -15,24 +15,15 @@
 #include "subscription_response.cpp"
 #include "CreateTrajectory.cpp"
 #include "unsubscription_response.cpp"
-#include <iostream>
-#include <vector>
-#include <random>
-#include <chrono>
-#include "rapidjson/document.h"
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <thread>
-#include <cstdlib>
-#include <ctime>
+#include <experimental/filesystem>
 
 using namespace std;
 
 using namespace rapidjson;
 
 using namespace std::chrono;
-using std::cout;
+
+using namespace experimental;
 
 Database * database;
 SubscriptionResponse * subscriptionResp;
@@ -289,88 +280,94 @@ void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
 }
 
 int main() {
+    auto returnCode{0};
 
-	FILE* file = fopen("include/TO_config.json", "r");
-	if(file == 0) {
-    std::cout << "Config File failed to load." << std::endl;
-	}
+    FILE *file = fopen("include/TO_config.json", "r");
+    if (file == 0) {
+        std::cout << "Config File failed to load." << std::endl;
+        returnCode = 1;
+    } else if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
+        std::cout << "Unable to create the logs directory, we stop" << std::endl;
+        returnCode = 2;
+    } else {
+        std::shared_ptr<torch::jit::script::Module> lstm_model = torch::jit::load("include/lstm_model.pt");
 
-	std::shared_ptr<torch::jit::script::Module> lstm_model = torch::jit::load("include/lstm_model.pt");
+        if (lstm_model != nullptr) write_to_log("import of lstm model successful\n");
 
-  if(lstm_model != nullptr) write_to_log("import of lstm model successful\n");
+        std::shared_ptr<torch::jit::script::Module> rl_model = torch::jit::load("include/rl_model_deuling.pt");
 
-	std::shared_ptr<torch::jit::script::Module> rl_model = torch::jit::load("include/rl_model_deuling.pt");
-
-  if(rl_model != nullptr) write_to_log("import of rl model successful\n");
-
-
-	char readBuffer[65536];
-	FileReadStream is(file, readBuffer, sizeof(readBuffer));
-	Document document;
-	document.ParseStream(is);
-	fclose(file);
-
-	inputSendAddress(document["sendAddress"].GetString());
-	inputSendPort(document["sendPort"].GetInt());
-	inputDistanceRadius(document["distanceRadius"].GetInt());
-	inputMergeLocation(document["longitude"].GetUint(),document["latitude"].GetUint());
-	inputReceivePort(document["receivePort"].GetInt());
-	inputReceiveAddress(document["receiveAddress"].GetString());
-
-	auto socket = initiateSubscription(sendAddress,sendPort,receiveAddress,receivePort,filter,document["distanceRadius"].GetInt(),document["longitude"].GetUint(),document["latitude"].GetUint());
-	initaliseDatabase();
-	bool listening = false;
-	string reconnect = "RECONNECT";
-	string reconnect_flag;
+        if (rl_model != nullptr) write_to_log("import of rl model successful\n");
 
 
-	do {
-		auto captured_data = listenDataTCP(socket);
-		Document document = parse(captured_data);
-		message_type messageType = filterInput(document);
-		if(captured_data == "\n" || captured_data == string()){
-			messageType = message_type::heart_beat;
-		}
+        char readBuffer[65536];
+        FileReadStream is(file, readBuffer, sizeof(readBuffer));
+        Document document;
+        document.ParseStream(is);
+        fclose(file);
 
-		switch (messageType){
-			case message_type::notify_add:
-				handleNotifyAdd(document);
-        computeManeuvers(lstm_model, rl_model, socket);
-				break;
-			case message_type::notify_delete:
-				handleNotifyDelete(document);
-				break;
-			case message_type::subscription_response:
-				subscriptionResp = handleSubscriptionResponse(document);
-				break;
-			case message_type::unsubscription_response:
-				unsubscriptionResp = handleUnSubscriptionResponse(document);
-				break;
-			case message_type::trajectory_feedback:
-				if (!handleTrajectoryFeedback(document)) {
-          computeManeuvers(lstm_model, rl_model, socket);
-				}
-        break;
-			case message_type::heart_beat:
-		    write_to_log("Recieved HeartBeat");
-				break;
-			case message_type::reconnect:
-		    write_to_log("Reconnecting");
-				break;
-			default:
-				cout << "Captured Data leading to Error Message:" << captured_data  << "End "<< endl;
-				write_to_log("error: Couldn't handle message.");
-				break;
-		}
-		reconnect_flag = captured_data;
-	} while(reconnect_flag != reconnect);
-	listening = false;
-	while(!listening){
-		std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-		main();
-	}
+        inputSendAddress(document["sendAddress"].GetString());
+        inputSendPort(document["sendPort"].GetInt());
+        inputDistanceRadius(document["distanceRadius"].GetInt());
+        inputMergeLocation(document["longitude"].GetUint(), document["latitude"].GetUint());
+        inputReceivePort(document["receivePort"].GetInt());
+        inputReceiveAddress(document["receiveAddress"].GetString());
 
-	initiateUnsubscription(sendAddress,sendPort,subscriptionResp);
+        auto socket = initiateSubscription(sendAddress, sendPort, receiveAddress, receivePort, filter,
+                                           document["distanceRadius"].GetInt(), document["longitude"].GetUint(),
+                                           document["latitude"].GetUint());
+        initaliseDatabase();
+        bool listening = false;
+        string reconnect = "RECONNECT";
+        string reconnect_flag;
 
-	return 0;
+
+        do {
+            auto captured_data = listenDataTCP(socket);
+            Document document = parse(captured_data);
+            message_type messageType = filterInput(document);
+            if (captured_data == "\n" || captured_data == string()) {
+                messageType = message_type::heart_beat;
+            }
+
+            switch (messageType) {
+                case message_type::notify_add:
+                    handleNotifyAdd(document);
+                    computeManeuvers(lstm_model, rl_model, socket);
+                    break;
+                case message_type::notify_delete:
+                    handleNotifyDelete(document);
+                    break;
+                case message_type::subscription_response:
+                    subscriptionResp = handleSubscriptionResponse(document);
+                    break;
+                case message_type::unsubscription_response:
+                    unsubscriptionResp = handleUnSubscriptionResponse(document);
+                    break;
+                case message_type::trajectory_feedback:
+                    if (!handleTrajectoryFeedback(document)) {
+                        computeManeuvers(lstm_model, rl_model, socket);
+                    }
+                    break;
+                case message_type::heart_beat:
+                    write_to_log("Recieved HeartBeat");
+                    break;
+                case message_type::reconnect:
+                    write_to_log("Reconnecting");
+                    break;
+                default:
+                    cout << "Captured Data leading to Error Message:" << captured_data << "End " << endl;
+                    write_to_log("error: Couldn't handle message.");
+                    break;
+            }
+            reconnect_flag = captured_data;
+        } while (reconnect_flag != reconnect);
+        listening = false;
+        while (!listening) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+            main();
+        }
+        //FIXME remove the dead code
+        initiateUnsubscription(sendAddress, sendPort, subscriptionResp);
+    }
+    return returnCode;
 }
