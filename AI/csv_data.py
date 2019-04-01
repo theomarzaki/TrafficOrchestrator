@@ -45,7 +45,7 @@ class Data():
         return featuresTrain
 
     def get_testing_data_tensor(self):
-        self.featuresTest = torch.zeros(round(self.test_data.shape[0]/70),70,20)
+        featuresTest = torch.zeros(round(self.test_data.shape[0]/70),70,20)
 
         batch = torch.zeros(70,20)
         counter = 0
@@ -56,13 +56,13 @@ class Data():
                 index = index + 1
             else:
                 try:
-                    self.featuresTest[counter] = batch
+                    featuresTest[counter] = batch
                     counter = counter + 1
                     index = 0
                     batch = torch.zeros(70,20)
                 except:
                     pass
-        return self.featuresTest
+        return featuresTest
 
     def get_training_lstm_data(self):
         self.train_data.drop(['recommendation', 'recommendedAcceleration','widthMerging','lenghtMerging','spacingMerging','lengthPreceding','widthPreceding','widthFollowing','spacingFollowing'], axis=1, inplace=True)

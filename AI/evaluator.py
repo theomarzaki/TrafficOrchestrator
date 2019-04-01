@@ -46,7 +46,8 @@ def DetermineAccuracy(featuresTest,model,agent):
         for current_epoch in range(game_run.shape[0]):
             game_state = game_run
             for state in range(game_state.shape[0]):
-                try:
+                # try:
+                if state < 69:
                     current = game_state[state].data.cpu().numpy()
 
                     next = game_state[state + 1].data.cpu().numpy()
@@ -60,15 +61,15 @@ def DetermineAccuracy(featuresTest,model,agent):
                         correct = correct + 1
                         break
 
-                    if state < 69:
-                        game_run[current_epoch + 1] = torch.Tensor(waypoint)
-                    else:
-                        break
-                except:
-                    pass
 
-        total = total + 1
-        print("Right: {}, Total: {}".format(correct,total))
+                        game_run[current_epoch + 1] = torch.Tensor(waypoint)
+                else:
+                    break
+                # except:
+                #     pass
+
+            total = total + 1
+            print("Right: {}, Total: {}".format(correct,total))
     return correct/total * 100
 
 def GenerateJsonFiles(featuresTrain,model,agent,predictor):
