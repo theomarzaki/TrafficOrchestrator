@@ -5,7 +5,7 @@
 
 ### Configuring TO 
 
-change the recieve/send adress/port in the TO_Config.json file located in ./include.
+change the receive/send adress/port in the TO_Config.json file located in ./include.
 
 If image is directly built from the repository:
 
@@ -15,7 +15,7 @@ If image is directly built from the repository:
 
 ### Run TO
 
-- not optimised for CUDA. due to library dependancies.
+- not optimised for CUDA. due to library dependencies.
 
 - build docker image & run docker image
 
