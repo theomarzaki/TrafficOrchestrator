@@ -21,11 +21,15 @@ def train(model,target_model,type):
     #TRAIN RL
     featuresTrain = data_wrapper.get_training_data_tensor()
     loss_over_time,rewards_over_time = train_model(model,target_model,featuresTrain,agent)
-    plt.scatter(loss_over_time)
-    plt.show()
 
-    plt.scatter(rewards_over_time)
-    plt.show()
+    try:
+        plt.plot(loss_over_time)
+        plt.show()
+
+        plt.plot(rewards_over_time)
+        plt.show()
+    except:
+        pass
 
     np.savetxt(F'{type}_loss.csv',loss_over_time)
     np.savetxt(F'{type}_rewards.csv',rewards_over_time,delimiter=',')
@@ -40,6 +44,12 @@ def load_checkpoint(model,model_name,save_number):
     traced_script_module = torch.jit.trace(model, torch.rand(20))
     traced_script_module.save(F"rl_model_{model_name}.pt")
 
+def train_checkpoint(model,model_name,save_number):
+    state = torch.load(F'DQN_Saves/DQN{save_number}.tar',map_location='cpu')
+    model.load_state_dict(state['state_dict'])
+    train(model.to(device),model.to(device),model_name)
+
+
 def main():
     parser = argparse.ArgumentParser(description="TO RL : Double Q-Learning trainer")
 
@@ -47,7 +57,8 @@ def main():
     parser.add_argument("--dueling", action='store_true')
     parser.add_argument("--double", action='store_true')
     parser.add_argument("--load","--l", action='store_true')
-    parser.add_argument("--checkpoint_number","--cn",type=int,default=3,help="checkpiont number to load")
+    parser.add_argument("--checkpoint_number","--cn", type=int, default = 3, help='loading checkpoint to train')
+    parser.add_argument("--checkpoint_train","--ct", action='store_true')
 
     args = parser.parse_args()
 
@@ -63,8 +74,11 @@ def main():
 
     if args.load:
         load_checkpoint(model_network,model_name,args.checkpoint_number)
+    elif args.checkpoint_train:
+        train_checkpoint(model_network,model_name,args.checkpoint_number)
     else:
         train(model_network.to(device),target_network.to(device),model_name)
+
 
 if __name__== "__main__":
     main()

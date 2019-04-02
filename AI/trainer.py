@@ -19,10 +19,10 @@ NUMBER_OF_ACTIONS = 5
 NUMBER_OF_INPUTS = 20
 FINAL_EPSILON = 0.01
 EPSILON_DECAY = 500000
-INITIAL_EPSILON = 1.0
+INITIAL_EPSILON = 0.01
 REPLAY_MEMORY_SIZE = 1000000
 NUMBER_OF_EPOCHS = 50
-MINIBATCH_SIZE = 32
+MINIBATCH_SIZE = 128
 GAMMA = 0.9
 LEARNING_RATE = 1e-3
 
@@ -90,7 +90,7 @@ def train_model(model_network,target_network,train_data,agent):
                 else:
                     break
 
-                if learn_step_counter % 100 == 0:
+                if learn_step_counter % 100 * 70 == 0:
                     target_network.load_state_dict(model_network.state_dict())
                 learn_step_counter += 1
 
