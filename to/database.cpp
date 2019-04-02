@@ -16,7 +16,7 @@ using namespace std;
 class Database {
 
 private:
-    unordered_map<string, RoadUser*> database;
+    unordered_map<string, shared_ptr<RoadUser>> database;
 
 public:
 
@@ -25,12 +25,12 @@ public:
 
   /* General access and display functions. */
   void displayDatabase();
-  void upsert(RoadUser *roadUser);
+  void upsert(shared_ptr<RoadUser> roadUser);
   void deleteRoadUser(string uuid);
   void deleteAll();
   bool findRoadUser(string uuid);
   int getSize();
-  shared_ptr<vector<RoadUser*>> findAll();
+  vector<shared_ptr<RoadUser>> findAll();
 };
 
 
@@ -38,7 +38,7 @@ public:
 *   @description Displays all RoadUsers in the database.
 */
 void Database::displayDatabase() {
-  for_each(database.begin(), database.end() , [](pair<string, RoadUser*> element){
+  for_each(database.begin(), database.end() , [](pair<string, shared_ptr<RoadUser>> element){
       cout << element.first << " :: " << element.second << endl;
   });
 }
@@ -48,7 +48,7 @@ void Database::displayDatabase() {
 *   @param roadUser is a RoadUser pointer.
 */
 
-void Database::upsert(RoadUser *roadUser) {
+void Database::upsert(shared_ptr<RoadUser> roadUser) {
   database[roadUser->getUuid()] = roadUser;
 }
 
@@ -82,10 +82,10 @@ int Database::getSize() {
   return database.size();
 }
 
-shared_ptr<vector<RoadUser*>> Database::findAll() {
-  auto values = make_shared<vector<RoadUser*>>();
+vector<shared_ptr<RoadUser>> Database::findAll() {
+  auto values = vector<shared_ptr<RoadUser>>();
   for(auto elem : database) {
-    values->push_back(elem.second);
+    values.push_back(elem.second);
   }
   return values;
 }
