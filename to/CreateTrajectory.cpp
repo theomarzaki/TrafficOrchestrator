@@ -39,10 +39,12 @@ int ProcessedSpeedtoRoadUserSpeed(int speed){
 }
 
 float RoadUserGPStoProcessedGPS(float point){
+    //FIXME do not cast from a double to a float
 	return point / pow(10,6);
 }
 float ProcessedGPStoRoadUserGPS(float point){
-	return point * pow(10,6);
+    //FIXME do not cast from a double to a float
+    return point * pow(10,6);
 }
 
 bool inRange(int low, int high, int x){
@@ -79,41 +81,59 @@ bool inRange(int low, int high, int x){
 
 // 1. spacing for cars (remove for shorter training time)
 
+auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> &merging_car, std::vector<std::shared_ptr<RoadUser>> close_by) {
+    std::shared_ptr<RoadUser> closest_following;
+    std::shared_ptr<RoadUser> closest_preceeding;
+    int minFollowing = 9999;
+    int minPreceeding = 9999;
 
-pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * merging_car,std::vector<RoadUser*> close_by){
-  RoadUser * closest_following = new RoadUser();
-  closest_following->setLongitude(RoadUserGPStoProcessedGPS(merging_car->getLongitude()-10000)); //check TODO
-  closest_following->setLatitude(RoadUserGPStoProcessedGPS(merging_car->getLatitude()-10000)); // check
-  closest_following->setSpeed(merging_car->getSpeed());
-  closest_following->setWidth(merging_car->getWidth());
-  closest_following->setLength(merging_car->getLength());
-  closest_following->setAcceleration(merging_car->getAcceleration());
-  closest_following->setLanePosition(merging_car->getLanePosition()+1);
-  RoadUser * closest_preceeding = new RoadUser();
-  closest_preceeding->setLongitude(RoadUserGPStoProcessedGPS(merging_car->getLongitude()+10000)); // check
-  closest_preceeding->setLatitude(RoadUserGPStoProcessedGPS(merging_car->getLatitude()+10000)); //check
-  closest_preceeding->setSpeed(merging_car->getSpeed());
-  closest_preceeding->setWidth(merging_car->getWidth());
-  closest_preceeding->setLength(merging_car->getLength());
-  closest_preceeding->setAcceleration(merging_car->getAcceleration());
-  closest_preceeding->setLanePosition(merging_car->getLanePosition()+1);
-
-  int minFollowing = 9999;
-  int minPreceeding = 9999;
-
-  for(RoadUser * close_car : close_by){
-    if(close_car->getLatitude() < merging_car->getLatitude() && close_car->getLongitude() < merging_car->getLongitude()){ //closest following
-      if(distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),RoadUserGPStoProcessedGPS(close_car->getLongitude()),RoadUserGPStoProcessedGPS(merging_car->getLatitude()),RoadUserGPStoProcessedGPS(merging_car->getLongitude())) < minFollowing){
-          closest_following = close_car;
-      }
+    for (const auto &close_car : close_by) {
+        if (close_car->getLatitude() < merging_car->getLatitude() &&
+            close_car->getLongitude() < merging_car->getLongitude()) { //closest following
+            if (distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),
+                              RoadUserGPStoProcessedGPS(close_car->getLongitude()),
+                              RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
+                              RoadUserGPStoProcessedGPS(merging_car->getLongitude())) < minFollowing) {
+                closest_following = close_car;
+            }
+        }
+        if (close_car->getLatitude() > merging_car->getLatitude() &&
+            close_car->getLongitude() > merging_car->getLongitude()) { //closest preceeding
+            if (distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),
+                              RoadUserGPStoProcessedGPS(close_car->getLongitude()),
+                              RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
+                              RoadUserGPStoProcessedGPS(merging_car->getLongitude())) < minPreceeding) {
+                closest_preceeding = close_car;
+            }
+        }
     }
-    if (close_car->getLatitude() > merging_car->getLatitude() && close_car->getLongitude() > merging_car->getLongitude()){ //closest preceeding
-      if(distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),RoadUserGPStoProcessedGPS(close_car->getLongitude()),RoadUserGPStoProcessedGPS(merging_car->getLatitude()),RoadUserGPStoProcessedGPS(merging_car->getLongitude())) < minPreceeding){
-        closest_preceeding = close_car;
-      }
+    if (!closest_preceeding) {
+        //we create a default one
+        closest_preceeding = std::make_shared<RoadUser>();
+        // FIXME do not cast from a float (in reality a double) to int
+        closest_preceeding->setLongitude(static_cast<int32_t>(RoadUserGPStoProcessedGPS(merging_car->getLongitude() + 10000))); // check
+        // FIXME do not cast from a float (in reality a double) to int
+        closest_preceeding->setLatitude(static_cast<int32_t>(RoadUserGPStoProcessedGPS(merging_car->getLatitude() + 10000))); //check
+        closest_preceeding->setSpeed(merging_car->getSpeed());
+        closest_preceeding->setWidth(merging_car->getWidth());
+        closest_preceeding->setLength(merging_car->getLength());
+        closest_preceeding->setAcceleration(merging_car->getAcceleration());
+        closest_preceeding->setLanePosition(merging_car->getLanePosition() + 1);
     }
-  }
-return pair<RoadUser*,RoadUser*>(closest_preceeding,closest_following);
+    if (!closest_following) {
+        //we create a default one
+        closest_following = std::make_shared<RoadUser>();
+        // FIXME do not cast from a float (in reality a double) to int
+        closest_following->setLongitude(static_cast<int32_t>(RoadUserGPStoProcessedGPS(merging_car->getLongitude() - 10000))); //check
+        // FIXME do not cast from a float (in reality a double) to int
+        closest_following->setLatitude(static_cast<int32_t>(RoadUserGPStoProcessedGPS(merging_car->getLatitude() - 10000))); // check
+        closest_following->setSpeed(merging_car->getSpeed());
+        closest_following->setWidth(merging_car->getWidth());
+        closest_following->setLength(merging_car->getLength());
+        closest_following->setAcceleration(merging_car->getAcceleration());
+        closest_following->setLanePosition(merging_car->getLanePosition() + 1);
+    }
+    return std::make_pair(closest_preceeding, closest_following);
 }
 
 // For RL only Algorithm
@@ -187,27 +207,29 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 	return stateTensor;
 }
 
+vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> &merging_car,
+                                   vector<pair<std::shared_ptr<RoadUser>,
+                                   vector<std::shared_ptr<RoadUser>>>> neighbours) {
 
-
-
-vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,vector<RoadUser*>>> neighbours){
-  std::vector<float> mergingCar;
-
-  std::vector<RoadUser*> v;
-  auto x = getClosestFollowingandPreceedingCars(merging_car,v);
-  for(pair<RoadUser*,vector<RoadUser*>> v : neighbours){
-    if ( v.first->getUuid() == merging_car->getUuid() ){
-      x = getClosestFollowingandPreceedingCars(merging_car,v.second);
-  	}
-	}
-
+    std::pair<std::shared_ptr<RoadUser>, std::shared_ptr<RoadUser>> x;
+    for (const auto &v : neighbours) {
+        if (v.first->getUuid() == merging_car->getUuid()) {
+            x = getClosestFollowingandPreceedingCars(merging_car, v.second);
+        }
+    }
+    std::vector<float> mergingCar;
     mergingCar.push_back(RoadUserGPStoProcessedGPS(merging_car->getLatitude()));
     mergingCar.push_back(RoadUserGPStoProcessedGPS(merging_car->getLongitude()));
     mergingCar.push_back(merging_car->getLength());
     mergingCar.push_back(merging_car->getWidth());
     mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(merging_car->getSpeed()));
     mergingCar.push_back(merging_car->getAcceleration());
-    mergingCar.push_back(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLongitude()),RoadUserGPStoProcessedGPS(merging_car->getLatitude()),RoadUserGPStoProcessedGPS(x.first->getLongitude()),RoadUserGPStoProcessedGPS(x.first->getLatitude()))); // spacing
+    // FIXME do not cast from a double to a float
+    mergingCar.push_back(
+            static_cast<float &&>(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLongitude()),
+                                                RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
+                                                RoadUserGPStoProcessedGPS(x.first->getLongitude()),
+                                                RoadUserGPStoProcessedGPS(x.first->getLatitude())))); // spacing
     mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLatitude()));
     mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLongitude()));
     mergingCar.push_back(x.first->getLength());
@@ -219,10 +241,15 @@ vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,
     mergingCar.push_back(x.second->getWidth());
     mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(x.second->getSpeed()));
     mergingCar.push_back(x.second->getAcceleration());
-    mergingCar.push_back(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLongitude()),RoadUserGPStoProcessedGPS(merging_car->getLatitude()),RoadUserGPStoProcessedGPS(x.second->getLongitude()),RoadUserGPStoProcessedGPS(x.second->getLatitude()))); // spacing
-		mergingCar.push_back(merging_car->getHeading());
+    // FIXME do not cast from a double to a float
+    mergingCar.push_back(
+            static_cast<float &&>(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLongitude()),
+                                                RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
+                                                RoadUserGPStoProcessedGPS(x.second->getLongitude()),
+                                                RoadUserGPStoProcessedGPS(x.second->getLatitude())))); // spacing
+    mergingCar.push_back(merging_car->getHeading());
 
-  return mergingCar;
+    return mergingCar;
 }
 
 ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> lstm_model,std::shared_ptr<torch::jit::script::Module> rl_model){
@@ -281,9 +308,9 @@ ManeuverParser(Database *database, double distanceRadius, std::shared_ptr<torch:
   const auto road_users{database->findAll()};
   for (auto r : road_users) {
     if (r->getConnected() && r->getLanePosition() == 0) {
-      auto neighbours = mapNeighbours(database, distanceRadius);
-      auto input_values = RoadUsertoModelInput(r.get(), neighbours);
-      auto models_input = torch::tensor(input_values).unsqueeze(0);
+      auto neighbours{mapNeighbours(database, distanceRadius)};
+      auto input_values{RoadUsertoModelInput(r, neighbours)};
+      auto models_input{torch::tensor(input_values).unsqueeze(0)};
       recommendations.push_back(calculatedTrajectories(r.get(), models_input, lstm_model, rl_model));
       // auto models_input = torch::tensor(input_values).unsqueeze(0).unsqueeze(0);
       // if(!isCarTerminal(models_input)){

@@ -32,46 +32,20 @@ double distanceEarth(double lat1d, double lon1d, double lat2d, double lon2d) {
   return 2.0 * EARTH_RADIUS_KM * asin(sqrt(u * u + cos(lat1r) * cos(lat2r) * v * v));
 }
 
-vector<pair<RoadUser*,vector<RoadUser*>>> mapNeighbours(Database * database, double distanceRadius) {
-	vector<pair<RoadUser*,vector<RoadUser*>>> neighbours;
-
-	long double roadLong1;
-	long double roadLat1;
-	long double roadLong2;
-	long double roadLat2;
-	long double distanceCalc;
-
-	vector<RoadUser*> closeBy;
-	pair<RoadUser*,vector<RoadUser*>> pair;
-
-	if(database->getSize() == 1) {
-		return neighbours;
-	}
-
-	else {
-
-    const auto roadUsers{database->findAll()};
-		for(int i = 0; i < roadUsers.size(); ++i) {
-			for(int j = i; ++j != roadUsers.size(); ) {
-
-				roadLong1 = roadUsers.at(i)->getLongitude();
-				roadLat1 = roadUsers.at(i)->getLatitude();
-
-				roadLong2 = roadUsers.at(j)->getLongitude();
-				roadLat2 = roadUsers.at(j)->getLatitude();
-				distanceCalc = distanceEarth(roadLat1, roadLong1, roadLat2, roadLong2);
-
-				// if(distanceCalc <= distanceRadius*0.001) { CHANGED TODO
-				closeBy.push_back(roadUsers.at(j).get());
-				// }
+auto mapNeighbours(Database *database, double distanceRadius) {
+	vector<pair<std::shared_ptr<RoadUser>, vector<std::shared_ptr<RoadUser>>>> neighbours;
+	vector<std::shared_ptr<RoadUser>> closeBy;
+	if (database->getSize() != 1) {
+		const auto roadUsers{database->findAll()};
+		for (auto i = 0; i < roadUsers.size(); ++i) {
+			for (auto j = i; ++j != roadUsers.size();) {
+				closeBy.push_back(roadUsers.at(j));
 			}
-
-			pair = make_pair(roadUsers.at(i).get(), closeBy);
+			auto pair{make_pair(roadUsers.at(i), closeBy)};
 			closeBy.clear();
 			neighbours.push_back(pair);
 		}
 	}
-
 	return neighbours;
 }
 
