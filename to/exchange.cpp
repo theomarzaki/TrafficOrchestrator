@@ -158,11 +158,12 @@ int generateReqID(){
 	return x;
 }
 
-void sendTrajectoryRecommendations(vector<ManeuverRecommendation*> v,int socket) {
-	for(ManeuverRecommendation * m : v) {
+void sendTrajectoryRecommendations(vector<std::shared_ptr<ManeuverRecommendation>> v,
+								   int socket) {
+	for (const auto &m : v) {
 		cout << createManeuverJSON(m) << endl;
 		write_to_log(createManeuverJSON(m));
-		sendDataTCP(socket,sendAddress, sendPort,receiveAddress,receivePort, createManeuverJSON(m));
+		sendDataTCP(socket, sendAddress, sendPort, receiveAddress, receivePort, createManeuverJSON(m));
 	}
 }
 
@@ -269,14 +270,15 @@ void initaliseDatabase() {
 }
 
 void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
-                      const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
-  vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
-  if(!recommendations.empty()) {
-					write_to_log("\n ***********************************  Sending  *********************************** \n");
-					sendTrajectoryRecommendations(recommendations,socket);
-				} else {
-					write_to_log("No Trajectories Calculated.\n");
-				}
+					  const shared_ptr<torch::jit::script::Module> &rl_model,
+					  int socket) {
+	auto recommendations{ManeuverParser(database, distanceRadius, lstm_model, rl_model)};
+	if (!recommendations.empty()) {
+		write_to_log("\n ***********************************  Sending  *********************************** \n");
+		sendTrajectoryRecommendations(recommendations, socket);
+	} else {
+		write_to_log("No Trajectories Calculated.\n");
+	}
 }
 
 int main() {
