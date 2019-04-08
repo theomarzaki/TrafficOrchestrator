@@ -23,7 +23,7 @@ using namespace rapidjson;
 using std::string;
 using std::cout;
 
-string createSubscriptionRequestJSON(SubscriptionRequest * subscriptionReq) {
+string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq) {
 	Document document;
 
 	document.SetObject();
@@ -87,7 +87,7 @@ string createSubscriptionRequestJSON(SubscriptionRequest * subscriptionReq) {
 
 }
 
-string createUnsubscriptionRequestJSON(UnsubscriptionRequest * unsubscriptionReq) {
+string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq) {
 	Document document;
 
 	document.SetObject();
