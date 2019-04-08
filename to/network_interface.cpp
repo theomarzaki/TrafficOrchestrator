@@ -23,7 +23,7 @@ using namespace rapidjson;
 using std::string;
 using std::cout;
 
-string createSubscriptionRequestJSON(SubscriptionRequest * subscriptionReq) {
+string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq) {
 	Document document;
 
 	document.SetObject();
@@ -87,7 +87,7 @@ string createSubscriptionRequestJSON(SubscriptionRequest * subscriptionReq) {
 
 }
 
-string createUnsubscriptionRequestJSON(UnsubscriptionRequest * unsubscriptionReq) {
+string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq) {
 	Document document;
 
 	document.SetObject();
@@ -130,7 +130,7 @@ string createUnsubscriptionRequestJSON(UnsubscriptionRequest * unsubscriptionReq
 *	@param trajectoryRec is a pointer to a TrajectoryRecommendation.
 *	@return strbuf.GetString() is the trajectory recommendation in JSON string format.
 */
-string createManeuverJSON(ManeuverRecommendation * maneuverRec) {
+string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec) {
 
 	Document document; // RapidJSON Document to build JSON message.
 	document.SetObject();
@@ -154,7 +154,7 @@ string createManeuverJSON(ManeuverRecommendation * maneuverRec) {
 
 	Value waypoints(kArrayType);
 
-	for(Waypoint * waypoint : maneuverRec->getWaypoints()) {
+	for(auto waypoint : maneuverRec->getWaypoints()) {
 		Value point(kObjectType);
 
 		point.AddMember("timestamp", Value().SetUint64(waypoint->getTimestamp()), allocator);

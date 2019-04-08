@@ -371,39 +371,37 @@ message_type filterInput(Document &document) {
 string listenDataTCP(int socket_c) {
 
   char dataReceived[MAXIMUM_TRANSFER];
-  memset(dataReceived,0,sizeof(dataReceived));
+  memset(dataReceived, 0, sizeof(dataReceived));
   string to_return;
+  auto returning{string()};
 
-  while(1) {
-    int i = read(socket_c,dataReceived,sizeof(dataReceived));
+  while (returning.empty()) {
+    auto i{read(socket_c, dataReceived, sizeof(dataReceived))};
 
-    if(i < 0) {
+    if (i < 0) {
       write_to_log("Error: Failed to receive transmitted data.\n");
       break;
-    }
-    else if(i == 0) {
+    } else if (i == 0) {
       printf("Socket closed from the remote server.\n");
-      return "RECONNECT";
-    }
-    else if(i > 0){
-      for(int index = 0; index < i; index++){
+      returning = "RECONNECT";
+    } else if (i > 0) {
+      for (int index = 0; index < i; index++) {
         char chrc = dataReceived[index];
-        if(chrc == '\n'){
+        if (chrc == '\n') {
           to_return = incomplete_message;
           incomplete_messages.push_back(to_return);
           incomplete_message = string();
-        }else{
+        } else {
           incomplete_message += chrc;
         }
       }
     }
 
-    if(incomplete_messages.size() != 0){
-      string returning = incomplete_messages.front();
+    if (!incomplete_messages.empty()) {
+      returning = incomplete_messages.front();
       write_to_log(incomplete_messages.front() + "\n");
       incomplete_messages.pop_front();
-      return returning;
     }
-
   }
+  return returning;
 }

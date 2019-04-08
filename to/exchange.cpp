@@ -1,3 +1,5 @@
+#include <utility>
+
 // This is the Main script that brings all the components together
 
 // Obtains TO connection data from configuration file and starts a connection and listens
@@ -26,9 +28,9 @@ using namespace std::chrono;
 using namespace experimental;
 
 Database * database;
-SubscriptionResponse * subscriptionResp;
-UnsubscriptionResponse * unsubscriptionResp;
-ManeuverFeedback * maneuverFeed;
+std::shared_ptr<SubscriptionResponse> subscriptionResp;
+std::shared_ptr<UnsubscriptionResponse> unsubscriptionResp;
+std::shared_ptr<ManeuverFeedback> maneuverFeed;
 
 string sendAddress;
 int sendPort;
@@ -94,9 +96,9 @@ vector<shared_ptr<RoadUser>> detectedToRoadUserList(vector<Detected_Road_User> v
 
 }
 
-ManeuverFeedback * detectedToFeedback(Detected_Trajectory_Feedback d) {
+auto detectedToFeedback(Detected_Trajectory_Feedback d) {
 
-	ManeuverFeedback * maneuverFeed = new ManeuverFeedback();
+	auto maneuverFeed{std::make_shared<ManeuverFeedback>()};
 	maneuverFeed->setType(d.type);
 	maneuverFeed->setContext(d.context);
 	maneuverFeed->setOrigin(d.origin);
@@ -114,8 +116,8 @@ ManeuverFeedback * detectedToFeedback(Detected_Trajectory_Feedback d) {
 
 }
 
-SubscriptionResponse * detectedToSubscription(Detected_Subscription_Response d) {
-	SubscriptionResponse * subscriptionResp = new SubscriptionResponse();
+auto detectedToSubscription(Detected_Subscription_Response d) {
+	auto subscriptionResp{std::make_shared<SubscriptionResponse>()};
 	subscriptionResp->setType(d.type);
 	subscriptionResp->setContext(d.context);
 	subscriptionResp->setOrigin(d.origin);
@@ -132,8 +134,8 @@ SubscriptionResponse * detectedToSubscription(Detected_Subscription_Response d) 
 }
 
 
-UnsubscriptionResponse * detectedToUnsubscription(Detected_Unsubscription_Response d) {
-	UnsubscriptionResponse * unsubscriptionResp = new UnsubscriptionResponse();
+auto detectedToUnsubscription(Detected_Unsubscription_Response d) {
+	auto unsubscriptionResp{std::make_shared<UnsubscriptionResponse>()};
 	unsubscriptionResp->setType(d.type);
 	unsubscriptionResp->setContext(d.context);
 	unsubscriptionResp->setOrigin(d.origin);
@@ -149,26 +151,28 @@ UnsubscriptionResponse * detectedToUnsubscription(Detected_Unsubscription_Respon
 }
 
 void generateUuidTo() {
+	// FIXME limited generation : use std random library instead
 	uuidTo = to_string(10000000 + ( std::rand() % ( 99999999 - 10000000 + 1 )));
 }
 
 int generateReqID(){
 	srand(time(NULL));
-	int x = std::rand();
-	return x;
+	// FIXME limited generation : use std random library instead
+	return std::rand();
 }
 
-void sendTrajectoryRecommendations(vector<ManeuverRecommendation*> v,int socket) {
-	for(ManeuverRecommendation * m : v) {
+void sendTrajectoryRecommendations(vector<std::shared_ptr<ManeuverRecommendation>> v,
+								   int socket) {
+	for (const auto &m : v) {
 		cout << createManeuverJSON(m) << endl;
 		write_to_log(createManeuverJSON(m));
-		sendDataTCP(socket,sendAddress, sendPort,receiveAddress,receivePort, createManeuverJSON(m));
+		sendDataTCP(socket, sendAddress, sendPort, receiveAddress, receivePort, createManeuverJSON(m));
 	}
 }
 
-int initiateSubscription(string sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter,int radius,uint32_t longitude, uint32_t latitude) {
+int initiateSubscription(const string &sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter,int radius,uint32_t longitude, uint32_t latitude) {
 	milliseconds timeSub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-	SubscriptionRequest * subscriptionReq = new SubscriptionRequest();
+	auto subscriptionReq{std::make_shared<SubscriptionRequest>()};
 	int request_id = generateReqID();
 	subscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 	subscriptionReq->setFilter(filter);
@@ -178,28 +182,30 @@ int initiateSubscription(string sendAddress, int sendPort,string receiveAddress,
 	subscriptionReq->setShape("circle");
 	subscriptionReq->setSignature("TEMPLATE");
 	subscriptionReq->setRequestId(request_id);
-	subscriptionReq->setTimestamp(timeSub.count());
+	// FIXME do not cast an unsigned int 64 from a long
+	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
-	auto socket = sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createSubscriptionRequestJSON(subscriptionReq));
+	auto socket = sendDataTCP(-999,sendAddress,sendPort, std::move(receiveAddress),receivePort,createSubscriptionRequestJSON(subscriptionReq));
 	write_to_log("Sent subscription request to " + sendAddress + ":"+ to_string(sendPort));
 	return socket;
 }
 
-void initiateUnsubscription(string sendAddress, int sendPort, SubscriptionResponse * subscriptionResp) {
+void initiateUnsubscription(const string &sendAddress, int sendPort, std::shared_ptr<SubscriptionResponse> subscriptionResp) {
 
 	milliseconds timeUnsub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-	UnsubscriptionRequest * unsubscriptionReq = new UnsubscriptionRequest();
+	auto unsubscriptionReq{std::make_shared<UnsubscriptionRequest>()};
 	unsubscriptionReq->setSubscriptionId(subscriptionResp->getSubscriptionId());
-	unsubscriptionReq->setTimestamp(timeUnsub.count());
+	// FIXME do not cast an unsigned int 64 from a long
+	unsubscriptionReq->setTimestamp(static_cast<uint64_t>(timeUnsub.count()));
 	sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createUnsubscriptionRequestJSON(unsubscriptionReq));
 }
 
-SubscriptionResponse * handleSubscriptionResponse(Document &document) {
+auto handleSubscriptionResponse(Document &document) {
 	write_to_log("Subscription Response Received.");
 	return detectedToSubscription(assignSubResponseVals(document));
 }
 
-UnsubscriptionResponse * handleUnSubscriptionResponse(Document &document) {
+auto handleUnSubscriptionResponse(Document &document) {
 	write_to_log("unsubscription response Received.");
 	return detectedToUnsubscription(assignUnsubResponseVals(document));
 }
@@ -207,11 +213,8 @@ UnsubscriptionResponse * handleUnSubscriptionResponse(Document &document) {
 void handleNotifyAdd(Document &document) {
 	write_to_log("Notify Add Received.");
 	const vector<Detected_Road_User> &roadUsers = assignNotificationVals(document).ru_description_list;
-	int size = roadUsers.size();
-
 	auto road_users{detectedToRoadUserList(roadUsers)};
-
-	for(auto road_user : road_users) {
+	for(const auto &road_user : road_users) {
 		database->upsert(road_user);
 	}
 }
@@ -269,14 +272,15 @@ void initaliseDatabase() {
 }
 
 void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
-                      const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
-  vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
-  if(!recommendations.empty()) {
-					write_to_log("\n ***********************************  Sending  *********************************** \n");
-					sendTrajectoryRecommendations(recommendations,socket);
-				} else {
-					write_to_log("No Trajectories Calculated.\n");
-				}
+					  const shared_ptr<torch::jit::script::Module> &rl_model,
+					  int socket) {
+	auto recommendations{ManeuverParser(database, distanceRadius, lstm_model, rl_model)};
+	if (!recommendations.empty()) {
+		write_to_log("\n ***********************************  Sending  *********************************** \n");
+		sendTrajectoryRecommendations(recommendations, socket);
+	} else {
+		write_to_log("No Trajectories Calculated.\n");
+	}
 }
 
 int main() {
@@ -349,7 +353,7 @@ int main() {
                     }
                     break;
                 case message_type::heart_beat:
-                    write_to_log("Recieved HeartBeat");
+                    write_to_log("Received HeartBeat");
                     break;
                 case message_type::reconnect:
                     write_to_log("Reconnecting");
