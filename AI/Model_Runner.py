@@ -47,7 +47,8 @@ def load_checkpoint(model,model_name,save_number):
 def train_checkpoint(model,model_name,save_number):
     state = torch.load(F'DQN_Saves/DQN{save_number}.tar',map_location='cpu')
     model.load_state_dict(state['state_dict'])
-    train(model.to(device),model.to(device),model_name)
+    target = model
+    train(model.to(device),target.to(device),model_name)
 
 
 def main():

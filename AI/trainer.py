@@ -19,12 +19,12 @@ NUMBER_OF_ACTIONS = 5
 NUMBER_OF_INPUTS = 20
 FINAL_EPSILON = 0.01
 EPSILON_DECAY = 500000
-INITIAL_EPSILON = 0.01
+INITIAL_EPSILON = 1.0
 REPLAY_MEMORY_SIZE = 1000000
-NUMBER_OF_EPOCHS = 50
-MINIBATCH_SIZE = 128
+NUMBER_OF_EPOCHS = 10
+MINIBATCH_SIZE = 32
 GAMMA = 0.9
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 1e-2
 
 def save_model_checkpoint(epoch,model_network,optimizer,loss):
     model_state = {
@@ -90,7 +90,7 @@ def train_model(model_network,target_network,train_data,agent):
                 else:
                     break
 
-                if learn_step_counter % 100 * 70 == 0:
+                if learn_step_counter % 100 == 0:
                     target_network.load_state_dict(model_network.state_dict())
                 learn_step_counter += 1
 
@@ -116,7 +116,7 @@ def train_model(model_network,target_network,train_data,agent):
                 reward,terminal = CalculateReward(next_state.data.cpu().numpy(),current_epoch)
 
                 rewards.append((learn_step_counter,reward))
-                print(reward)
+                # print(reward)
                 if terminal and reward > 1:
                     wins = wins + 1
 

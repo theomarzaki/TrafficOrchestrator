@@ -113,44 +113,50 @@ def GenerateJsonFiles(featuresTrain,model,agent,predictor):
 
 def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
     to_plot = []
+    human_plot = []
     # featuresTrain = featuresTrain.data.numpy()[::-1]
     featuresTrain = featuresTrain.data.numpy()
-    for index,game_run in enumerate(featuresTrain):
-        for current_epoch in range(game_run.shape[0]):
-            game_state = game_run
-            for state in range(game_state.shape[0]):
-                current = game_state[state]
-                try:
-                    next = game_state[state + 1]
-                    output = model(torch.from_numpy(current))
-                    action_tensor = torch.zeros(5)
-                    action_tensor[torch.argmax(output).item()] = 1
-                    waypoint = agent.calculateActionComputed(action_tensor,current,next)
+    game_run = featuresTrain[3000]
+    for current_epoch in range(game_run.shape[0]):
+        game_state = game_run
+        for state in range(game_state.shape[0]):
+            current = game_state[state]
+            try:
+                next = game_state[state + 1]
+                output = model(torch.from_numpy(current))
+                action_tensor = torch.zeros(5)
+                action_tensor[torch.argmax(output).item()] = 1
+                waypoint = agent.calculateActionComputed(action_tensor,current,next)
 
-                    if isCarTerminal(waypoint):
-                        print('reached')
-                        break
+                reward,terminal = CalculateReward(waypoint,current_epoch)
+                print(reward)
 
-                    if is_scatter:
-                        to_plot.append((waypoint[0],waypoint[1]))
-                    else:
-                        mergingX = waypoint[0]
-                        mergingY = waypoint[1]
-                        precedingX = waypoint[7]
-                        precedingY = waypoint[8]
-                        followingX = waypoint[13]
-                        followingY = waypoint[14]
+                if isCarTerminal(waypoint):
+                    print('reached')
+                    break
 
-                        plots_X = [mergingX,precedingX,followingX]
-                        plots_Y = [mergingY,precedingY,followingY]
-                        to_plot.append((plots_X,plots_Y))
+                if is_scatter:
+                    to_plot.append((waypoint[0],waypoint[1]))
+                    human_plot.append((game_run[state][0],game_run[state][1]))
+                else:
+                    mergingX = waypoint[0]
+                    mergingY = waypoint[1]
+                    precedingX = waypoint[7]
+                    precedingY = waypoint[8]
+                    followingX = waypoint[13]
+                    followingY = waypoint[14]
+
+                    plots_X = [mergingX,precedingX,followingX]
+                    plots_Y = [mergingY,precedingY,followingY]
+                    to_plot.append((plots_X,plots_Y))
 
 
-                    game_state[state + 1] = torch.Tensor(waypoint)
-                except:
-                    pass
-            break
+                game_state[state + 1] = torch.Tensor(waypoint)
+            except:
+                pass
         break
+    np.savetxt('human.csv',human_plot)
+    np.savetxt('to.csv',to_plot)
     return to_plot
 
 def ActionedMergeLaneScenario(actions,featuresTrain,agent):
