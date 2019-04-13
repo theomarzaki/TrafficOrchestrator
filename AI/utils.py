@@ -50,15 +50,15 @@ def CalculateReward(state,current_epoch):
         y_val = round(slope * int(state[0]) + plus_c)
         distance_merging_point = distance.sqeuclidean((state[0],state[1]), (state[0],y_val))
         # print(distance_merging_point)
-        if (round(distance_merging_point) <= 1):
+        if (round(distance_merging_point) <= 0.5):
             return 100000 * 1/(current_epoch+1),True
         elif(distance_merging_point > 1e10):
             return -100000,True
         else:
             if(state[4] != 0):
-                return -(abs(0.001 * (-((distance_merging_point)) * (1/state[4]) * abs((state[5]))))),False
+                return -(abs(0.001 * ((distance_merging_point) * (1/state[4]) * abs((state[5]))))),False
             else:
-                return -(abs(0.001 * (-((distance_merging_point)) * 0.03 * 0.06))),False
+                return -(abs(0.001 * ((distance_merging_point) * 0.03 * 0.06))),False
     else:
         return -100000,True
 

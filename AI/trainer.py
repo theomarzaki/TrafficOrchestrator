@@ -21,10 +21,10 @@ FINAL_EPSILON = 0.01
 EPSILON_DECAY = 500000
 INITIAL_EPSILON = 1.0
 REPLAY_MEMORY_SIZE = 1000000
-NUMBER_OF_EPOCHS = 10
-MINIBATCH_SIZE = 32
-GAMMA = 0.9
-LEARNING_RATE = 1e-2
+NUMBER_OF_EPOCHS = 150
+MINIBATCH_SIZE = 128
+GAMMA = 0.999
+LEARNING_RATE = 1e-4
 
 def save_model_checkpoint(epoch,model_network,optimizer,loss):
     model_state = {
@@ -90,7 +90,7 @@ def train_model(model_network,target_network,train_data,agent):
                 else:
                     break
 
-                if learn_step_counter % 100 == 0:
+                if learn_step_counter % 80 == 0:
                     target_network.load_state_dict(model_network.state_dict())
                 learn_step_counter += 1
 
@@ -99,14 +99,12 @@ def train_model(model_network,target_network,train_data,agent):
 
                 action = torch.zeros([NUMBER_OF_ACTIONS], dtype=torch.float32)
                 random_action = random.random() < epsilon
-                # action_index = [torch.randint(NUMBER_OF_ACTIONS, torch.Size([]), dtype=torch.int)
-                #                 if random_action
-                #                 else torch.argmax(output)][0]
 
                 if random_action:
-                    action[random.randrange(0,5)] = 1
+                    action[random.randrange(5)] = 1
                 else:
-                    action[torch.argmax(output).item()] = 1
+                    with torch.no_grad():
+                        action[torch.argmax(output).item()] = 1
 
 
                 # get next state and reward
@@ -116,7 +114,6 @@ def train_model(model_network,target_network,train_data,agent):
                 reward,terminal = CalculateReward(next_state.data.cpu().numpy(),current_epoch)
 
                 rewards.append((learn_step_counter,reward))
-                # print(reward)
                 if terminal and reward > 1:
                     wins = wins + 1
 
@@ -136,16 +133,16 @@ def train_model(model_network,target_network,train_data,agent):
                 # extract Q-value
                 q_value = torch.sum(model_network(current_batch) * action_batch, dim=1)
 
-                q_eval = torch.sum(model_network(current_batch).to(device) * action_batch, dim=1)  # shape (batch, 1)
-                q_next = target_network(next_state_batch).to(device).detach()     # detach from graph, don't backpropagate
-                q_target = reward_batch + 0.9 * q_next.max(1)[0] * 1 - int(terminal)  # shape (batch, 1)
-                loss = criterion(q_eval, q_target)
+                # q_eval = torch.sum(model_network(current_batch).to(device) * action_batch, dim=1)  # shape (batch, 1)
+                # q_next = target_network(next_state_batch).to(device).detach()     # detach from graph, don't backpropagate
+                # q_target = reward_batch + 0.9 * q_next.max(1)[0] * (1 - int(terminal))  # shape (batch, 1)
+                # loss = criterion(q_eval, q_target)
 
                 optimizer.zero_grad()
 
-                # y_batch = torch.Tensor(y_batch).detach().to(device)
+                y_batch = torch.Tensor(y_batch).detach().to(device)
                 # calculate loss
-                # loss = criterion(q_value, y_batch)
+                loss = criterion(q_value, y_batch)
 
                 hist.append((learn_step_counter,loss.item()))
                 # do backward pass

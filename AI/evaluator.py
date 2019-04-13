@@ -113,10 +113,10 @@ def GenerateJsonFiles(featuresTrain,model,agent,predictor):
 
 def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
     to_plot = []
-    human_plot = []
+    # human_plot = []
     # featuresTrain = featuresTrain.data.numpy()[::-1]
     featuresTrain = featuresTrain.data.numpy()
-    game_run = featuresTrain[3000]
+    game_run = featuresTrain[1]
     for current_epoch in range(game_run.shape[0]):
         game_state = game_run
         for state in range(game_state.shape[0]):
@@ -131,13 +131,13 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
                 reward,terminal = CalculateReward(waypoint,current_epoch)
                 print(reward)
 
-                if isCarTerminal(waypoint):
+                if terminal and reward > 1:
                     print('reached')
                     break
 
                 if is_scatter:
                     to_plot.append((waypoint[0],waypoint[1]))
-                    human_plot.append((game_run[state][0],game_run[state][1]))
+                    # human_plot.append((game_run[state][0],game_run[state][1]))
                 else:
                     mergingX = waypoint[0]
                     mergingY = waypoint[1]
@@ -155,8 +155,8 @@ def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
             except:
                 pass
         break
-    np.savetxt('human.csv',human_plot)
-    np.savetxt('to.csv',to_plot)
+    # np.savetxt('human.csv',human_plot)
+    # np.savetxt('to.csv',to_plot)
     return to_plot
 
 def ActionedMergeLaneScenario(actions,featuresTrain,agent):
@@ -189,7 +189,7 @@ def ActionedMergeLaneScenario(actions,featuresTrain,agent):
         except:
             pass
         print(reward)
-        if not isCarTerminal(waypoint):
+        if not(terminal and reward > 1):
             mergingX = waypoint[0]
             mergingY = waypoint[1]
             precedingX = waypoint[7]
