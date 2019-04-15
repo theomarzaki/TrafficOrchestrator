@@ -52,7 +52,7 @@ def train_checkpoint(model,model_name,save_number):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="TO RL : Double Q-Learning trainer")
+    parser = argparse.ArgumentParser(description="TO RL Trainer")
 
     parser.add_argument("--dqn", action='store_true')
     parser.add_argument("--dueling", action='store_true')
