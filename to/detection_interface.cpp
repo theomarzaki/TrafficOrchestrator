@@ -372,11 +372,10 @@ string listenDataTCP(int socket_c) {
 
   char dataReceived[MAXIMUM_TRANSFER];
   memset(dataReceived, 0, sizeof(dataReceived));
-  string to_return;
-  auto returning{string()};
+  string to_return,returning;
 
   while (returning.empty()) {
-    auto i{read(socket_c, dataReceived, sizeof(dataReceived))};
+    int i = read(socket_c, dataReceived, sizeof(dataReceived));
 
     if (i < 0) {
       write_to_log("Error: Failed to receive transmitted data.\n");
