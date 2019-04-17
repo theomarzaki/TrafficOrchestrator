@@ -44,6 +44,15 @@ float ProcessedGPStoRoadUserGPS(float point){
 	return point * pow(10,6);
 }
 
+float RoadUserHeadingtoProcessedHeading(float point){
+	return point / 100;
+}
+
+float ProcessedHeadingtoRoadUserHeading(float point){
+	return point * 100;
+}
+
+
 bool inRange(int low, int high, int x){
     return ((x-high)*(x-low) <= 0);
 }
@@ -219,7 +228,7 @@ vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,
     mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(x.second->getSpeed()));
     mergingCar.push_back(x.second->getAcceleration());
     mergingCar.push_back(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLongitude()),RoadUserGPStoProcessedGPS(merging_car->getLatitude()),RoadUserGPStoProcessedGPS(x.second->getLongitude()),RoadUserGPStoProcessedGPS(x.second->getLatitude()))); // spacing
-		mergingCar.push_back(merging_car->getHeading());
+		mergingCar.push_back(RoadUserHeadingtoProcessedHeading(merging_car->getHeading()));
 
   return mergingCar;
 }
@@ -249,6 +258,7 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
   waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][1].item<float>()));
   waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_n_1_states[0][4].item<float>()));
   waypoint->setLanePosition(mergingVehicle->getLanePosition());
+	waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
   mergingManeuver->addWaypoint(waypoint);
 
 	// at::Tensor previous_state = calculated_n_1_states;
