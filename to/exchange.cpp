@@ -234,6 +234,7 @@ bool handleTrajectoryFeedback(Document &document) {
 		if(roadUser != NULL){
 			roadUser->setProcessingWaypoint(false);
 			database->upsert(roadUser);
+			return true;
 		}
 	}else{
 		return true;
