@@ -57,49 +57,19 @@ bool inRange(int low, int high, int x){
     return ((x-high)*(x-low) <= 0);
 }
 
-// bool isCarTerminal(at::Tensor state){
-//   float y_diff = state[0][14].item<float>() - state[0][8].item<float>();
-//   float x_diff = state[0][13].item<float>() - state[0][7].item<float>();
-//
-//   try{
-//     float slope = round(y_diff) / round(x_diff);
-//     if(isinf(slope) || isnan(slope)) slope = 0;
-//     float plus_c = state[0][8].item<float>() - (slope * state[0][7].item<float>());
-//     if(!isinf(state[0][0].item<float>()) && !isinf(state[0][1].item<float>())){
-//         if(inRange(round(slope * int(state[0][0].item<float>()) + plus_c) - 1, round(slope * int(state[0][0].item<float>()) + plus_c) + 1,round(int(state[0][1].item<float>())))){
-//             if(int(state[0][7].item<float>()) > int(state[0][0].item<float>()) && int(state[0][0].item<float>()) > int(state[0][13].item<float>()) && int(state[0][8].item<float>()) < int(state[0][1].item<float>()) && int(state[0][1].item<float>()) < int(state[0][14].item<float>())){
-//                 return true;
-// 						}
-// 				}
-// 		}
-// 	}
-//   catch(...){
-//     float plus_c = int(state[0][8].item<float>());
-//     if ((round(state[0][1].item<float>()) + 1 == round(plus_c) or round(state[0][1].item<float>()) - 1 == round(plus_c))){
-//          if(int(state[0][7].item<float>()) > int(state[0][0].item<float>()) && int(state[0][0].item<float>()) > int(state[0][13].item<float>()) && int(state[0][8].item<float>()) < int(state[0][1].item<float>()) && int(state[0][1].item<float>()) < int(state[0][14].item<float>())){
-//              return true;
-// 					 }
-// 		}
-// 	}
-//   return false;
-// }
-// TODO
-
-// 1. spacing for cars (remove for shorter training time)
-
 
 pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * merging_car,std::vector<RoadUser*> close_by){
   RoadUser * closest_following = new RoadUser();
-  closest_following->setLongitude(RoadUserGPStoProcessedGPS(merging_car->getLongitude()-10000)); //check TODO
-  closest_following->setLatitude(RoadUserGPStoProcessedGPS(merging_car->getLatitude()-10000)); // check
+  closest_following->setLongitude(RoadUserGPStoProcessedGPS(merging_car->getLongitude()-10000)); // OBTAIN FROM ROAD MAPPING
+  closest_following->setLatitude(RoadUserGPStoProcessedGPS(merging_car->getLatitude()-10000)); // OBTAIN FROM ROAD MAPPING
   closest_following->setSpeed(merging_car->getSpeed());
   closest_following->setWidth(merging_car->getWidth());
   closest_following->setLength(merging_car->getLength());
   closest_following->setAcceleration(merging_car->getAcceleration());
   closest_following->setLanePosition(merging_car->getLanePosition()+1);
   RoadUser * closest_preceeding = new RoadUser();
-  closest_preceeding->setLongitude(RoadUserGPStoProcessedGPS(merging_car->getLongitude()+10000)); // check
-  closest_preceeding->setLatitude(RoadUserGPStoProcessedGPS(merging_car->getLatitude()+10000)); //check
+  closest_preceeding->setLongitude(RoadUserGPStoProcessedGPS(merging_car->getLongitude()+10000)); // OBTAIN FROM ROAD MAPPING
+  closest_preceeding->setLatitude(RoadUserGPStoProcessedGPS(merging_car->getLatitude()+10000)); //OBTAIN FROM ROAD MAPPING
   closest_preceeding->setSpeed(merging_car->getSpeed());
   closest_preceeding->setWidth(merging_car->getWidth());
   closest_preceeding->setLength(merging_car->getLength());
@@ -124,7 +94,7 @@ pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * mergin
 return pair<RoadUser*,RoadUser*>(closest_preceeding,closest_following);
 }
 
-// For RL only Algorithm
+
 at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 	int accelerate_tensor = 0;
 	int deccelerate_tensor = 1;
@@ -190,7 +160,7 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 	    stateTensor[0][1] = new_y;
 			stateTensor[0][19] = angle;
     return stateTensor;
-	} else cout << "ERROR: incomputing incorrect action tensor";
+	} else perror("Action cannot be recognized");
 
 	return stateTensor;
 }
@@ -260,26 +230,8 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
   waypoint->setLanePosition(mergingVehicle->getLanePosition());
 	waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
   mergingManeuver->addWaypoint(waypoint);
+	mergingVehicle->setProcessingWaypoint(true);
 
-	// at::Tensor previous_state = calculated_n_1_states;
-	// for(int counter = 0;counter < 4; counter++){ //number of waypoints
-	// 	auto timeCalculator = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-	// 	std::vector<torch::jit::IValue> rl_n_inputs;
-	//
-	// 	rl_n_inputs.push_back(previous_state);
-	// 	auto calculated_next_state = rl_model->forward(rl_n_inputs).toTensor();
-	// 	auto calculated_waypoint = GetStateFromActions(calculated_next_state,previous_state);
-	// 	previous_state = calculated_waypoint;
-	//
-	// 	Waypoint * n_waypoint = new Waypoint();
-	//   n_waypoint->setTimestamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_waypoint[0][0].item<float>(),calculated_waypoint[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
-	//   n_waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_waypoint[0][0].item<float>()));
-	//   n_waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_waypoint[0][1].item<float>()));
-	//   n_waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_waypoint[0][4].item<float>()));
-	//   n_waypoint->setLanePosition(mergingVehicle->getLanePosition());
-	//   mergingManeuver->addWaypoint(n_waypoint);
-	//
-	// }
   return mergingManeuver;
 }
 
@@ -287,17 +239,11 @@ vector<ManeuverRecommendation*> ManeuverParser(Database * database, double dista
   vector<ManeuverRecommendation*> recommendations;
 	const shared_ptr<vector<RoadUser *>> &ptr = database->findAll();
   for(auto r : *ptr) {
-		if(r->getConnected() == true && r->getLanePosition() == 0) {
+		if(r->getConnected() == true && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
 			auto neighbours = mapNeighbours(database,distanceRadius);
       auto input_values = RoadUsertoModelInput(r,neighbours);
       auto models_input = torch::tensor(input_values).unsqueeze(0);
 			recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
-			// auto models_input = torch::tensor(input_values).unsqueeze(0).unsqueeze(0);
-			// if(!isCarTerminal(models_input)){
-			// 	recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
-			// } else {
-			// 	r->setLanePosition(r->getLanePosition()+1);
-			// }
 		}
 	}
   return recommendations;

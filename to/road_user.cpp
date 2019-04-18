@@ -88,6 +88,9 @@ float height_c; // Variance of RU height measurements.
 string signature; // Used for signing the message content.
 string source_uuid;
 
+/* flag indicating availability of road user to recieve waypoint */
+bool processing_waypoint;
+
 public:
 
 RoadUser(string type,string context,string origin,string version,uint64_t timestamp,string uuid,string its_station_type,bool connected,int32_t latitude,int32_t longitude,string position_type,
@@ -136,6 +139,7 @@ type = "ru_description";
 context = "lane_merge";
 origin = "self";
 version = "1.0.0";
+processing_waypoint = false;
 }
 
 ~RoadUser(); // Destructor declaration.
@@ -175,6 +179,7 @@ float getHeightConfidence();
 string getSignature();
 string getPositionType();
 string getSouceUUID();
+bool getProcessingWaypoint();
 
 void setType(string);
 void setContext(string);
@@ -209,6 +214,7 @@ void setHeightConfidence(float);
 void setSignature(string);
 void setPositionType(string);
 void setSourceUUID(string);
+void setProcessingWaypoint(bool);
 
 };
 
@@ -247,6 +253,7 @@ float RoadUser::getHeightConfidence(){return height_c;}
 string RoadUser::getSignature(){return signature;}
 string RoadUser::getPositionType(){return position_type;}
 string RoadUser::getSouceUUID(){return source_uuid;}
+bool RoadUser::getProcessingWaypoint(){return processing_waypoint;}
 
 void RoadUser::setType(string parameter){type = parameter;}
 void RoadUser::setContext(string parameter){context = parameter;}
@@ -281,6 +288,7 @@ void RoadUser::setHeightConfidence(float parameter){height_c = parameter;}
 void RoadUser::setSignature(string parameter){signature = parameter;}
 void RoadUser::setPositionType(string parameter){position_type = parameter;}
 void RoadUser::setSourceUUID(string parameter){source_uuid = parameter;}
+void RoadUser::setProcessingWaypoint(bool parameter){processing_waypoint = parameter;}
 
 std::ostream& operator<<(std::ostream& os, RoadUser * roadUser) {
 
@@ -350,6 +358,8 @@ std::ostream& operator<<(std::ostream& os, RoadUser * roadUser) {
   << roadUser->getHeightConfidence()
   << ","
   << roadUser->getSignature()
+  << ","
+  << roadUser->getProcessingWaypoint()
   << "]\n";
 
   return os;

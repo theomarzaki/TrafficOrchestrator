@@ -224,14 +224,20 @@ void handleNotifyAdd(Document &document) {
 }
 
 bool handleTrajectoryFeedback(Document &document) {
-	cout << "\n*********************************** Received Trajectory Feedback *********************************** \n";
 	maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
 	write_to_log("Maneuver Feedback: " + maneuverFeed->getFeedback());
 	if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
 		write_to_log("calculating new Trajectory for Vehicle");
 		return false;
+	}else if(maneuverFeed->getFeedback() == "checkpoint"){
+		RoadUser * roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
+		if(roadUser != NULL){
+			roadUser->setProcessingWaypoint(false);
+			database->upsert(roadUser);
+		}
+	}else{
+		return true;
 	}
-  return true;
 }
 
 void handleNotifyDelete(Document &document) {
@@ -279,7 +285,7 @@ void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
                       const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
   vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
   if(!recommendations.empty()) {
-					write_to_log("\n ***********************************  Sending  *********************************** \n");
+					write_to_log("Sending recommendations.\n");
 					sendTrajectoryRecommendations(recommendations,socket);
 				} else {
 					write_to_log("No Trajectories Calculated.\n");
