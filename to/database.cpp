@@ -50,7 +50,7 @@ void Database::displayDatabase() {
 
 void Database::upsert(RoadUser *roadUser) {
   RoadUser * updated_roadUser = findRoadUser(roadUser->getUuid());
-  if(updated_roadUser != NULL){
+  if(updated_roadUser != nullptr){
     updated_roadUser->setTimestamp(roadUser->getTimestamp());
     updated_roadUser->setSpeed(roadUser->getSpeed());
     updated_roadUser->setHeading(roadUser->getHeading());
@@ -89,7 +89,7 @@ RoadUser * Database::findRoadUser(string uuid) {
     //MAYBE FIXME: huge memory leak. Need to find how to delete a pointer in a map
     return iterator->second;
   }
-  return NULL;
+  return nullptr;
 }
 
 

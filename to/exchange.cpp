@@ -231,7 +231,7 @@ bool handleTrajectoryFeedback(Document &document) {
 		return false;
 	}else if(maneuverFeed->getFeedback() == "checkpoint"){
 		RoadUser * roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
-		if(roadUser != NULL){
+		if(roadUser != nullptr){
 			roadUser->setProcessingWaypoint(false);
 			database->upsert(roadUser);
 			return true;

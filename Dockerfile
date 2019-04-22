@@ -9,7 +9,8 @@ RUN apt-get install -y build-essential \
 							nodejs \
 							cmake \
 							unzip \
-							vim
+							vim \
+							valgrind
 
 COPY . /communication_layer
 

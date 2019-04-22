@@ -60,14 +60,13 @@ bool inRange(int low, int high, int x){
 
 pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * merging_car,std::vector<RoadUser*> close_by){
   RoadUser * closest_following = new RoadUser();
+	RoadUser * closest_preceeding = new RoadUser();
   closest_following->setLongitude(RoadUserGPStoProcessedGPS(merging_car->getLongitude()-10000)); // OBTAIN FROM ROAD MAPPING
   closest_following->setLatitude(RoadUserGPStoProcessedGPS(merging_car->getLatitude()-10000)); // OBTAIN FROM ROAD MAPPING
   closest_following->setSpeed(merging_car->getSpeed());
   closest_following->setWidth(merging_car->getWidth());
   closest_following->setLength(merging_car->getLength());
   closest_following->setAcceleration(merging_car->getAcceleration());
-  closest_following->setLanePosition(merging_car->getLanePosition()+1);
-  RoadUser * closest_preceeding = new RoadUser();
   closest_preceeding->setLongitude(RoadUserGPStoProcessedGPS(merging_car->getLongitude()+10000)); // OBTAIN FROM ROAD MAPPING
   closest_preceeding->setLatitude(RoadUserGPStoProcessedGPS(merging_car->getLatitude()+10000)); //OBTAIN FROM ROAD MAPPING
   closest_preceeding->setSpeed(merging_car->getSpeed());
@@ -82,7 +81,7 @@ pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * mergin
   for(RoadUser * close_car : close_by){
     if(close_car->getLatitude() < merging_car->getLatitude() && close_car->getLongitude() < merging_car->getLongitude()){ //closest following
       if(distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),RoadUserGPStoProcessedGPS(close_car->getLongitude()),RoadUserGPStoProcessedGPS(merging_car->getLatitude()),RoadUserGPStoProcessedGPS(merging_car->getLongitude())) < minFollowing){
-          closest_following = close_car;
+        closest_following = close_car;
       }
     }
     if (close_car->getLatitude() > merging_car->getLatitude() && close_car->getLongitude() > merging_car->getLongitude()){ //closest preceeding
