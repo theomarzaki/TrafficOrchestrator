@@ -219,9 +219,8 @@ UnsubscriptionResponse * handleUnSubscriptionResponse(Document &document) {
 void handleNotifyAdd(Document &document) {
 	write_to_log("Notify Add Received.");
 	const vector<Detected_Road_User> &roadUsers = assignNotificationVals(document).ru_description_list;
-	int size = roadUsers.size();
 	RoadUser * road_users = detectedToRoadUserList(roadUsers);
-	for(int j = 0; j < size; j++) {
+	for(int j = 0; j < roadUsers.size(); j++) {
 		database->upsert(&road_users[j]);
 	}
 }
@@ -239,6 +238,7 @@ bool handleTrajectoryFeedback(Document &document) {
 			database->upsert(roadUser);
 			return true;
 		}
+		delete roadUser;
 	}else{
 		return true;
 	}

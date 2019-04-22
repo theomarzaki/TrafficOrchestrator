@@ -202,7 +202,7 @@ vector<float> RoadUsertoModelInput(RoadUser * merging_car,vector<pair<RoadUser*,
   return mergingCar;
 }
 
-ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> lstm_model,std::shared_ptr<torch::jit::script::Module> rl_model){
+ManeuverRecommendation* calculatedTrajectories(Database * database,RoadUser * mergingVehicle,at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> lstm_model,std::shared_ptr<torch::jit::script::Module> rl_model){
   ManeuverRecommendation* mergingManeuver = new ManeuverRecommendation();
 	std::vector<torch::jit::IValue> rl_inputs;
 
@@ -230,7 +230,8 @@ ManeuverRecommendation* calculatedTrajectories(RoadUser * mergingVehicle,at::Ten
 	waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
   mergingManeuver->addWaypoint(waypoint);
 	mergingVehicle->setProcessingWaypoint(true);
-
+	database->upsert(mergingVehicle);
+	
   return mergingManeuver;
 }
 
@@ -242,7 +243,7 @@ vector<ManeuverRecommendation*> ManeuverParser(Database * database, double dista
 			auto neighbours = mapNeighbours(database,distanceRadius);
       auto input_values = RoadUsertoModelInput(r,neighbours);
       auto models_input = torch::tensor(input_values).unsqueeze(0);
-			recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
+			recommendations.push_back(calculatedTrajectories(database,r,models_input,lstm_model,rl_model));
 		}
 	}
   return recommendations;
