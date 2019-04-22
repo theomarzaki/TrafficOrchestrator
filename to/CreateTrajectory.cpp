@@ -61,7 +61,7 @@ bool inRange(int low, int high, int x){
 pair<RoadUser*,RoadUser*> getClosestFollowingandPreceedingCars(RoadUser * merging_car,std::vector<RoadUser*> close_by){
   RoadUser * closest_following = new RoadUser();
 	RoadUser * closest_preceeding = new RoadUser();
-  closest_following->setLongitude(RoadUserGPStoProcessedGPS(merging_car->getLongitude()-10000)); // OBTAIN FROM ROAD MAPPING
+	closest_following->setLongitude(RoadUserGPStoProcessedGPS(merging_car->getLongitude()-10000)); // OBTAIN FROM ROAD MAPPING
   closest_following->setLatitude(RoadUserGPStoProcessedGPS(merging_car->getLatitude()-10000)); // OBTAIN FROM ROAD MAPPING
   closest_following->setSpeed(merging_car->getSpeed());
   closest_following->setWidth(merging_car->getWidth());

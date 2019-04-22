@@ -177,9 +177,9 @@ Document parse(string readFromServer) {
 
 Detected_Road_User assignRoadUserVals(Document &document) {
 	Detected_Road_User values;
-  if(!(document.IsObject())){
-    return values;
-  }
+  // if(!(document.IsObject())){
+  //   return values;
+  // }
   //TODO: use int instead of double when possible
   values.type = document["type"].GetString();
   document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";

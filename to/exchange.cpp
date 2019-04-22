@@ -26,6 +26,7 @@
 #include <thread>
 #include <cstdlib>
 #include <ctime>
+#include <csignal>
 
 using namespace std;
 
@@ -48,7 +49,11 @@ double distanceRadius;
 uint32_t mergingLongitude;
 uint32_t mergingLatitude;
 string uuidTo;
+int request_id;
+int socket_c;
 bool filter = true;
+std::shared_ptr<torch::jit::script::Module> lstm_model;
+std::shared_ptr<torch::jit::script::Module> rl_model;
 
 
 RoadUser * detectedToRoadUserList(vector<Detected_Road_User> v) {
@@ -163,22 +168,20 @@ void generateUuidTo() {
 
 int generateReqID(){
 	srand(time(NULL));
-	int x = std::rand();
-	return x;
+	request_id = std::rand();
 }
 
 void sendTrajectoryRecommendations(vector<ManeuverRecommendation*> v,int socket) {
 	for(ManeuverRecommendation * m : v) {
-		cout << createManeuverJSON(m) << endl;
+		m->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 		write_to_log(createManeuverJSON(m));
 		sendDataTCP(socket,sendAddress, sendPort,receiveAddress,receivePort, createManeuverJSON(m));
 	}
 }
 
-int initiateSubscription(string sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter,int radius,uint32_t longitude, uint32_t latitude) {
+void initiateSubscription(string sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter,int radius,uint32_t longitude, uint32_t latitude) {
 	milliseconds timeSub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	SubscriptionRequest * subscriptionReq = new SubscriptionRequest();
-	int request_id = generateReqID();
 	subscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 	subscriptionReq->setFilter(filter);
 	subscriptionReq->setRadius(radius);
@@ -189,15 +192,15 @@ int initiateSubscription(string sendAddress, int sendPort,string receiveAddress,
 	subscriptionReq->setRequestId(request_id);
 	subscriptionReq->setTimestamp(timeSub.count());
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
-	auto socket = sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createSubscriptionRequestJSON(subscriptionReq));
+	socket_c = sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createSubscriptionRequestJSON(subscriptionReq));
 	write_to_log("Sent subscription request to " + sendAddress + ":"+ to_string(sendPort));
-	return socket;
 }
 
 void initiateUnsubscription(string sendAddress, int sendPort, SubscriptionResponse * subscriptionResp) {
 
 	milliseconds timeUnsub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	UnsubscriptionRequest * unsubscriptionReq = new UnsubscriptionRequest();
+	unsubscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 	unsubscriptionReq->setSubscriptionId(subscriptionResp->getSubscriptionId());
 	unsubscriptionReq->setTimestamp(timeUnsub.count());
 	sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createUnsubscriptionRequestJSON(unsubscriptionReq));
@@ -293,6 +296,16 @@ void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
 				}
 }
 
+void terminate_to(int signum ){
+	write_to_log("Sending unsubscription request.\n");
+	initiateUnsubscription(sendAddress,sendPort,subscriptionResp);
+	close(socket_c);
+	lstm_model.reset();
+	rl_model.reset();
+	exit(signum);
+}
+
+
 int main() {
 
 	FILE* file = fopen("../include/TO_config.json", "r");
@@ -300,11 +313,11 @@ int main() {
     std::cout << "Config File failed to load." << std::endl;
 	}
 
-	std::shared_ptr<torch::jit::script::Module> lstm_model = torch::jit::load("../include/lstm_model.pt");
+	lstm_model = torch::jit::load("../include/lstm_model.pt");
 
   if(lstm_model != nullptr) write_to_log("import of lstm model successful\n");
 
-	std::shared_ptr<torch::jit::script::Module> rl_model = torch::jit::load("../include/rl_model_Dueling.pt");
+	rl_model = torch::jit::load("../include/rl_model_Dueling.pt");
 
   if(rl_model != nullptr) write_to_log("import of rl model successful\n");
 
@@ -322,15 +335,16 @@ int main() {
 	inputReceivePort(document["receivePort"].GetInt());
 	inputReceiveAddress(document["receiveAddress"].GetString());
 
-	auto socket = initiateSubscription(sendAddress,sendPort,receiveAddress,receivePort,filter,document["distanceRadius"].GetInt(),document["longitude"].GetUint(),document["latitude"].GetUint());
+	initiateSubscription(sendAddress,sendPort,receiveAddress,receivePort,filter,document["distanceRadius"].GetInt(),document["longitude"].GetUint(),document["latitude"].GetUint());
 	initaliseDatabase();
 	bool listening = false;
 	string reconnect = "RECONNECT";
 	string reconnect_flag;
 
+	signal(SIGINT,terminate_to);
 
 	do {
-		auto captured_data = listenDataTCP(socket);
+		auto captured_data = listenDataTCP(socket_c);
 		Document document = parse(captured_data);
 		message_type messageType = filterInput(document);
 		if(captured_data == "\n" || captured_data == string()){
@@ -340,7 +354,7 @@ int main() {
 		switch (messageType){
 			case message_type::notify_add:
 				handleNotifyAdd(document);
-        computeManeuvers(lstm_model, rl_model, socket);
+        computeManeuvers(lstm_model, rl_model, socket_c);
 				break;
 			case message_type::notify_delete:
 				handleNotifyDelete(document);
@@ -353,7 +367,7 @@ int main() {
 				break;
 			case message_type::trajectory_feedback:
 				if (!handleTrajectoryFeedback(document)) {
-          computeManeuvers(lstm_model, rl_model, socket);
+          computeManeuvers(lstm_model, rl_model, socket_c);
 				}
         break;
 			case message_type::heart_beat:
@@ -374,8 +388,6 @@ int main() {
 		std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 		main();
 	}
-
-	initiateUnsubscription(sendAddress,sendPort,subscriptionResp);
 
 	return 0;
 }

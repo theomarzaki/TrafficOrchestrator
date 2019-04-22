@@ -60,6 +60,7 @@ void Database::upsert(RoadUser *roadUser) {
     database[roadUser->getUuid()] = updated_roadUser;
   }else{
     database[roadUser->getUuid()] = roadUser;
+    delete updated_roadUser;
   }
 
 }
