@@ -378,11 +378,11 @@ string listenDataTCP(int socket_c) {
     int i = read(socket_c,dataReceived,sizeof(dataReceived));
 
     if(i < 0) {
-      write_to_log("Error: Failed to receive transmitted data.\n");
+      write_to_log("Error: Failed to receive transmitted data.\n" + dataReceived + "End.\n");
       break;
     }
     else if(i == 0) {
-      printf("Socket closed from the remote server.\n");
+      write_to_log("Socket closed from the remote server.\n");
       return "RECONNECT";
     }
     else if(i > 0){
