@@ -33,7 +33,7 @@
 *.app
 
 .idea/
-cmake-build-*/
+cmake-*/
 
 logs/
 

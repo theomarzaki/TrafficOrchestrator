@@ -8,8 +8,23 @@
 
 // Modified by : Omar Nassef(KCL)
 
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <thread>
+#include <cstdlib>
+#include <ctime>
+#include <experimental/filesystem>
+#include <csignal>
+#include <iostream>
+#include <vector>
+#include <random>
+#include <chrono>
+
+#include "rapidjson/document.h"
 #include <torch/torch.h>
 #include <torch/script.h>
+
 #include "detection_interface.cpp"
 #include "database.cpp"
 #include "maneuver_feedback.cpp"
@@ -17,20 +32,7 @@
 #include "subscription_response.cpp"
 #include "CreateTrajectory.cpp"
 #include "unsubscription_response.cpp"
-#include <experimental/filesystem>
-#include <csignal>
-#include <iostream>
-#include <vector>
-#include <random>
-#include <chrono>
-#include "rapidjson/document.h"
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <thread>
-#include <cstdlib>
-#include <ctime>
-
+#include "mapper.cpp"
 
 using namespace std;
 

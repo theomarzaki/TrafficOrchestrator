@@ -7,8 +7,6 @@
       "_id" : 0,
       "name" : "Rond-Point Central",
       "type" : "loop",
-      "forkFrom" : null,
-      "mergeInto" : null,
       "numberOfLanes" : 1,
       "lanes" : [
         {
@@ -159,8 +157,6 @@
       "_id" : 1,
       "name" : "Autoroute principale",
       "type" : "stripe",
-      "forkFrom" : 0,
-      "mergeInto" : 0,
       "numberOfLanes" : 3,
       "lanes" : [
         {
