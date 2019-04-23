@@ -231,7 +231,7 @@ ManeuverRecommendation* calculatedTrajectories(Database * database,RoadUser * me
   mergingManeuver->addWaypoint(waypoint);
 	mergingVehicle->setProcessingWaypoint(true);
 	database->upsert(mergingVehicle);
-	
+
   return mergingManeuver;
 }
 

@@ -51,7 +51,7 @@ class SubscriptionRequest {
 			context = "subscriptions"; //changed from subscription_mechanism
 			origin = "traffic_orchestrator";
 			source_uuid = "traffic_orchestrator";
-			destination_uuid = "v2xgw";
+			destination_uuid = "v2x_gateway";
 		}
 
 		SubscriptionRequest() {
@@ -59,7 +59,7 @@ class SubscriptionRequest {
 			context = "subscriptions"; // same as above
 			origin = "traffic_orchestrator";
 			source_uuid = "traffic_orchestrator"; // add to json format properly
-			destination_uuid = "v2xgw";
+			destination_uuid = "v2x_gateway";
 		}
 
 	~SubscriptionRequest();

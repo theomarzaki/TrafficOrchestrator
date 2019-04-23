@@ -299,6 +299,7 @@ void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
 void terminate_to(int signum ){
 	write_to_log("Sending unsubscription request.\n");
 	initiateUnsubscription(sendAddress,sendPort,subscriptionResp);
+	std::this_thread::sleep_for(std::chrono::milliseconds(15000));
 	close(socket_c);
 	lstm_model.reset();
 	rl_model.reset();
