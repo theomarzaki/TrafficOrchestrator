@@ -296,6 +296,7 @@ void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
 				}
 }
 
+// Function Handling the exit of TO
 void terminate_to(int signum ){
 	write_to_log("Sending unsubscription request.\n");
 	initiateUnsubscription(sendAddress,sendPort,subscriptionResp);
@@ -339,9 +340,9 @@ int main() {
 	initiateSubscription(sendAddress,sendPort,receiveAddress,receivePort,filter,document["distanceRadius"].GetInt(),document["longitude"].GetUint(),document["latitude"].GetUint());
 	initaliseDatabase();
 	bool listening = false;
-	string reconnect = "RECONNECT";
 	string reconnect_flag;
 
+	// terminate TO on abortion/interruption
 	signal(SIGINT,terminate_to);
 
 	do {
@@ -383,7 +384,7 @@ int main() {
 				break;
 		}
 		reconnect_flag = captured_data;
-	} while(reconnect_flag != reconnect);
+	} while(reconnect_flag != "RECONNECT");
 	listening = false;
 	while(!listening){
 		std::this_thread::sleep_for(std::chrono::milliseconds(10000));
