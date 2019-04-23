@@ -152,6 +152,12 @@ public:
         return EARTH_RADIUS * c;
     }
 
+    static double distanceBetweenAPointAndAStraightLine(double xP, double yP, double xL, double yL, double xH, double yH) {
+        auto coef = (yH - yL) / (xH - xL);
+        auto offset = coef*xL - yL;
+        return (- coef*xP + yP - offset) / sqrt( pow(coef,2) + 1 );
+    }
+
     Gps_Descriptor getPositionDescriptor(double latitude, double longitude) {
 
         Gps_Descriptor nearestDescription;
@@ -161,6 +167,7 @@ public:
         nearestDescription.state = Mapper_Result_State::OUT_OF_MAP;
 
         auto distance = numeric_limits<double>::max();
+        int index = -1;
 
         for (auto& road : *roads) { // TODO Change basic optimum search
             for (auto& lane : road.lanes) {
@@ -172,10 +179,41 @@ public:
                         nearestDescription.laneId = lane.id;
                         nearestDescription.state = Mapper_Result_State::ON;
                         nearestDescription.roadName = road.name;
+                        index = i;
                     }
                 }
             }
         }
+
+        if (index > -1) {
+            auto lane = roads->at(nearestDescription.roadId).lanes.at(nearestDescription.laneId);
+            auto node = lane.nodes.at(index);
+            auto previousNode = lane.nodes.at(index -1);
+            auto nextNode = lane.nodes.at(index +1);
+
+            auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode.latitude, previousNode.longitude, latitude, longitude);
+            auto distanceToNext = distanceBetween2GPSCoordinates(nextNode.latitude, nextNode.longitude, latitude, longitude);
+
+            auto compareNode = distanceToPrevious < distanceToNext ? previousNode : nextNode;
+
+            auto xH = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, compareNode.latitude, node.longitude);
+            auto yH = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, node.latitude, compareNode.longitude);
+
+            auto xP = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, compareNode.latitude, longitude);
+            auto yP = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, latitude, compareNode.longitude);
+
+            xH = node.latitude < compareNode.latitude ? -xH : xH;
+            yH = node.longitude < compareNode.longitude ? -yH : yH;
+
+            xP = latitude < compareNode.latitude ? -xP : xP;
+            yP = longitude < compareNode.longitude ? -yP : yP;
+
+            auto distance = distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH);
+            if (distance <= lane.size/2) {
+                nearestDescription.state = Mapper_Result_State::OUT_OF_ROAD;
+            }
+        }
+
         return std::move(nearestDescription);
     }
 };
