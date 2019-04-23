@@ -155,7 +155,7 @@ public:
     static double distanceBetweenAPointAndAStraightLine(double xP, double yP, double xL, double yL, double xH, double yH) {
         auto coef = (yH - yL) / (xH - xL);
         auto offset = coef*xL - yL;
-        return (- coef*xP + yP - offset) / sqrt( pow(coef,2) + 1 );
+        return fabs(- coef*xP + yP - offset) / sqrt( pow(coef,2) + 1 );
     }
 
     Gps_Descriptor getPositionDescriptor(double latitude, double longitude) {
