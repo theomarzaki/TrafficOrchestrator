@@ -402,7 +402,7 @@ string listenDataTCP(int socket_c) {
 
     if (!incomplete_messages.empty()) {
       returning = incomplete_messages.front();
-      write_to_log(incomplete_messages.front() + "\n");
+      if(returning != "\n" && returning != string()) write_to_log(returning + "\n");
       incomplete_messages.pop_front();
     }
   }
