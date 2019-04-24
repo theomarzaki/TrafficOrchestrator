@@ -373,7 +373,6 @@ int main() {
 				}
         break;
 			case message_type::heart_beat:
-		    write_to_log("Recieved HeartBeat");
 				break;
 			case message_type::reconnect:
 		    write_to_log("Reconnecting");
