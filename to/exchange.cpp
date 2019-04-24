@@ -172,7 +172,7 @@ void generateUuidTo() {
 	uuidTo = to_string(10000000 + ( std::rand() % ( 99999999 - 10000000 + 1 )));
 }
 
-int generateReqID(){
+void generateReqID(){
 	srand(time(NULL));
 	request_id = std::rand();
 }
@@ -188,7 +188,7 @@ void sendTrajectoryRecommendations(vector<std::shared_ptr<ManeuverRecommendation
 void initiateSubscription(const string &sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter,int radius,uint32_t longitude, uint32_t latitude) {
 	milliseconds timeSub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	auto subscriptionReq{std::make_shared<SubscriptionRequest>()};
-	request_id = generateReqID();
+	generateReqID();
 	subscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 	subscriptionReq->setFilter(filter);
 	subscriptionReq->setRadius(radius);
@@ -240,17 +240,15 @@ bool handleTrajectoryFeedback(Document &document) {
 	if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
 		write_to_log("calculating new Trajectory for Vehicle");
 		return false;
-	}else if(maneuverFeed->getFeedback() == "checkpoint"){
-		RoadUser * roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
+	}
+	if(maneuverFeed->getFeedback() == "checkpoint"){
+		auto roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
 		if(roadUser != nullptr){
 			roadUser->setProcessingWaypoint(false);
 			database->upsert(roadUser);
-			return true;
 		}
-		delete roadUser;
-	}else{
-		return true;
 	}
+	return true;
 }
 
 void handleNotifyDelete(Document &document) {
@@ -296,7 +294,7 @@ void initaliseDatabase() {
 
 void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
                       const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
-  vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
+  auto recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
   if(!recommendations.empty()) {
 					write_to_log("Sending recommendations.\n");
 					sendTrajectoryRecommendations(recommendations,socket);

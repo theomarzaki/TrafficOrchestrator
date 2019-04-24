@@ -28,7 +28,7 @@ public:
   void upsert(shared_ptr<RoadUser> roadUser);
   void deleteRoadUser(string uuid);
   void deleteAll();
-  RoadUser * findRoadUser(string uuid);
+  std::shared_ptr<RoadUser> findRoadUser(string uuid);
   int getSize();
   vector<shared_ptr<RoadUser>> findAll();
 };
@@ -49,7 +49,7 @@ void Database::displayDatabase() {
 */
 
 void Database::upsert(shared_ptr<RoadUser> roadUser) {
-  shared_ptr<RoadUser> updated_roadUser = findRoadUser(roadUser->getUuid());
+  auto updated_roadUser = findRoadUser(roadUser->getUuid());
   if(updated_roadUser != nullptr){
     updated_roadUser->setTimestamp(roadUser->getTimestamp());
     updated_roadUser->setSpeed(roadUser->getSpeed());
@@ -60,7 +60,6 @@ void Database::upsert(shared_ptr<RoadUser> roadUser) {
     database[roadUser->getUuid()] = updated_roadUser;
   }else{
     database[roadUser->getUuid()] = roadUser;
-    delete updated_roadUser;
   }
 
 }
