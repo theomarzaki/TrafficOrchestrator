@@ -4,18 +4,25 @@
 //
 
 #include "rapidjson/document.h"
+#include "rapidjson/rapidjson.h"
 #include <vector>
 #include <limits>
 #include <math.h>
 #include <array>
+#include <vector>
+#include <memory>
+#include <iostream>
+#include <fstream>
+#include <unistd.h>
 
-#define MONTLHERY_MAP "handcraft_montlhery_road_path"
 #define EARTH_RADIUS 6371000
 
 class Mapper {
 private:
-    static std::shared_ptr<Mapper> mapper;
-    static std::string pathToMap;
+    inline static const std::string MONTLHERY_MAP = "handcraft_montlhery_road_path";
+
+    inline static std::shared_ptr<Mapper> mapper;
+    inline static std::string pathToMap;
 
     struct Lane_Node {
         double latitude;
@@ -25,7 +32,7 @@ private:
     struct Lane_Descriptor {
         int id;
         float size;
-        vector<Lane_Node> nodes{vector<Lane_Node>()};
+        std::vector<Lane_Node> nodes{std::vector<Lane_Node>()};
     };
 
     struct Road_Descriptor {
@@ -35,10 +42,10 @@ private:
         int forkFrom;
         int mergeInto;
         int numberOfLanes;
-        vector<Lane_Descriptor> lanes{vector<Lane_Descriptor>()};
+        std::vector<Lane_Descriptor> lanes{std::vector<Lane_Descriptor>()};
     };
 
-    std::unique_ptr<vector<Road_Descriptor>> roads = std::make_unique<vector<Road_Descriptor>>();
+    std::unique_ptr<std::vector<Road_Descriptor>> roads = std::make_unique<std::vector<Road_Descriptor>>();
     int numberOfRoad = 0;
 
     Mapper() {
@@ -53,7 +60,7 @@ private:
             file.close();
         }
 
-        auto json = std::make_unique<Document>();
+        auto json = std::make_unique<rapidjson::Document>();
         if (!jsonString.empty()) {
             json->Parse(jsonString.c_str());
             createMapContainer(std::move(json));
@@ -62,7 +69,7 @@ private:
         }
     }
 
-    void createMapContainer(std::unique_ptr<Document> json) {
+    void createMapContainer(std::unique_ptr<rapidjson::Document> json) { // TODO Change array topography
         if (json->IsObject()) {
             numberOfRoad = json->HasMember("numberOfRoad") ? json->FindMember("numberOfRoad")->value.GetInt() : 0;
             for (auto& road : json->FindMember("roads")->value.GetArray()) {
@@ -74,12 +81,12 @@ private:
                 for (auto& lane : road["lanes"].GetArray()) {
                     Lane_Descriptor laneStruct;
                     laneStruct.id = lane.HasMember("_id") ? lane["_id"].GetInt() : -1;
-                    laneStruct.size = lane.HasMember("_id") ? lane["_id"].GetInt() : 0;
+                    laneStruct.size = lane.HasMember("size") ? lane["size"].GetFloat() : 0;
 
                     for (auto& node : lane["points"].GetArray()) {
                         Lane_Node nodeStruct;
-                        nodeStruct.latitude = node.HasMember("latitude") ? node["latitude"].GetDouble() : 120.0; // Aka impossible
-                        nodeStruct.longitude = node.HasMember("longitude") ? node["longitude"].GetDouble() : 220.0;
+                        nodeStruct.latitude = node.HasMember("lat") ? node["lat"].GetDouble() : 120.0; // Aka impossible
+                        nodeStruct.longitude = node.HasMember("long") ? node["long"].GetDouble() : 220.0;
                         laneStruct.nodes.push_back(nodeStruct);
                     }
                     roadStruct.lanes.push_back(laneStruct);
@@ -93,10 +100,11 @@ private:
 
 public:
 
-    enum Mapper_Result_State{
+    enum class Mapper_Result_State{
+        ERROR,
         OUT_OF_MAP,
         OUT_OF_ROAD,
-        ON,
+        OK,
     };
 
     struct Gps_Descriptor {
@@ -107,8 +115,7 @@ public:
     };
 
     static bool setMap(const std::string& mapPath) {
-        struct stat buffer;
-        if ( stat(std::string("./include/"+mapPath+".json").c_str(), &buffer) == 0) {
+        if ( access( std::string("./include/"+mapPath+".json").c_str(), F_OK ) > -1) {
             printf("[INFO] Map path set");
             pathToMap = mapPath;
             return true;
@@ -127,17 +134,19 @@ public:
         } catch (const std::exception& e) {
             printf("[ERROR] Mapper initializer : %s",e.what());
         }
+        return nullptr;
     }
 
     static double toRadian(double value) {
-        return value * M_1_PIf64 / 180.0;
+        return value * M_PIf64 / 180.0;
     }
 
     static double toDegree(double value) {
-        return value * 180.0 / M_1_PIf64;
+        return value * 180.0 / M_PIf64;
     }
 
-    static double distanceBetween2GPSCoordinates(double latitude, double longitude, double latitude2, double longitude2) {  // in meters not in imperials shits
+    static double distanceBetween2GPSCoordinates(double latitude, double longitude,
+                                                 double latitude2, double longitude2) {  // in meters not in imperials shits
         latitude = toRadian(latitude);
         longitude = toRadian(longitude);
         latitude2 = toRadian(latitude2);
@@ -152,7 +161,9 @@ public:
         return EARTH_RADIUS * c;
     }
 
-    static double distanceBetweenAPointAndAStraightLine(double xP, double yP, double xL, double yL, double xH, double yH) {
+    static double distanceBetweenAPointAndAStraightLine(double xP, double yP,
+                                                        double xL, double yL,
+                                                        double xH, double yH) {
         auto coef = (yH - yL) / (xH - xL);
         auto offset = coef*xL - yL;
         return fabs(- coef*xP + yP - offset) / sqrt( pow(coef,2) + 1 );
@@ -164,20 +175,20 @@ public:
         nearestDescription.roadId = -1;
         nearestDescription.laneId = -1;
         nearestDescription.roadName = "";
-        nearestDescription.state = Mapper_Result_State::OUT_OF_MAP;
+        nearestDescription.state = Mapper_Result_State::ERROR;
 
-        auto distance = numeric_limits<double>::max();
+        auto distance = std::numeric_limits<double>::max();
         int index = -1;
 
         for (auto& road : *roads) { // TODO Change basic optimum search
             for (auto& lane : road.lanes) {
-                for (int i=0; i < size(lane.nodes); i++) {
-                    auto nodeDistance = distanceBetween2GPSCoordinates(lane.nodes.at(i).latitude, lane.nodes.at(i).longitude, latitude, longitude);
+                for (int i=0; i < size(lane.nodes); i++) { // TODO Find match with sector vectors
+                    double nodeDistance = distanceBetween2GPSCoordinates(lane.nodes.at(i).latitude, lane.nodes.at(i).longitude, latitude, longitude);
                     if (nodeDistance < distance) {
                         distance = nodeDistance;
                         nearestDescription.roadId = road.id;
                         nearestDescription.laneId = lane.id;
-                        nearestDescription.state = Mapper_Result_State::ON;
+                        nearestDescription.state = Mapper_Result_State::OUT_OF_ROAD;
                         nearestDescription.roadName = road.name;
                         index = i;
                     }
@@ -186,34 +197,56 @@ public:
         }
 
         if (index > -1) {
-            auto lane = roads->at(nearestDescription.roadId).lanes.at(nearestDescription.laneId);
-            auto node = lane.nodes.at(index);
-            auto previousNode = lane.nodes.at(index -1);
-            auto nextNode = lane.nodes.at(index +1);
+            if (distance < 10000) { // TODO Find the extremum of the serie and define the limit with it.
+                auto lane = roads->at(nearestDescription.roadId).lanes.at(nearestDescription.laneId);
+                auto node = lane.nodes.at(index);
+                auto previousNode = lane.nodes.at(index -1);
+                auto nextNode = lane.nodes.at(index +1);
 
-            auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode.latitude, previousNode.longitude, latitude, longitude);
-            auto distanceToNext = distanceBetween2GPSCoordinates(nextNode.latitude, nextNode.longitude, latitude, longitude);
+                auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode.latitude, previousNode.longitude, latitude, longitude);
+                auto distanceToNext = distanceBetween2GPSCoordinates(nextNode.latitude, nextNode.longitude, latitude, longitude);
 
-            auto compareNode = distanceToPrevious < distanceToNext ? previousNode : nextNode;
+                auto compareNode = distanceToPrevious < distanceToNext ? previousNode : nextNode;
 
-            auto xH = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, compareNode.latitude, node.longitude);
-            auto yH = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, node.latitude, compareNode.longitude);
+                auto xH = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, compareNode.latitude, node.longitude);
+                auto yH = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, node.latitude, compareNode.longitude);
 
-            auto xP = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, compareNode.latitude, longitude);
-            auto yP = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, latitude, compareNode.longitude);
+                auto xP = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, compareNode.latitude, longitude);
+                auto yP = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, latitude, compareNode.longitude);
 
-            xH = node.latitude < compareNode.latitude ? -xH : xH;
-            yH = node.longitude < compareNode.longitude ? -yH : yH;
+                xH = node.latitude < compareNode.latitude ? -xH : xH;
+                yH = node.longitude < compareNode.longitude ? -yH : yH;
 
-            xP = latitude < compareNode.latitude ? -xP : xP;
-            yP = longitude < compareNode.longitude ? -yP : yP;
+                xP = latitude < compareNode.latitude ? -xP : xP;
+                yP = longitude < compareNode.longitude ? -yP : yP;
 
-            auto distance = distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH);
-            if (distance <= lane.size/2) {
-                nearestDescription.state = Mapper_Result_State::OUT_OF_ROAD;
+                if (distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) <= lane.size/2) { // TODO implement Square B-Spline distance check
+                    nearestDescription.state = Mapper_Result_State::OK;
+                }
+            } else {
+                nearestDescription.state = Mapper_Result_State::OUT_OF_MAP;
             }
         }
 
         return std::move(nearestDescription);
     }
 };
+
+int main() {
+
+    double vectors[9][2] = {{48.623246, 2.242104},  // lane0 in the grass
+                            {48.623206, 2.242140},  // lane1
+                            {48.623183, 2.242167},  // lane2
+                            {48.623162, 2.241968},  // lane0
+                            {48.623140, 2.241996},  // lane1
+                            {48.623115, 2.242018},  // lane2
+                            {48.623107, 2.241817},  // lane0
+                            {48.623083, 2.241847},  // lane1
+                            {48.623055, 2.241863}};  // lane2
+
+    for (auto& vector : vectors) {
+        Mapper::Gps_Descriptor buff = Mapper::getMapper()->getPositionDescriptor(vector[0],vector[1]);
+        printf("Lane : %d\n",buff.laneId);
+        printf("Status : %d\n\n",buff.state); // 3 = OK , 2 = OUT_OF_ROAD
+    }
+}
