@@ -7,18 +7,18 @@ class Dueling_DQN(nn.Module):
     def __init__(self):
         super(Dueling_DQN,self).__init__()
         self.feature = nn.Sequential(
-            nn.Linear(20, 256),
+            nn.Linear(20, 128),
             nn.ReLU()
         )
         self.advantage = nn.Sequential(
-            nn.Linear(256, 256),
+            nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(256, NUMBER_OF_ACTIONS)
+            nn.Linear(128, NUMBER_OF_ACTIONS)
         )
         self.value = nn.Sequential(
-            nn.Linear(256, 256),
+            nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(256, 1)
+            nn.Linear(128, 1)
         )
 
     def forward(self, x):
@@ -31,11 +31,11 @@ class DoubleQLearning(nn.Module):
     def __init__(self):
         super(DoubleQLearning, self).__init__()
         self.layers = nn.Sequential(
-            nn.Linear(20, 256),
+            nn.Linear(20, 128),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(256, NUMBER_OF_ACTIONS)
+            nn.Linear(128, NUMBER_OF_ACTIONS)
         )
 
     def forward(self, x):

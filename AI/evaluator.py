@@ -39,30 +39,37 @@ from RandomForestClassifier import RandomForestPredictor
 import json
 
 
-def DetermineAccuracy(featuresTest,model,agent,predictor):
+def DetermineAccuracy(featuresTest,model,agent):
     total = 0
     correct = 0
     for index,game_run in enumerate(featuresTest):
-        for current_epoch,state in enumerate(game_run):
-            current = state
-            next = (featuresTest[index])[current_epoch]
+        for current_epoch in range(game_run.shape[0]):
+            game_state = game_run
+            for state in range(game_state.shape[0]):
+                # try:
+                if state < 69:
+                    current = game_state[state].data.cpu().numpy()
 
-            output = model(current)
-            action_tensor = torch.zeros(5)
-            action_tensor[torch.argmax(output)] = 1
-            waypoint = agent.calculateActionComputed(action_tensor,current,next)
-            reward,terminal = CalculateReward(waypoint.data.cpu().numpy(),predictor)
+                    next = game_state[state + 1].data.cpu().numpy()
+                    output = model(torch.from_numpy(current))
+                    action_tensor = torch.zeros(5)
+                    action_tensor[torch.argmax(output).item()] = 1
+                    waypoint = agent.calculateActionComputed(action_tensor,current,next)
+                    reward,terminal = CalculateReward(waypoint,current)
 
-            if isCarTerminal(waypoint):
-                correct = correct + 1
-                break
+                    if isCarTerminal(waypoint):
+                        correct = correct + 1
+                        break
 
-            try:
-                game_run[current_epoch + 1] = torch.Tensor(waypoint)
-            except:
-                pass
-        total = total + 1
-        print("Right: {}, Total: {}".format(correct,total))
+
+                        game_run[current_epoch + 1] = torch.Tensor(waypoint)
+                else:
+                    break
+                # except:
+                #     pass
+
+            total = total + 1
+            print("Right: {}, Total: {}".format(correct,total))
     return correct/total * 100
 
 def GenerateJsonFiles(featuresTrain,model,agent,predictor):
@@ -80,7 +87,7 @@ def GenerateJsonFiles(featuresTrain,model,agent,predictor):
                     next = game_state[state + 1].data.cpu().numpy()
                     output = model(torch.from_numpy(current))
                     action_tensor = torch.zeros(5)
-                    action_tensor[torch.argmax(output)] = 1
+                    action_tensor[torch.argmax(output).item()] = 1
                     waypoint = agent.calculateActionComputed(action_tensor,current,next)
                     reward,terminal = CalculateReward(waypoint,predictor)
 
@@ -104,49 +111,55 @@ def GenerateJsonFiles(featuresTrain,model,agent,predictor):
     with open('data.txt', 'w') as outfile:
         json.dump(data, outfile)
 
-def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent,predictor):
+def FullMergeLaneScenario(is_scatter,featuresTrain,model,agent):
     to_plot = []
-    counter = 0
-    for index,game_run in enumerate(featuresTrain):
-        for current_epoch in range(game_run.shape[0]):
-            game_state = game_run
-            if counter > 1: break
-            counter = counter + 1
-            for state in range(game_state.shape[0]):
-                current = game_state[state].data.cpu().numpy()
-                try:
-                    next = game_state[state + 1].data.cpu().numpy()
-                    output = model(torch.from_numpy(current))
-                    action_tensor = torch.zeros(5)
-                    action_tensor[torch.argmax(output)] = 1
-                    waypoint = agent.calculateActionComputed(action_tensor,current,next)
-                    reward,terminal = CalculateReward(waypoint,predictor)
-                    print(reward)
+    # human_plot = []
+    # featuresTrain = featuresTrain.data.numpy()[::-1]
+    featuresTrain = featuresTrain.data.numpy()
+    game_run = featuresTrain[1]
+    for current_epoch in range(game_run.shape[0]):
+        game_state = game_run
+        for state in range(game_state.shape[0]):
+            current = game_state[state]
+            try:
+                next = game_state[state + 1]
+                output = model(torch.from_numpy(current))
+                action_tensor = torch.zeros(5)
+                action_tensor[torch.argmax(output).item()] = 1
+                waypoint = agent.calculateActionComputed(action_tensor,current,next)
 
-                    if not isCarTerminal(waypoint):
-                        if is_scatter:
-                            to_plot.append((waypoint[0],waypoint[1]))
-                        else:
-                            mergingX = waypoint[0]
-                            mergingY = waypoint[1]
-                            precedingX = waypoint[7]
-                            precedingY = waypoint[8]
-                            followingX = waypoint[13]
-                            followingY = waypoint[14]
+                reward,terminal = CalculateReward(waypoint,current_epoch)
+                print(reward)
 
-                            plots_X = [mergingX,precedingX,followingX]
-                            plots_Y = [mergingY,precedingY,followingY]
-                            to_plot.append((plots_X,plots_Y))
-                    else:
-                        print("reached goal")
-                        break
+                if terminal and reward > 1:
+                    print('reached')
+                    break
 
-                    game_state[state + 1] = torch.Tensor(waypoint)
-                except:
-                    pass
+                if is_scatter:
+                    to_plot.append((waypoint[0],waypoint[1]))
+                    # human_plot.append((game_run[state][0],game_run[state][1]))
+                else:
+                    mergingX = waypoint[0]
+                    mergingY = waypoint[1]
+                    precedingX = waypoint[7]
+                    precedingY = waypoint[8]
+                    followingX = waypoint[13]
+                    followingY = waypoint[14]
+
+                    plots_X = [mergingX,precedingX,followingX]
+                    plots_Y = [mergingY,precedingY,followingY]
+                    to_plot.append((plots_X,plots_Y))
+
+
+                game_state[state + 1] = torch.Tensor(waypoint)
+            except:
+                pass
+        break
+    # np.savetxt('human.csv',human_plot)
+    # np.savetxt('to.csv',to_plot)
     return to_plot
 
-def ActionedMergeLaneScenario(actions,featuresTrain,agent,predictor):
+def ActionedMergeLaneScenario(actions,featuresTrain,agent):
     to_plot = []
 
     left = torch.Tensor([0,0,1,0,0])
@@ -158,7 +171,7 @@ def ActionedMergeLaneScenario(actions,featuresTrain,agent,predictor):
     for index,action in enumerate(actions):
         game_state = (featuresTrain[0])[index]
         next = (featuresTrain[0])[index+1]
-        next = next.cpu().numpy()
+        next = next.data.cpu().numpy()
         if action == "left":
             waypoint = agent.calculateActionComputed(left,game_state,next)
         elif action == "right":
@@ -170,13 +183,13 @@ def ActionedMergeLaneScenario(actions,featuresTrain,agent,predictor):
         else:
             waypoint = agent.calculateActionComputed(nothing ,game_state,next)
 
-        reward,terminal = CalculateReward(waypoint,predictor)
+        reward,terminal = CalculateReward(waypoint,index)
         try:
-            waypoint = waypoint.cpu().numpy()
+            waypoint = waypoint.data.cpu().numpy()
         except:
             pass
         print(reward)
-        if not isCarTerminal(waypoint):
+        if not(terminal and reward > 1):
             mergingX = waypoint[0]
             mergingY = waypoint[1]
             precedingX = waypoint[7]
@@ -204,63 +217,27 @@ def main():
     parser.add_argument("--heatmap","--h",help="display vehicle trajectory of the merging car in a heat map",action='store_true')
     parser.add_argument("--double_dqn","--double",help="double dqn for car merging ",action='store_true')
     parser.add_argument("--lstm","--lm",help="test the accuracy of the lstm model",action='store_true')
-    parser.add_argument("--dueling_dqn","--ddqn",help="test the accuracy of the dueling DQN model",action='store_true')
+    parser.add_argument("--dueling_dqn","--dueling",help="test the accuracy of the dueling DQN model",action='store_true')
     parser.add_argument("--accuracy", "--acc", help ="Determing accuracy of the algorithm",action='store_true')
     parser.add_argument("--actions","--a",help="show the movement of the agent with plain actions, requires array of actions",action='store_true')
     parser.add_argument("--gen_json","--json",help="generate json to be shown on map using simulator",action='store_true')
     args = parser.parse_args()
 
-    predictor = RandomForestPredictor(Data().get_RFC_dataset())
+    # predictor = RandomForestPredictor(Data().get_RFC_dataset())
     agent = Agent()
-    if args.dueling_dqn:
-        model = torch.jit.load('rl_model_deuling.pt')
-    elif args.lstm:
-        lstm_model = torch.jit.load('../include/lstm_model.pt')
-    elif args.double_dqn:
-        model = torch.jit.load('rl_model_double.pt')
-    else:
-        model = torch.jit.load('rl_model.pt')
-
     data_wrapper = Data()
-    data = data_wrapper.get_RFC_dataset()
-    data = data[::-1]
-    data.heading = (data.heading + 180) % 360
-    data.drop(['recommendation', 'recommendedAcceleration'],axis=1,inplace=True)
 
     featuresTrain = data_wrapper.get_training_data_tensor()
     featuresTest = data_wrapper.get_testing_data_tensor()
 
-    if args.scatter == True:
-        to_plot = FullMergeLaneScenario(True,featuresTrain,model,agent)
-        plt.scatter([x[0] for x in to_plot],[x[1] for x in to_plot])
-        plt.show()
-    elif args.heatmap == True:
-        print("coming soon ...")
-    elif args.accuracy == True:
-        accuracy = DetermineAccuracy(featuresTest,model,agent,predictor)
-        print(accuracy)
-    elif args.gen_json == True:
-        GenerateJsonFiles(featuresTrain,model,agent,predictor)
-    elif args.lstm == True:
-        score = 0
-        total = 0
-        input,target = data_wrapper.get_testing_lstm_data()
-        data_set = list(zip(input,target))
-        for (input_data,target) in data_set:
-            output = lstm_model(input_data.unsqueeze(0))
-            print(output)
-            if torch.equal(output,target):
-                score = score + 1
-            total = total + 1
-        print((score/total)*100)
-    elif args.actions == True:
+    if args.actions == True:
         actions = ["left","left","left","decelerate","left","left","left","left","left","left","left","left",\
             "left","left","left","left","left","left","left","left","left","left","left","left","left","left",\
             "left","left","left","left","left","left","left","left","left","left","nothing","nothing",\
             "nothing","nothing","left","left","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate","accelerate",\
             "deccelerate","deccelerate","deccelerate","deccelerate","accelerate","deccelerate","accelerate","accelerate","deccelerate","accelerate","accelerate","left","left","accelerate","accelerate"]
 
-        to_plot = ActionedMergeLaneScenario(actions,featuresTrain,agent,predictor)
+        to_plot = ActionedMergeLaneScenario(actions,featuresTrain,agent)
         camera = Camera(plt.figure())
         colors = cm.rainbow(np.linspace(0, 1, 3))
         for plot_data in to_plot:
@@ -269,14 +246,47 @@ def main():
         anim = camera.animate(blit=True)
         anim.save('trial.mp4')
     else:
-        to_plot = FullMergeLaneScenario(False,featuresTrain,model,agent,predictor)
-        camera = Camera(plt.figure())
-        colors = cm.rainbow(np.linspace(0, 1, 3))
-        for plot_data in to_plot:
-            plt.scatter(plot_data[0],plot_data[1], c=colors, s=100)
-            camera.snap()
-        anim = camera.animate(blit=True)
-        anim.save('trial.mp4')
+        if args.dueling_dqn:
+            model = torch.jit.load('../include/rl_model_Dueling.pt')
+        elif args.lstm:
+            lstm_model = torch.jit.load('../include/lstm_model.pt')
+        elif args.double_dqn:
+            model = torch.jit.load('rl_model_Double.pt')
+        else:
+            model = torch.jit.load('rl_model_DQN.pt')
+
+        if args.scatter == True:
+            to_plot = FullMergeLaneScenario(True,featuresTrain,model,agent)
+            plt.scatter([x[0] for x in to_plot],[x[1] for x in to_plot])
+            plt.show()
+        elif args.heatmap == True:
+            print("coming soon ...")
+        elif args.accuracy == True:
+            accuracy = DetermineAccuracy(featuresTest,model,agent)
+            print(accuracy)
+        elif args.gen_json == True:
+            GenerateJsonFiles(featuresTrain,model,agent,predictor)
+        elif args.lstm == True:
+            score = 0
+            total = 0
+            input,target = data_wrapper.get_testing_lstm_data()
+            data_set = list(zip(input,target))
+            for (input_data,target) in data_set:
+                output = lstm_model(input_data.unsqueeze(0))
+                print(output)
+                if torch.equal(output,target):
+                    score = score + 1
+                total = total + 1
+            print((score/total)*100)
+        else:
+            to_plot = FullMergeLaneScenario(False,featuresTrain,model,agent)
+            camera = Camera(plt.figure())
+            colors = cm.rainbow(np.linspace(0, 1, 3))
+            for plot_data in to_plot:
+                plt.scatter(plot_data[0],plot_data[1], c=colors, s=100)
+                camera.snap()
+            anim = camera.animate(blit=True)
+            anim.save('trial.mp4')
 
 if __name__ == '__main__':
     main()

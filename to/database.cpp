@@ -28,7 +28,7 @@ public:
   void upsert(shared_ptr<RoadUser> roadUser);
   void deleteRoadUser(string uuid);
   void deleteAll();
-  bool findRoadUser(string uuid);
+  RoadUser * findRoadUser(string uuid);
   int getSize();
   vector<shared_ptr<RoadUser>> findAll();
 };
@@ -49,7 +49,20 @@ void Database::displayDatabase() {
 */
 
 void Database::upsert(shared_ptr<RoadUser> roadUser) {
-  database[roadUser->getUuid()] = roadUser;
+  shared_ptr<RoadUser> updated_roadUser = findRoadUser(roadUser->getUuid());
+  if(updated_roadUser != nullptr){
+    updated_roadUser->setTimestamp(roadUser->getTimestamp());
+    updated_roadUser->setSpeed(roadUser->getSpeed());
+    updated_roadUser->setHeading(roadUser->getHeading());
+    updated_roadUser->setLatitude(roadUser->getLatitude());
+    updated_roadUser->setLongitude(roadUser->getLongitude());
+    updated_roadUser->setLanePosition(roadUser->getLanePosition());
+    database[roadUser->getUuid()] = updated_roadUser;
+  }else{
+    database[roadUser->getUuid()] = roadUser;
+    delete updated_roadUser;
+  }
+
 }
 
 /**
@@ -64,6 +77,22 @@ void Database::deleteRoadUser(string uuid) {
     database.erase(uuid);
   }
 }
+
+/**
+*   @description Finds a RoadUser pointer from the database.
+*   @param roadUser is a RoadUser pointer.
+*   @return RoadUser pointer or NULL if no match found
+*/
+
+shared_ptr<RoadUser> Database::findRoadUser(string uuid) {
+  const auto &iterator{database.find(uuid)};
+  if (iterator != database.end()) {
+    //MAYBE FIXME: huge memory leak. Need to find how to delete a pointer in a map
+    return iterator->second;
+  }
+  return nullptr;
+}
+
 
 /**
 *   @description Removes all RoadUser pointers in the database.

@@ -177,9 +177,9 @@ Document parse(string readFromServer) {
 
 Detected_Road_User assignRoadUserVals(Document &document) {
 	Detected_Road_User values;
-  if(!(document.IsObject())){
-    return values;
-  }
+  // if(!(document.IsObject())){
+  //   return values;
+  // }
   //TODO: use int instead of double when possible
   values.type = document["type"].GetString();
   document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
@@ -377,14 +377,16 @@ string listenDataTCP(int socket_c) {
   while (returning.empty()) {
     int i = read(socket_c, dataReceived, sizeof(dataReceived));
 
-    if (i < 0) {
-      write_to_log("Error: Failed to receive transmitted data.\n");
+    if(i < 0) {
+      write_to_log("Error: Failed to receive transmitted data.\n" + dataReceived + "End.\n");
       break;
-    } else if (i == 0) {
-      printf("Socket closed from the remote server.\n");
-      returning = "RECONNECT";
-    } else if (i > 0) {
-      for (int index = 0; index < i; index++) {
+    }
+    else if(i == 0) {
+      write_to_log("Socket closed from the remote server.\n");
+      return "RECONNECT";
+    }
+    else if(i > 0){
+      for(int index = 0; index < i; index++){
         char chrc = dataReceived[index];
         if (chrc == '\n') {
           to_return = incomplete_message;

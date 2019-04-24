@@ -103,7 +103,7 @@ string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> un
 	.AddMember("version",Value().SetString(unsubscriptionReq->getVersion().c_str(),allocator),allocator)
 	.AddMember("timestamp",timestamp,allocator)
 	.AddMember("source_uuid",Value().SetString(unsubscriptionReq->getSourceUUID().c_str(),allocator),allocator)
-	.AddMember("destination_uuid",Value().SetString(unsubscriptionReq->getSourceUUID().c_str(),allocator),allocator);;
+	.AddMember("destination_uuid",Value().SetString(unsubscriptionReq->getDestinationUUID().c_str(),allocator),allocator);;
 
 	Value object(kObjectType);
 

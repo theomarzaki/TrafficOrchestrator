@@ -47,39 +47,20 @@ float ProcessedGPStoRoadUserGPS(float point){
     return point * pow(10,6);
 }
 
+float RoadUserHeadingtoProcessedHeading(float point){
+	return point / 100;
+}
+
+float ProcessedHeadingtoRoadUserHeading(float point){
+	return point * 100;
+}
+
+
 bool inRange(int low, int high, int x){
     return ((x-high)*(x-low) <= 0);
 }
 
-// bool isCarTerminal(at::Tensor state){
-//   float y_diff = state[0][14].item<float>() - state[0][8].item<float>();
-//   float x_diff = state[0][13].item<float>() - state[0][7].item<float>();
-//
-//   try{
-//     float slope = round(y_diff) / round(x_diff);
-//     if(isinf(slope) || isnan(slope)) slope = 0;
-//     float plus_c = state[0][8].item<float>() - (slope * state[0][7].item<float>());
-//     if(!isinf(state[0][0].item<float>()) && !isinf(state[0][1].item<float>())){
-//         if(inRange(round(slope * int(state[0][0].item<float>()) + plus_c) - 1, round(slope * int(state[0][0].item<float>()) + plus_c) + 1,round(int(state[0][1].item<float>())))){
-//             if(int(state[0][7].item<float>()) > int(state[0][0].item<float>()) && int(state[0][0].item<float>()) > int(state[0][13].item<float>()) && int(state[0][8].item<float>()) < int(state[0][1].item<float>()) && int(state[0][1].item<float>()) < int(state[0][14].item<float>())){
-//                 return true;
-// 						}
-// 				}
-// 		}
-// 	}
-//   catch(...){
-//     float plus_c = int(state[0][8].item<float>());
-//     if ((round(state[0][1].item<float>()) + 1 == round(plus_c) or round(state[0][1].item<float>()) - 1 == round(plus_c))){
-//          if(int(state[0][7].item<float>()) > int(state[0][0].item<float>()) && int(state[0][0].item<float>()) > int(state[0][13].item<float>()) && int(state[0][8].item<float>()) < int(state[0][1].item<float>()) && int(state[0][1].item<float>()) < int(state[0][14].item<float>())){
-//              return true;
-// 					 }
-// 		}
-// 	}
-//   return false;
-// }
-// TODO
 
-// 1. spacing for cars (remove for shorter training time)
 
 auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> &merging_car, std::vector<std::shared_ptr<RoadUser>> close_by) {
     std::shared_ptr<RoadUser> closest_following;
@@ -136,7 +117,7 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> &mergi
     return std::make_pair(closest_preceeding, closest_following);
 }
 
-// For RL only Algorithm
+
 at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 	int accelerate_tensor = 0;
 	int deccelerate_tensor = 1;
@@ -202,7 +183,7 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 	    stateTensor[0][1] = new_y;
 			stateTensor[0][19] = angle;
     return stateTensor;
-	} else cout << "ERROR: incomputing incorrect action tensor";
+	} else perror("Action cannot be recognized");
 
 	return stateTensor;
 }
@@ -229,7 +210,7 @@ vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> &merging_car,
             static_cast<float &&>(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLongitude()),
                                                 RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
                                                 RoadUserGPStoProcessedGPS(x.first->getLongitude()),
-                                                RoadUserGPStoProcessedGPS(x.first->getLatitude())))); // spacing
+                                                RoadUserGPStoProcessedGPS(x.first->getLatitude()))));
     mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLatitude()));
     mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLongitude()));
     mergingCar.push_back(x.first->getLength());
@@ -241,13 +222,12 @@ vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> &merging_car,
     mergingCar.push_back(x.second->getWidth());
     mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(x.second->getSpeed()));
     mergingCar.push_back(x.second->getAcceleration());
-    // FIXME do not cast from a double to a float
-    mergingCar.push_back(
+		mergingCar.push_back(
             static_cast<float &&>(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLongitude()),
                                                 RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
                                                 RoadUserGPStoProcessedGPS(x.second->getLongitude()),
-                                                RoadUserGPStoProcessedGPS(x.second->getLatitude())))); // spacing
-    mergingCar.push_back(merging_car->getHeading());
+                                                RoadUserGPStoProcessedGPS(x.second->getLatitude()))));
+		mergingCar.push_back(RoadUserHeadingtoProcessedHeading(merging_car->getHeading()));
 
     return mergingCar;
 }
@@ -282,27 +262,11 @@ auto calculatedTrajectories(RoadUser *mergingVehicle, at::Tensor models_input, s
     waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][1].item<float>()));
     waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_n_1_states[0][4].item<float>()));
     waypoint->setLanePosition(mergingVehicle->getLanePosition());
+		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
     mergingManeuver->addWaypoint(waypoint);
+		mergingVehicle->setProcessingWaypoint(true);
+		database->upsert(mergingVehicle);
 
-    // at::Tensor previous_state = calculated_n_1_states;
-    // for(int counter = 0;counter < 4; counter++){ //number of waypoints
-    // 	auto timeCalculator = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-    // 	std::vector<torch::jit::IValue> rl_n_inputs;
-    //
-    // 	rl_n_inputs.push_back(previous_state);
-    // 	auto calculated_next_state = rl_model->forward(rl_n_inputs).toTensor();
-    // 	auto calculated_waypoint = GetStateFromActions(calculated_next_state,previous_state);
-    // 	previous_state = calculated_waypoint;
-    //
-    // 	Waypoint * n_waypoint = new Waypoint();
-    //   n_waypoint->setTimestamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(),mergingVehicle->getLongitude(),calculated_waypoint[0][0].item<float>(),calculated_waypoint[0][1].item<float>())/mergingVehicle->getSpeed())*1000); //distance to mergeing point
-    //   n_waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_waypoint[0][0].item<float>()));
-    //   n_waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_waypoint[0][1].item<float>()));
-    //   n_waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_waypoint[0][4].item<float>()));
-    //   n_waypoint->setLanePosition(mergingVehicle->getLanePosition());
-    //   mergingManeuver->addWaypoint(n_waypoint);
-    //
-    // }
     return mergingManeuver;
 }
 
@@ -313,18 +277,16 @@ auto ManeuverParser(Database *database,
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {
-        if (r->getConnected() && r->getLanePosition() == 0) {
+        if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
             auto neighbours{mapNeighbours(database, distanceRadius)};
             auto input_values{RoadUsertoModelInput(r, neighbours)};
             auto models_input{torch::tensor(input_values).unsqueeze(0)};
             recommendations.push_back(calculatedTrajectories(r.get(), models_input, lstm_model, rl_model));
-            // auto models_input = torch::tensor(input_values).unsqueeze(0).unsqueeze(0);
-            // if(!isCarTerminal(models_input)){
-            // 	recommendations.push_back(calculatedTrajectories(r,models_input,lstm_model,rl_model));
-            // } else {
-            // 	r->setLanePosition(r->getLanePosition()+1);
-            // }
         }
     }
     return recommendations;
+
+}
+
+
 }

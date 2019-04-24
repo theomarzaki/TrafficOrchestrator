@@ -18,6 +18,19 @@
 #include "CreateTrajectory.cpp"
 #include "unsubscription_response.cpp"
 #include <experimental/filesystem>
+#include <csignal>
+#include <iostream>
+#include <vector>
+#include <random>
+#include <chrono>
+#include "rapidjson/document.h"
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <thread>
+#include <cstdlib>
+#include <ctime>
+
 
 using namespace std;
 
@@ -41,7 +54,11 @@ double distanceRadius;
 uint32_t mergingLongitude;
 uint32_t mergingLatitude;
 string uuidTo;
+int request_id;
+int socket_c;
 bool filter = true;
+std::shared_ptr<torch::jit::script::Module> lstm_model;
+std::shared_ptr<torch::jit::script::Module> rl_model;
 
 
 vector<shared_ptr<RoadUser>> detectedToRoadUserList(vector<Detected_Road_User> v) {
@@ -157,23 +174,21 @@ void generateUuidTo() {
 
 int generateReqID(){
 	srand(time(NULL));
-	// FIXME limited generation : use std random library instead
-	return std::rand();
+	request_id = std::rand();
 }
 
-void sendTrajectoryRecommendations(vector<std::shared_ptr<ManeuverRecommendation>> v,
-								   int socket) {
-	for (const auto &m : v) {
-		cout << createManeuverJSON(m) << endl;
+void sendTrajectoryRecommendations(vector<std::shared_ptr<ManeuverRecommendation>> v,int socket) {
+	for(const auto &m : v) {
+		m->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 		write_to_log(createManeuverJSON(m));
 		sendDataTCP(socket, sendAddress, sendPort, receiveAddress, receivePort, createManeuverJSON(m));
 	}
 }
 
-int initiateSubscription(const string &sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter,int radius,uint32_t longitude, uint32_t latitude) {
+void initiateSubscription(const string &sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter,int radius,uint32_t longitude, uint32_t latitude) {
 	milliseconds timeSub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	auto subscriptionReq{std::make_shared<SubscriptionRequest>()};
-	int request_id = generateReqID();
+	request_id = generateReqID();
 	subscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 	subscriptionReq->setFilter(filter);
 	subscriptionReq->setRadius(radius);
@@ -185,15 +200,15 @@ int initiateSubscription(const string &sendAddress, int sendPort,string receiveA
 	// FIXME do not cast an unsigned int 64 from a long
 	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
-	auto socket = sendDataTCP(-999,sendAddress,sendPort, std::move(receiveAddress),receivePort,createSubscriptionRequestJSON(subscriptionReq));
+	socket_c = sendDataTCP(-999,sendAddress,sendPort,std::move(receiveAddress),receivePort,createSubscriptionRequestJSON(subscriptionReq));
 	write_to_log("Sent subscription request to " + sendAddress + ":"+ to_string(sendPort));
-	return socket;
 }
 
 void initiateUnsubscription(const string &sendAddress, int sendPort, std::shared_ptr<SubscriptionResponse> subscriptionResp) {
 
 	milliseconds timeUnsub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	auto unsubscriptionReq{std::make_shared<UnsubscriptionRequest>()};
+	unsubscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 	unsubscriptionReq->setSubscriptionId(subscriptionResp->getSubscriptionId());
 	// FIXME do not cast an unsigned int 64 from a long
 	unsubscriptionReq->setTimestamp(static_cast<uint64_t>(timeUnsub.count()));
@@ -220,14 +235,22 @@ void handleNotifyAdd(Document &document) {
 }
 
 bool handleTrajectoryFeedback(Document &document) {
-	cout << "\n*********************************** Received Trajectory Feedback *********************************** \n";
 	maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
 	write_to_log("Maneuver Feedback: " + maneuverFeed->getFeedback());
 	if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
 		write_to_log("calculating new Trajectory for Vehicle");
 		return false;
+	}else if(maneuverFeed->getFeedback() == "checkpoint"){
+		RoadUser * roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
+		if(roadUser != nullptr){
+			roadUser->setProcessingWaypoint(false);
+			database->upsert(roadUser);
+			return true;
+		}
+		delete roadUser;
+	}else{
+		return true;
 	}
-  return true;
 }
 
 void handleNotifyDelete(Document &document) {
@@ -272,16 +295,27 @@ void initaliseDatabase() {
 }
 
 void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
-					  const shared_ptr<torch::jit::script::Module> &rl_model,
-					  int socket) {
-	auto recommendations{ManeuverParser(database, distanceRadius, lstm_model, rl_model)};
-	if (!recommendations.empty()) {
-		write_to_log("\n ***********************************  Sending  *********************************** \n");
-		sendTrajectoryRecommendations(recommendations, socket);
-	} else {
-		write_to_log("No Trajectories Calculated.\n");
-	}
+                      const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
+  vector<ManeuverRecommendation*> recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
+  if(!recommendations.empty()) {
+					write_to_log("Sending recommendations.\n");
+					sendTrajectoryRecommendations(recommendations,socket);
+				} else {
+					write_to_log("No Trajectories Calculated.\n");
+				}
 }
+
+// Function Handling the exit of TO
+void terminate_to(int signum ){
+	write_to_log("Sending unsubscription request.\n");
+	initiateUnsubscription(sendAddress,sendPort,subscriptionResp);
+	std::this_thread::sleep_for(std::chrono::milliseconds(15000));
+	close(socket_c);
+	lstm_model.reset();
+	rl_model.reset();
+	exit(signum);
+}
+
 
 int main() {
     auto returnCode{0};
@@ -316,17 +350,18 @@ int main() {
         inputReceivePort(document["receivePort"].GetInt());
         inputReceiveAddress(document["receiveAddress"].GetString());
 
-        auto socket = initiateSubscription(sendAddress, sendPort, receiveAddress, receivePort, filter,
+        initiateSubscription(sendAddress, sendPort, receiveAddress, receivePort, filter,
                                            document["distanceRadius"].GetInt(), document["longitude"].GetUint(),
                                            document["latitude"].GetUint());
         initaliseDatabase();
         bool listening = false;
-        string reconnect = "RECONNECT";
         string reconnect_flag;
 
+				// terminate TO on abortion/interruption
+				signal(SIGINT,terminate_to);
 
         do {
-            auto captured_data = listenDataTCP(socket);
+            auto captured_data = listenDataTCP(socket_c);
             Document document = parse(captured_data);
             message_type messageType = filterInput(document);
             if (captured_data == "\n" || captured_data == string()) {
@@ -336,7 +371,7 @@ int main() {
             switch (messageType) {
                 case message_type::notify_add:
                     handleNotifyAdd(document);
-                    computeManeuvers(lstm_model, rl_model, socket);
+                    computeManeuvers(lstm_model, rl_model, socket_c);
                     break;
                 case message_type::notify_delete:
                     handleNotifyDelete(document);
@@ -349,11 +384,10 @@ int main() {
                     break;
                 case message_type::trajectory_feedback:
                     if (!handleTrajectoryFeedback(document)) {
-                        computeManeuvers(lstm_model, rl_model, socket);
+                        computeManeuvers(lstm_model, rl_model, socket_c);
                     }
                     break;
                 case message_type::heart_beat:
-                    write_to_log("Received HeartBeat");
                     break;
                 case message_type::reconnect:
                     write_to_log("Reconnecting");
@@ -364,14 +398,12 @@ int main() {
                     break;
             }
             reconnect_flag = captured_data;
-        } while (reconnect_flag != reconnect);
+        } while (reconnect_flag != "RECONNECT");
         listening = false;
         while (!listening) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10000));
             main();
         }
-        //FIXME remove the dead code
-        initiateUnsubscription(sendAddress, sendPort, subscriptionResp);
     }
     return returnCode;
 }

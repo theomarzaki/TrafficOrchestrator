@@ -15,25 +15,16 @@ import numpy as np
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-parser = argparse.ArgumentParser(description="TO RL : Double Q-Learning trainer")
-
-parser.add_argument("-iter", "--num_epochs", type=int, default=5, help="number of epochs to train")
-parser.add_argument("-mb", "--minibatch_size", type=int, default=32)
-parser.add_argument("-lr", "--learning_rate", type=float, default=1e-4)
-parser.add_argument("-g", "--gamma", type=float, default=0.9)
-
-args = parser.parse_args()
-
 NUMBER_OF_ACTIONS = 5
 NUMBER_OF_INPUTS = 20
 FINAL_EPSILON = 0.01
-EPSILON_DECAY = 1000000
+EPSILON_DECAY = 500000
 INITIAL_EPSILON = 1.0
-REPLAY_MEMORY_SIZE = 10000
-NUMBER_OF_EPOCHS = args.num_epochs
-MINIBATCH_SIZE = args.minibatch_size
-GAMMA = args.gamma
-LEARNING_RATE = args.learning_rate
+REPLAY_MEMORY_SIZE = 1000000
+NUMBER_OF_EPOCHS = 150
+MINIBATCH_SIZE = 128
+GAMMA = 0.999
+LEARNING_RATE = 1e-4
 
 def save_model_checkpoint(epoch,model_network,optimizer,loss):
     model_state = {
@@ -71,7 +62,7 @@ def minibatch_reward(model,replay_memory):
                         else reward_batch[i] + GAMMA * torch.max(next_state_batch_output[i])
                               for i in range(len(minibatch)))
 
-    return y_batch,current_batch,action_batch,reward_batch
+    return y_batch,current_batch,action_batch,reward_batch,next_state_batch
 
 def train_model(model_network,target_network,train_data,agent):
     learn_step_counter = 0
@@ -82,7 +73,7 @@ def train_model(model_network,target_network,train_data,agent):
     rewards = []
 
 
-    optimizer = torch.optim.Adam(model_network.parameters(), lr=LEARNING_RATE)
+    optimizer = torch.optim.Adam(model_network.parameters())
     criterion = nn.SmoothL1Loss()
     epsilon = INITIAL_EPSILON
 
@@ -94,9 +85,12 @@ def train_model(model_network,target_network,train_data,agent):
         for index,game_run in enumerate(sample_train):
             for current_epoch,state in enumerate(game_run):
                 current = state
-                next = (sample_train[index])[current_epoch]
+                if(current_epoch < game_run.shape[0] - 1):
+                    next = game_run[current_epoch + 1]
+                else:
+                    break
 
-                if learn_step_counter % 100 == 0:
+                if learn_step_counter % 80 == 0:
                     target_network.load_state_dict(model_network.state_dict())
                 learn_step_counter += 1
 
@@ -104,21 +98,23 @@ def train_model(model_network,target_network,train_data,agent):
                 # initialise actions
 
                 action = torch.zeros([NUMBER_OF_ACTIONS], dtype=torch.float32)
-                random_action = random.random() <= epsilon
-                action_index = [torch.randint(NUMBER_OF_ACTIONS, torch.Size([]), dtype=torch.int)
-                                if random_action
-                                else torch.argmax(output)][0]
+                random_action = random.random() < epsilon
 
-                action[action_index] = 1
+                if random_action:
+                    action[random.randrange(5)] = 1
+                else:
+                    with torch.no_grad():
+                        action[torch.argmax(output).item()] = 1
+
 
                 # get next state and reward
 
                 next_state = agent.calculateActionComputed(action,current,next)
 
-                reward,terminal = CalculateReward(next_state.data.cpu().numpy())
+                reward,terminal = CalculateReward(next_state.data.cpu().numpy(),current_epoch)
 
                 rewards.append((learn_step_counter,reward))
-                if reward == 1:
+                if terminal and reward > 1:
                     wins = wins + 1
 
                 if len(replay_memory) > REPLAY_MEMORY_SIZE:
@@ -132,10 +128,15 @@ def train_model(model_network,target_network,train_data,agent):
                                  math.exp(-1. * learn_step_counter / EPSILON_DECAY)
 
 
-                y_batch,current_batch,action_batch,reward_batch = minibatch_reward(model_network,replay_memory)
+                y_batch,current_batch,action_batch,reward_batch,next_state_batch = minibatch_reward(model_network,replay_memory)
 
                 # extract Q-value
                 q_value = torch.sum(model_network(current_batch) * action_batch, dim=1)
+
+                # q_eval = torch.sum(model_network(current_batch).to(device) * action_batch, dim=1)  # shape (batch, 1)
+                # q_next = target_network(next_state_batch).to(device).detach()     # detach from graph, don't backpropagate
+                # q_target = reward_batch + 0.9 * q_next.max(1)[0] * (1 - int(terminal))  # shape (batch, 1)
+                # loss = criterion(q_eval, q_target)
 
                 optimizer.zero_grad()
 
@@ -148,7 +149,9 @@ def train_model(model_network,target_network,train_data,agent):
                 loss.backward()
                 optimizer.step()
 
-                if(current_epoch < 69):
+                if terminal == True:
+                    break
+                if(current_epoch < game_run.shape[0] - 1):
                     game_run[current_epoch + 1] = next_state
                 else:
                     break
