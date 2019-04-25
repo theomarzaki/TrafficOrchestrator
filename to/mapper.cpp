@@ -220,6 +220,8 @@ public:
                 xP = latitude < compareNode.latitude ? -xP : xP;
                 yP = longitude < compareNode.longitude ? -yP : yP;
 
+//                printf("Dist : %f\n",distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH));
+
                 if (distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) <= lane.size/2) { // TODO implement Square B-Spline distance check
                     nearestDescription.state = Mapper_Result_State::OK;
                 }
@@ -232,21 +234,21 @@ public:
     }
 };
 
-int main() {
-
-    double vectors[9][2] = {{48.623246, 2.242104},  // lane0 in the grass
-                            {48.623206, 2.242140},  // lane1
-                            {48.623183, 2.242167},  // lane2
-                            {48.623162, 2.241968},  // lane0
-                            {48.623140, 2.241996},  // lane1
-                            {48.623115, 2.242018},  // lane2
-                            {48.623107, 2.241817},  // lane0
-                            {48.623083, 2.241847},  // lane1
-                            {48.623055, 2.241863}};  // lane2
-
-    for (auto& vector : vectors) {
-        Mapper::Gps_Descriptor buff = Mapper::getMapper()->getPositionDescriptor(vector[0],vector[1]);
-        printf("Lane : %d\n",buff.laneId);
-        printf("Status : %d\n\n",buff.state); // 3 = OK , 2 = OUT_OF_ROAD
-    }
-}
+//int main() {
+//
+//    double vectors[9][2] = {{48.623256, 2.242104},  // lane0 in the grass
+//                            {48.623206, 2.242140},  // lane1
+//                            {48.623183, 2.242167},  // lane2
+//                            {48.623162, 2.241968},  // lane0
+//                            {48.623140, 2.241996},  // lane1
+//                            {48.623115, 2.242018},  // lane2
+//                            {48.623107, 2.241817},  // lane0
+//                            {48.623083, 2.241847},  // lane1
+//                            {48.623055, 2.241863}};  // lane2
+//
+//    for (auto& vector : vectors) {
+//        Mapper::Gps_Descriptor buff = Mapper::getMapper()->getPositionDescriptor(vector[0],vector[1]);
+//        printf("Lane : %d\n",buff.laneId);
+//        printf("Status : %d\n\n",buff.state); // 3 = OK , 2 = OUT_OF_ROAD
+//    }
+//}
