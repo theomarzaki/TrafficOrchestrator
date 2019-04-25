@@ -400,6 +400,9 @@ int main() {
         listening = false;
         while (!listening) {
             std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+						close(socket_c);
+						lstm_model.reset();
+						rl_model.reset();
             main();
         }
     }
