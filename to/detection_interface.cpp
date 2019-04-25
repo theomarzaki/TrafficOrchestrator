@@ -379,9 +379,8 @@ string listenDataTCP(int socket_c) {
 
     if(i < 0) {
       write_to_log("Error: Failed to receive transmitted data.\n");
-      write_to_log(dataReceived);
-      write_to_log("End.\n");
-      break;
+      write_to_log("trying to reconnect.\n");
+      return "RECONNECT";
     }
     else if(i == 0) {
       write_to_log("Socket closed from the remote server.\n");
