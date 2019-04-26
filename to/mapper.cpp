@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#include <map>
 
 #define EARTH_RADIUS 6371000
 
@@ -42,7 +43,7 @@ private:
         int forkFrom;
         int mergeInto;
         int numberOfLanes;
-        std::vector<Lane_Descriptor> lanes{std::vector<Lane_Descriptor>()};
+        std::map<int,Lane_Descriptor> lanes{std::map<int,Lane_Descriptor>()};
     };
 
     std::unique_ptr<std::vector<Road_Descriptor>> roads = std::make_unique<std::vector<Road_Descriptor>>();
@@ -89,7 +90,7 @@ private:
                         nodeStruct.longitude = node.HasMember("long") ? node["long"].GetDouble() : 220.0;
                         laneStruct.nodes.push_back(nodeStruct);
                     }
-                    roadStruct.lanes.push_back(laneStruct);
+                    roadStruct.lanes.insert( std::pair<int,Lane_Descriptor>(laneStruct.id,laneStruct));
                 }
                 roads->push_back(roadStruct);
             }
@@ -179,17 +180,19 @@ public:
 
         auto distance = std::numeric_limits<double>::max();
         int index = -1;
+        int maxIndex = 0;
 
         for (auto& road : *roads) { // TODO Change basic optimum search
             for (auto& lane : road.lanes) {
-                for (int i=0; i < size(lane.nodes); i++) { // TODO Find match with sector vectors
-                    double nodeDistance = distanceBetween2GPSCoordinates(lane.nodes.at(i).latitude, lane.nodes.at(i).longitude, latitude, longitude);
+                for (int i=0; i < size(lane.second.nodes); i++) { // TODO Find match with sector vectors
+                    double nodeDistance = distanceBetween2GPSCoordinates(lane.second.nodes.at(i).latitude, lane.second.nodes.at(i).longitude, latitude, longitude);
                     if (nodeDistance < distance) {
                         distance = nodeDistance;
                         nearestDescription.roadId = road.id;
-                        nearestDescription.laneId = lane.id;
+                        nearestDescription.laneId = lane.second.id;
                         nearestDescription.state = Mapper_Result_State::OUT_OF_ROAD;
                         nearestDescription.roadName = road.name;
+                        maxIndex = size(lane.second.nodes) - 1;
                         index = i;
                     }
                 }
@@ -198,27 +201,35 @@ public:
 
         if (index > -1) {
             if (distance < 10000) { // TODO Find the extremum of the serie and define the limit with it.
-                auto lane = roads->at(nearestDescription.roadId).lanes.at(nearestDescription.laneId);
+                auto lane = roads->at(nearestDescription.roadId).lanes.find(nearestDescription.laneId)->second;
                 auto node = lane.nodes.at(index);
-                auto previousNode = lane.nodes.at(index -1);
-                auto nextNode = lane.nodes.at(index +1);
 
-                auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode.latitude, previousNode.longitude, latitude, longitude);
-                auto distanceToNext = distanceBetween2GPSCoordinates(nextNode.latitude, nextNode.longitude, latitude, longitude);
+                Lane_Node* compareNode;
 
-                auto compareNode = distanceToPrevious < distanceToNext ? previousNode : nextNode;
+                if (index == 0) {
+                    compareNode = &lane.nodes.at(index +1);
+                } else if (index < maxIndex) {
+                    auto previousNode = lane.nodes.at(index -1);
+                    auto nextNode = lane.nodes.at(index +1);
 
-                auto xH = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, compareNode.latitude, node.longitude);
-                auto yH = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, node.latitude, compareNode.longitude);
+                    auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode.latitude, previousNode.longitude, latitude, longitude);
+                    auto distanceToNext = distanceBetween2GPSCoordinates(nextNode.latitude, nextNode.longitude, latitude, longitude);
 
-                auto xP = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, compareNode.latitude, longitude);
-                auto yP = distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, latitude, compareNode.longitude);
+                    compareNode = distanceToPrevious < distanceToNext ? &previousNode : &nextNode;
+                } else {
+                    compareNode = &lane.nodes.at(index -1);
+                }
 
-                xH = node.latitude < compareNode.latitude ? -xH : xH;
-                yH = node.longitude < compareNode.longitude ? -yH : yH;
+                auto xH = distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, compareNode->latitude, node.longitude);
+                auto yH = distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, node.latitude, compareNode->longitude);
+                auto xP = distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, compareNode->latitude, longitude);
+                auto yP = distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, latitude, compareNode->longitude);
 
-                xP = latitude < compareNode.latitude ? -xP : xP;
-                yP = longitude < compareNode.longitude ? -yP : yP;
+                xH = node.latitude < compareNode->latitude ? -xH : xH;
+                yH = node.longitude < compareNode->longitude ? -yH : yH;
+
+                xP = latitude < compareNode->latitude ? -xP : xP;
+                yP = longitude < compareNode->longitude ? -yP : yP;
 
 //                printf("Dist : %f\n",distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH));
 
@@ -239,10 +250,10 @@ public:
 //    double vectors[9][2] = {{48.623256, 2.242104},  // lane0 in the grass
 //                            {48.623206, 2.242140},  // lane1
 //                            {48.623183, 2.242167},  // lane2
-//                            {48.623162, 2.241968},  // lane0
+//                            {48.623162, 2.241968},  // lane1 on the emergency stop strip
 //                            {48.623140, 2.241996},  // lane1
 //                            {48.623115, 2.242018},  // lane2
-//                            {48.623107, 2.241817},  // lane0
+//                            {48.623107, 2.241817},  // lane1 on the emergency stop strip
 //                            {48.623083, 2.241847},  // lane1
 //                            {48.623055, 2.241863}};  // lane2
 //
