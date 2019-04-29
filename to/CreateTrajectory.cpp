@@ -70,21 +70,29 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> &mergi
 
     for (const auto &close_car : close_by) {
         if (close_car->getLatitude() < merging_car->getLatitude() &&
-            close_car->getLongitude() < merging_car->getLongitude()) { //closest following
+            close_car->getLongitude() < merging_car->getLongitude() && close_car->getLanePosition() == merging_car->getLanePosition() + 1) { //closest following
             if (distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),
                               RoadUserGPStoProcessedGPS(close_car->getLongitude()),
                               RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
                               RoadUserGPStoProcessedGPS(merging_car->getLongitude())) < minFollowing) {
                 closest_following = close_car;
+								minFollowing = distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),
+		                              RoadUserGPStoProcessedGPS(close_car->getLongitude()),
+		                              RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
+		                              RoadUserGPStoProcessedGPS(merging_car->getLongitude()));
             }
         }
         if (close_car->getLatitude() > merging_car->getLatitude() &&
-            close_car->getLongitude() > merging_car->getLongitude()) { //closest preceeding
+            close_car->getLongitude() > merging_car->getLongitude() && close_car->getLanePosition() == merging_car->getLanePosition() + 1) { //closest preceeding
             if (distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),
                               RoadUserGPStoProcessedGPS(close_car->getLongitude()),
                               RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
                               RoadUserGPStoProcessedGPS(merging_car->getLongitude())) < minPreceeding) {
                 closest_preceeding = close_car;
+								minPreceeding = distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),
+		                              RoadUserGPStoProcessedGPS(close_car->getLongitude()),
+		                              RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
+		                              RoadUserGPStoProcessedGPS(merging_car->getLongitude()));
             }
         }
     }
