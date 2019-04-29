@@ -117,11 +117,11 @@ public:
 
     static bool setMap(const std::string& mapPath) {
         if ( access( std::string("./include/"+mapPath+".json").c_str(), F_OK ) > -1) {
-            printf("[INFO] Map path set");
+            std::cout << "[INFO] Map path set" << std::endl;
             pathToMap = mapPath;
             return true;
         } else {
-            printf("[ERROR] '%s' don't exist in the include folder",mapPath.c_str());
+            std::cout << "[ERROR] '" << mapPath.c_str() << "' don't exist in the include folder" << std::endl;
             return false;
         }
     }
@@ -133,7 +133,7 @@ public:
             }
             return mapper;
         } catch (const std::exception& e) {
-            printf("[ERROR] Mapper initializer : %s",e.what());
+            std::cout << "[ERROR] Mapper initializer : " << e.what() << std::endl;
         }
         return nullptr;
     }
@@ -231,7 +231,7 @@ public:
                 xP = latitude < compareNode->latitude ? -xP : xP;
                 yP = longitude < compareNode->longitude ? -yP : yP;
 
-//                printf("Dist : %f\n",distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH));
+//                std::cout << "Dist : " << distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) << std::endl;
 
                 if (distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) <= lane.size/2) { // TODO implement Square B-Spline distance check
                     nearestDescription.state = Mapper_Result_State::OK;
@@ -259,7 +259,7 @@ public:
 //
 //    for (auto& vector : vectors) {
 //        Mapper::Gps_Descriptor buff = Mapper::getMapper()->getPositionDescriptor(vector[0],vector[1]);
-//        printf("Lane : %d\n",buff.laneId);
-//        printf("Status : %d\n\n",buff.state); // 3 = OK , 2 = OUT_OF_ROAD
+//        std::cout << "Lane : " << buff.laneId << std::endl;
+//        std::cout << "Status : " << buff.state << "\n\n"; // 3 = OK , 2 = OUT_OF_ROAD
 //    }
 //}

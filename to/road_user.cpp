@@ -156,6 +156,8 @@ string getItsStationType();
 bool getConnected();
 int32_t getLatitude();
 int32_t getLongitude();
+double getDoubleLatitude();
+double getDoubleLongitude();
 uint16_t getHeading();
 uint16_t getSpeed();
 uint16_t getAcceleration();
@@ -230,6 +232,8 @@ string RoadUser::getItsStationType(){return its_station_type;}
 bool RoadUser::getConnected(){return connected;}
 int32_t RoadUser::getLatitude(){return latitude;}
 int32_t RoadUser::getLongitude(){return longitude;}
+double RoadUser::getDoubleLatitude(){return latitude/1000000.0;}
+double RoadUser::getDoubleLongitude(){return longitude/1000000.0;}
 uint16_t RoadUser::getHeading(){return heading;}
 uint16_t RoadUser::getSpeed(){return speed;}
 uint16_t RoadUser::getAcceleration(){return acceleration;}
