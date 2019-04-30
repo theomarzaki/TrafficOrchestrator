@@ -196,7 +196,7 @@ at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
 	return stateTensor;
 }
 
-vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> &merging_car,
+vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> merging_car,
                                    vector<pair<std::shared_ptr<RoadUser>,
                                    vector<std::shared_ptr<RoadUser>>>> neighbours) {
 
@@ -207,6 +207,7 @@ vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> &merging_car,
         }
     }
     std::vector<float> mergingCar;
+
     mergingCar.push_back(RoadUserGPStoProcessedGPS(merging_car->getLatitude()));
     mergingCar.push_back(RoadUserGPStoProcessedGPS(merging_car->getLongitude()));
     mergingCar.push_back(merging_car->getLength());
@@ -236,7 +237,6 @@ vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> &merging_car,
                                                 RoadUserGPStoProcessedGPS(x.second->getLongitude()),
                                                 RoadUserGPStoProcessedGPS(x.second->getLatitude()))));
 		mergingCar.push_back(RoadUserHeadingtoProcessedHeading(merging_car->getHeading()));
-
     return mergingCar;
 }
 
@@ -274,7 +274,6 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     mergingManeuver->addWaypoint(waypoint);
 		mergingVehicle->setProcessingWaypoint(true);
 		database->upsert(mergingVehicle);
-
     return mergingManeuver;
 }
 
