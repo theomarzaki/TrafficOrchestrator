@@ -15,6 +15,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <map>
+#include <iomanip>
 
 #define EARTH_RADIUS 6371000
 
@@ -24,6 +25,11 @@ private:
 
     inline static std::shared_ptr<Mapper> mapper;
     inline static std::string pathToMap;
+
+    enum class Road_Type {
+        STRIPE,
+        LOOP
+    };
 
     struct Lane_Node {
         double latitude;
@@ -39,7 +45,7 @@ private:
     struct Road_Descriptor {
         int id;
         std::string name;
-        int type;
+        Road_Type type;
         int forkFrom;
         int mergeInto;
         int numberOfLanes;
@@ -78,6 +84,7 @@ private:
                 roadStruct.id = road.HasMember("_id") ? road["_id"].GetInt() : -1;
                 roadStruct.numberOfLanes = road.HasMember("numberOfLanes") ? road["numberOfLanes"].GetInt() : 0;
                 roadStruct.name = road["name"].GetString();
+                roadStruct.type = road.HasMember("type") and std::string(road["type"].GetString()) == "loop" ? Road_Type::LOOP : Road_Type::STRIPE;
 
                 for (auto& lane : road["lanes"].GetArray()) {
                     Lane_Descriptor laneStruct;
@@ -101,15 +108,26 @@ private:
 
 public:
 
-    enum class Mapper_Result_State{
+    enum Mapper_Result_State{
         ERROR,
         OUT_OF_MAP,
         OUT_OF_ROAD,
         OK,
     };
 
+    struct Gps_Point {
+        double latitude;
+        double longitude;
+    };
+
+    struct Merging_Scenario {
+        Gps_Point preceeding;
+        Gps_Point following;
+    };
+
     struct Gps_Descriptor {
         Mapper_Result_State state;
+        int nodeId;
         int laneId;
         int roadId;
         std::string roadName;
@@ -170,19 +188,26 @@ public:
         return fabs(- coef*xP + yP - offset) / sqrt( pow(coef,2) + 1 );
     }
 
-    Gps_Descriptor getPositionDescriptor(double latitude, double longitude) {
+    Gps_Descriptor getPositionDescriptor(double latitude, double longitude, int forcedRoadID = -1) {
 
         Gps_Descriptor nearestDescription;
         nearestDescription.roadId = -1;
         nearestDescription.laneId = -1;
+        nearestDescription.nodeId = -1;
         nearestDescription.roadName = "";
         nearestDescription.state = Mapper_Result_State::ERROR;
 
         auto distance = std::numeric_limits<double>::max();
-        int index = -1;
         int maxIndex = 0;
 
-        for (auto& road : *roads) { // TODO Change basic optimum search
+        auto listRoads = *this->roads;
+        if (forcedRoadID > -1) {
+            auto buff = std::vector<Road_Descriptor>();
+            buff.push_back(this->roads->at(forcedRoadID));
+            listRoads = buff;
+        }
+
+        for (auto& road : listRoads) { // TODO Change basic optimum search
             for (auto& lane : road.lanes) {
                 for (int i=0; i < size(lane.second.nodes); i++) { // TODO Find match with sector vectors
                     double nodeDistance = distanceBetween2GPSCoordinates(lane.second.nodes.at(i).latitude, lane.second.nodes.at(i).longitude, latitude, longitude);
@@ -193,37 +218,59 @@ public:
                         nearestDescription.state = Mapper_Result_State::OUT_OF_ROAD;
                         nearestDescription.roadName = road.name;
                         maxIndex = size(lane.second.nodes) - 1;
-                        index = i;
+                        nearestDescription.nodeId = i;
                     }
                 }
             }
         }
 
-        if (index > -1) {
+        if (nearestDescription.nodeId > -1) {
             if (distance < 10000) { // TODO Find the extremum of the serie and define the limit with it.
-                auto lane = roads->at(nearestDescription.roadId).lanes.find(nearestDescription.laneId)->second;
-                auto node = lane.nodes.at(index);
+                auto lane{this->roads->at(nearestDescription.roadId).lanes.find(nearestDescription.laneId)->second};
+                auto node{lane.nodes.at(nearestDescription.nodeId)};
 
                 Lane_Node* compareNode;
 
-                if (index == 0) {
-                    compareNode = &lane.nodes.at(index +1);
-                } else if (index < maxIndex) {
-                    auto previousNode = lane.nodes.at(index -1);
-                    auto nextNode = lane.nodes.at(index +1);
+                if ( this->roads->at(nearestDescription.roadId).type == Road_Type::LOOP ) {
 
-                    auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode.latitude, previousNode.longitude, latitude, longitude);
-                    auto distanceToNext = distanceBetween2GPSCoordinates(nextNode.latitude, nextNode.longitude, latitude, longitude);
+                    Lane_Node* previousNode ;
+                    Lane_Node* nextNode ;
 
-                    compareNode = distanceToPrevious < distanceToNext ? &previousNode : &nextNode;
+                    if (nearestDescription.nodeId == 0) {
+                        previousNode = &lane.nodes.at(maxIndex);
+                        nextNode = &lane.nodes.at(nearestDescription.nodeId +1);
+                    } else if (nearestDescription.nodeId == maxIndex) {
+                        previousNode = &lane.nodes.at(nearestDescription.nodeId -1);
+                        nextNode = &lane.nodes.at(0);
+                    } else {
+                        previousNode = &lane.nodes.at(nearestDescription.nodeId -1);
+                        nextNode = &lane.nodes.at(nearestDescription.nodeId +1);
+                    }
+
+                    auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode->latitude, previousNode->longitude, latitude, longitude);
+                    auto distanceToNext = distanceBetween2GPSCoordinates(nextNode->latitude, nextNode->longitude, latitude, longitude);
+
+                    compareNode = distanceToPrevious < distanceToNext ? previousNode : nextNode;
                 } else {
-                    compareNode = &lane.nodes.at(index -1);
+                    if (nearestDescription.nodeId == 0) {
+                        compareNode = &lane.nodes.at(nearestDescription.nodeId +1);
+                    } else if (nearestDescription.nodeId < maxIndex) {
+                        auto previousNode = lane.nodes.at(nearestDescription.nodeId -1);
+                        auto nextNode = lane.nodes.at(nearestDescription.nodeId +1);
+
+                        auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode.latitude, previousNode.longitude, latitude, longitude);
+                        auto distanceToNext = distanceBetween2GPSCoordinates(nextNode.latitude, nextNode.longitude, latitude, longitude);
+
+                        compareNode = distanceToPrevious < distanceToNext ? &previousNode : &nextNode;
+                    } else {
+                        compareNode = &lane.nodes.at(nearestDescription.nodeId -1);
+                    }
                 }
 
-                auto xH = distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, compareNode->latitude, node.longitude);
-                auto yH = distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, node.latitude, compareNode->longitude);
-                auto xP = distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, compareNode->latitude, longitude);
-                auto yP = distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, latitude, compareNode->longitude);
+                auto xH{distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, compareNode->latitude, node.longitude)};
+                auto yH{distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, node.latitude, compareNode->longitude)};
+                auto xP{distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, compareNode->latitude, longitude)};
+                auto yP{distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, latitude, compareNode->longitude)};
 
                 xH = node.latitude < compareNode->latitude ? -xH : xH;
                 yH = node.longitude < compareNode->longitude ? -yH : yH;
@@ -243,6 +290,31 @@ public:
 
         return std::move(nearestDescription);
     }
+
+    Merging_Scenario getFakeCarMergingScenario(const Mapper::Gps_Point& gpsPoint) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
+        Gps_Descriptor gps{getPositionDescriptor(gpsPoint.latitude,gpsPoint.longitude,1)}; // 1 = highway
+        auto nodes{this->roads->at(gps.roadId).lanes.find(1)->second.nodes}; // 1 = First lane
+        auto max{nodes.size()-1};
+        auto spread{nodes.size()/6}; // size factor
+
+//        std::cout << gps.roadId << " " << gps.laneId << " " << std::setprecision(6) << std::fixed << nodes.at(gps.nodeId).latitude << ", " << nodes.at(gps.nodeId).longitude << std::endl;
+
+        int indexFollowing = gps.nodeId - spread < 0 ? max - (gps.nodeId - spread - 1) : gps.nodeId - spread;
+        int indexPreceeding = gps.nodeId + spread > max ? (gps.nodeId + spread) % max - 1 : gps.nodeId + spread;
+
+        Gps_Point carFollowing, carPreceeding;
+
+        carPreceeding.latitude = nodes.at(indexPreceeding).latitude;
+        carPreceeding.longitude = nodes.at(indexPreceeding).longitude;
+        carFollowing.latitude = nodes.at(indexFollowing).latitude;
+        carFollowing.longitude = nodes.at(indexFollowing).longitude;
+
+        Merging_Scenario ret;
+        ret.following = carFollowing;
+        ret.preceeding = carPreceeding;
+
+        return ret;
+    }
 };
 
 //int main() {
@@ -260,6 +332,14 @@ public:
 //    for (auto& vector : vectors) {
 //        Mapper::Gps_Descriptor buff = Mapper::getMapper()->getPositionDescriptor(vector[0],vector[1]);
 //        std::cout << "Lane : " << buff.laneId << std::endl;
-//        std::cout << "Status : " << buff.state << "\n\n"; // 3 = OK , 2 = OUT_OF_ROAD
+//        std::cout << "Status : " << std::to_string(buff.state) << "\n\n"; // 3 = OK , 2 = OUT_OF_ROAD
 //    }
+//
+//    Mapper::Gps_Point gps;
+//    gps.latitude = 48.624586;
+//    gps.longitude = 2.243641;
+//
+//    auto derch = Mapper::getMapper()->getFakeCarMergingScenario(gps);
+//    std::cout << std::setprecision(6) << std::fixed << derch.preceeding.latitude << ", "  << derch.preceeding.longitude << " / " << derch.following.latitude << ", "  << derch.following.longitude;
+//
 //}
