@@ -193,6 +193,8 @@ void setItsStationType(string);
 void setConnected(bool);
 void setLatitude(int32_t);
 void setLongitude(int32_t);
+void setDoubleLatitude(double);
+void setDoubleLongitude(double);
 void setHeading(uint16_t);
 void setSpeed(uint16_t);
 void setAcceleration(uint16_t);
@@ -259,16 +261,18 @@ string RoadUser::getPositionType(){return position_type;}
 string RoadUser::getSouceUUID(){return source_uuid;}
 bool RoadUser::getProcessingWaypoint(){return processing_waypoint;}
 
-void RoadUser::setType(string parameter){type = parameter;}
-void RoadUser::setContext(string parameter){context = parameter;}
-void RoadUser::setOrigin(string parameter){origin = parameter;}
-void RoadUser::setVersion(string parameter){version = parameter;}
+void RoadUser::setType(string parameter){type = std::move(parameter);}
+void RoadUser::setContext(string parameter){context = std::move(parameter);}
+void RoadUser::setOrigin(string parameter){origin = std::move(parameter);}
+void RoadUser::setVersion(string parameter){version = std::move(parameter);}
 void RoadUser::setTimestamp(uint64_t parameter){timestamp = parameter;}
-void RoadUser::setUuid(string parameter){uuid = parameter;}
-void RoadUser::setItsStationType(string parameter){its_station_type = parameter;}
+void RoadUser::setUuid(string parameter){uuid = std::move(parameter);}
+void RoadUser::setItsStationType(string parameter){its_station_type = std::move(parameter);}
 void RoadUser::setConnected(bool parameter){connected = parameter;}
 void RoadUser::setLatitude(int32_t parameter){latitude = parameter;}
 void RoadUser::setLongitude(int32_t parameter){longitude = parameter;}
+void RoadUser::setDoubleLatitude(double parameter){latitude = static_cast<int32_t >(parameter * 1000000);}
+void RoadUser::setDoubleLongitude(double parameter){longitude = static_cast<int32_t >(parameter * 1000000);}
 void RoadUser::setHeading(uint16_t parameter){heading = parameter;}
 void RoadUser::setSpeed(uint16_t parameter){speed = parameter;}
 void RoadUser::setAcceleration(uint16_t parameter){acceleration = parameter;}
@@ -276,7 +280,7 @@ void RoadUser::setYawRate(uint16_t parameter){yaw_rate = parameter;}
 void RoadUser::setLength(float parameter){length = parameter;}
 void RoadUser::setWidth(float parameter){width = parameter;}
 void RoadUser::setHeight(float parameter){height = parameter;}
-void RoadUser::setColor(string parameter){color = parameter;}
+void RoadUser::setColor(string parameter){color = std::move(parameter);}
 void RoadUser::setLanePosition(uint4 parameter){lane_position = parameter;}
 void RoadUser::setExistenceProbability(uint8_t parameter){existence_probability = parameter;}
 void RoadUser::setPositionSemiMajorConfidence(uint16_t parameter){position_semi_major_confidence = parameter;}
@@ -286,12 +290,12 @@ void RoadUser::setHeadingConfidence(uint16_t parameter){heading_c = parameter;}
 void RoadUser::setSpeedConfidence(uint16_t parameter){speed_c = parameter;}
 void RoadUser::setAccelerationConfidence(uint16_t parameter){acceleration_c = parameter;}
 void RoadUser::setYawRateConfidence(uint16_t parameter){yaw_rate_c = parameter;}
-void RoadUser::setLengthConfidence(float parameter){yaw_rate_c = parameter;}
+void RoadUser::setLengthConfidence(float parameter){yaw_rate_c = static_cast<uint16_t>(parameter);}
 void RoadUser::setWidthConfidence(float parameter) {width_c = parameter;}
 void RoadUser::setHeightConfidence(float parameter){height_c = parameter;}
-void RoadUser::setSignature(string parameter){signature = parameter;}
-void RoadUser::setPositionType(string parameter){position_type = parameter;}
-void RoadUser::setSourceUUID(string parameter){source_uuid = parameter;}
+void RoadUser::setSignature(string parameter){signature = std::move(parameter);}
+void RoadUser::setPositionType(string parameter){position_type = std::move(parameter);}
+void RoadUser::setSourceUUID(string parameter){source_uuid = std::move(parameter);}
 void RoadUser::setProcessingWaypoint(bool parameter){processing_waypoint = parameter;}
 
 std::ostream& operator<<(std::ostream& os, RoadUser * roadUser) {

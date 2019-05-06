@@ -291,8 +291,8 @@ public:
         return std::move(nearestDescription);
     }
 
-    Merging_Scenario getFakeCarMergingScenario(const Mapper::Gps_Point& gpsPoint) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
-        Gps_Descriptor gps{getPositionDescriptor(gpsPoint.latitude,gpsPoint.longitude,1)}; // 1 = highway
+    Merging_Scenario getFakeCarMergingScenario(double latitude, double longitude) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
+        Gps_Descriptor gps{getPositionDescriptor(latitude,longitude,1)}; // 1 = highway
         auto nodes{this->roads->at(gps.roadId).lanes.find(1)->second.nodes}; // 1 = First lane
         auto max{nodes.size()-1};
         auto spread{nodes.size()/6}; // size factor
@@ -302,16 +302,20 @@ public:
         int indexFollowing = gps.nodeId - spread < 0 ? max - (gps.nodeId - spread - 1) : gps.nodeId - spread;
         int indexPreceeding = gps.nodeId + spread > max ? (gps.nodeId + spread) % max - 1 : gps.nodeId + spread;
 
-        Gps_Point carFollowing, carPreceeding;
+        Gps_Point carPreceeding = {
+                nodes.at(indexPreceeding).latitude,
+                nodes.at(indexPreceeding).longitude,
+        };
 
-        carPreceeding.latitude = nodes.at(indexPreceeding).latitude;
-        carPreceeding.longitude = nodes.at(indexPreceeding).longitude;
-        carFollowing.latitude = nodes.at(indexFollowing).latitude;
-        carFollowing.longitude = nodes.at(indexFollowing).longitude;
+        Gps_Point carFollowing = {
+                nodes.at(indexFollowing).latitude,
+                nodes.at(indexFollowing).longitude,
+        };
 
-        Merging_Scenario ret;
-        ret.following = carFollowing;
-        ret.preceeding = carPreceeding;
+        Merging_Scenario ret = {
+                carPreceeding,
+                carFollowing,
+        };
 
         return ret;
     }
