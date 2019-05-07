@@ -326,11 +326,11 @@ int main() {
         std::cout << "Unable to create the logs directory, we stop" << std::endl;
         returnCode = 2;
     } else {
-        std::shared_ptr<torch::jit::script::Module> lstm_model = torch::jit::load("include/lstm_model.pt");
+        lstm_model = torch::jit::load("include/lstm_model.pt");
 
         if (lstm_model != nullptr) write_to_log("import of lstm model successful\n");
 
-        std::shared_ptr<torch::jit::script::Module> rl_model = torch::jit::load("include/rl_model_deuling.pt");
+        rl_model = torch::jit::load("include/rl_model_deuling.pt");
 
         if (rl_model != nullptr) write_to_log("import of rl model successful\n");
 
