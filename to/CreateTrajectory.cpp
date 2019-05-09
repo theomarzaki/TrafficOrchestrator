@@ -201,14 +201,16 @@ vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> merging_car,
                                    vector<std::shared_ptr<RoadUser>>>> neighbours) {
 
     std::pair<std::shared_ptr<RoadUser>, std::shared_ptr<RoadUser>> x;
+		std::vector<std::shared_ptr<RoadUser>> no_neighbours;
+
+		x = getClosestFollowingandPreceedingCars(merging_car,no_neighbours);
+
     for (const auto &v : neighbours) {
         if (v.first->getUuid() == merging_car->getUuid()) {
             x = getClosestFollowingandPreceedingCars(merging_car, v.second);
         }
     }
-		std::vector<std::shared_ptr<RoadUser>> no_neighbours;
 
-		x = getClosestFollowingandPreceedingCars(merging_car,no_neighbours);
 
     std::vector<float> mergingCar;
     mergingCar.push_back(RoadUserGPStoProcessedGPS(merging_car->getLatitude()));
