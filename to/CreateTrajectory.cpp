@@ -38,11 +38,11 @@ int ProcessedSpeedtoRoadUserSpeed(int speed){
 	return speed / 100;
 }
 
-double RoadUserGPStoProcessedGPS(int32_t point){
+double RoadUserGPStoProcessedGPS(float point){
     //FIXME do not cast from a double to a float
 	return double(point / pow(10,6));
 }
-double ProcessedGPStoRoadUserGPS(int32_t point){
+double ProcessedGPStoRoadUserGPS(float point){
     //FIXME do not cast from a double to a float
     return double(point * pow(10,6));
 }
@@ -206,6 +206,10 @@ vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> merging_car,
             x = getClosestFollowingandPreceedingCars(merging_car, v.second);
         }
     }
+		std::vector<std::shared_ptr<RoadUser>> no_neighbours;
+
+		x = getClosestFollowingandPreceedingCars(merging_car,no_neighbours);
+
     std::vector<float> mergingCar;
     mergingCar.push_back(RoadUserGPStoProcessedGPS(merging_car->getLatitude()));
     mergingCar.push_back(RoadUserGPStoProcessedGPS(merging_car->getLongitude()));
@@ -214,9 +218,8 @@ vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> merging_car,
     mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(merging_car->getSpeed()));
     mergingCar.push_back(merging_car->getAcceleration());
     // FIXME do not cast from a double to a float
-
     mergingCar.push_back(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLongitude()),RoadUserGPStoProcessedGPS(merging_car->getLatitude()),RoadUserGPStoProcessedGPS(x.first->getLongitude()),RoadUserGPStoProcessedGPS(x.first->getLatitude())));
-    mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLatitude()));
+		mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLatitude()));
     mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLongitude()));
     mergingCar.push_back(x.first->getLength());
     mergingCar.push_back(x.first->getWidth());
