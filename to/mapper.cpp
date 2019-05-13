@@ -294,13 +294,11 @@ public:
     Merging_Scenario getFakeCarMergingScenario(double latitude, double longitude) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
         Gps_Descriptor gps{getPositionDescriptor(latitude,longitude,1)}; // 1 = highway
         auto nodes{this->roads->at(gps.roadId).lanes.find(1)->second.nodes}; // 1 = First lane
-        auto max{nodes.size()-1};
-        auto spread{nodes.size()/6}; // size factor
+        long max = nodes.size()-1;
+        long spread = nodes.size()/6; // size factor
 
-//        std::cout << gps.roadId << " " << gps.laneId << " " << std::setprecision(6) << std::fixed << nodes.at(gps.nodeId).latitude << ", " << nodes.at(gps.nodeId).longitude << std::endl;
-
-        int indexFollowing = gps.nodeId - spread < 0 ? max - (gps.nodeId - spread - 1) : gps.nodeId - spread;
-        int indexPreceeding = gps.nodeId + spread > max ? (gps.nodeId + spread) % max - 1 : gps.nodeId + spread;
+        unsigned int indexFollowing = gps.nodeId - spread < 0 ? max + (gps.nodeId - spread + 1) : gps.nodeId - spread;
+        unsigned int indexPreceeding = gps.nodeId + spread > max ? (gps.nodeId + spread) % max - 1 : gps.nodeId + spread;
 
         Gps_Point carPreceeding = {
                 nodes.at(indexPreceeding).latitude,
@@ -340,10 +338,10 @@ public:
 //    }
 //
 //    Mapper::Gps_Point gps;
-//    gps.latitude = 48.624586;
-//    gps.longitude = 2.243641;
+//    gps.latitude = 48.627456;
+//    gps.longitude = 2.246525;
 //
-//    auto derch = Mapper::getMapper()->getFakeCarMergingScenario(gps);
+//    auto derch = Mapper::getMapper()->getFakeCarMergingScenario(gps.latitude,gps.longitude);
 //    std::cout << std::setprecision(6) << std::fixed << derch.preceeding.latitude << ", "  << derch.preceeding.longitude << " / " << derch.following.latitude << ", "  << derch.following.longitude;
 //
 //}
