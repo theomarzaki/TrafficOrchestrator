@@ -28,6 +28,7 @@ using namespace std;
 using namespace rapidjson;
 
 int TIME_VARIANT = 0.035;
+double BIAS = 1;
 
 using namespace std::chrono;
 using std::cout;
@@ -144,7 +145,7 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor stateT
 	if(accelerate_tensor == actionTensor.item<int>()){
 			auto final_velocity = state[0][4].item<float>() + TIME_VARIANT * (state[0][4].item<float>() + state[0][5].item<float>() * TIME_VARIANT);
 			auto final_acceleration = (pow(final_velocity,2) - pow(state[0][4].item<float>(),2)) / 2 * (0.5 * (state[0][4].item<float>() + final_velocity) * TIME_VARIANT);
-			auto displacement = final_velocity * TIME_VARIANT + 0.5 * (final_acceleration * TIME_VARIANT * TIME_VARIANT);
+			auto displacement = final_velocity * TIME_VARIANT + BIAS * (final_acceleration * TIME_VARIANT * TIME_VARIANT);
 			auto angle = int(state[0][19].item<float>());
 			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
 			auto new_y = state[0][1].item<float>() + displacement * sin((angle * M_PI)/ 180);
@@ -157,7 +158,7 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor stateT
 	} else if(deccelerate_tensor == actionTensor.item<int>()){
 		auto final_velocity = state[0][4].item<float>() - TIME_VARIANT * (state[0][4].item<float>() + state[0][5].item<float>() * TIME_VARIANT);
 		auto final_acceleration = (pow(final_velocity,2) - pow(state[0][4].item<float>(),2)) / 2 * (0.5 * (state[0][4].item<float>() + final_velocity) * TIME_VARIANT);
-		auto displacement = final_velocity * TIME_VARIANT + 0.5 * (final_acceleration * TIME_VARIANT * TIME_VARIANT);
+		auto displacement = final_velocity * TIME_VARIANT + BIAS * (final_acceleration * TIME_VARIANT * TIME_VARIANT);
 		auto angle = int(state[0][19].item<float>());
 		auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
 		auto new_y = state[0][1].item<float>() + displacement * sin((angle * M_PI)/ 180);
@@ -168,7 +169,7 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor stateT
 		stateTensor[0][19] = angle;
 	return stateTensor;
 	} else if(left_tensor == actionTensor.item<int>()){
-			float displacement = state[0][4].item<float>() * TIME_VARIANT + 0.5 * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
+			float displacement = state[0][4].item<float>() * TIME_VARIANT + BIAS * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
 			auto angle = int(state[0][19].item<float>());
 			angle = (angle + 1) % 360;
 			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
@@ -178,7 +179,7 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor stateT
 			stateTensor[0][19] = angle;
 		return stateTensor;
 	} else if(right_tensor == actionTensor.item<int>()){
-			auto displacement = state[0][4].item<float>() * TIME_VARIANT + 0.5 * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
+			auto displacement = state[0][4].item<float>() * TIME_VARIANT + BIAS * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
 			auto angle = int(state[0][19].item<float>());
 			angle = (angle - 1) % 360;
 			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
@@ -188,7 +189,7 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor stateT
 			stateTensor[0][19] = angle;
 		return stateTensor;
 	} else if(doNothing_tensor == actionTensor.item<int>()){
-			auto displacement = state[0][4].item<float>() * TIME_VARIANT + 0.5 * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
+			auto displacement = state[0][4].item<float>() * TIME_VARIANT + BIAS * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
 	   	auto angle = int(state[0][19].item<float>());
 	    auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
 	    auto new_y = state[0][1].item<float>() + displacement * sin((angle * M_PI)/ 180);
