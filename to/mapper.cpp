@@ -157,11 +157,11 @@ public:
     }
 
     static double toRadian(double value) {
-        return value * M_PIf64 / 180.0;
+        return value * M_PI / 180.0;
     }
 
     static double toDegree(double value) {
-        return value * 180.0 / M_PIf64;
+        return value * 180.0 / M_PI;
     }
 
     static double distanceBetween2GPSCoordinates(double latitude, double longitude,
