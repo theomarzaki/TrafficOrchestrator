@@ -22,6 +22,8 @@
 #include <math.h>
 #include <memory>
 
+#include "mapper.cpp"
+
 using namespace std;
 using namespace rapidjson;
 
@@ -63,10 +65,10 @@ bool inRange(int low, int high, int x){
 
 
 auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> merging_car, std::vector<std::shared_ptr<RoadUser>> close_by) {
-    std::shared_ptr<RoadUser> closest_following = nullptr;
-    std::shared_ptr<RoadUser> closest_preceeding = nullptr;
-    int minFollowing = 9999;
-    int minPreceeding = 9999;
+    std::shared_ptr<RoadUser> closest_following{nullptr};
+    std::shared_ptr<RoadUser> closest_preceeding{nullptr};
+    double minFollowing{9999};
+    double minPreceeding{9999};
 
     for (const auto &close_car : close_by) {
         if (close_car->getLatitude() < merging_car->getLatitude() &&
@@ -96,37 +98,36 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> mergin
             }
         }
     }
-    if (closest_preceeding == nullptr) {
-        //we create a default one
-        closest_preceeding = std::make_shared<RoadUser>();
-        // FIXME do not cast from a float (in reality a double) to int
-        closest_preceeding->setLongitude(static_cast<int32_t>(RoadUserGPStoProcessedGPS(merging_car->getLongitude() + 10000))); // check
-        // FIXME do not cast from a float (in reality a double) to int
-        closest_preceeding->setLatitude(static_cast<int32_t>(RoadUserGPStoProcessedGPS(merging_car->getLatitude() + 10000))); //check
-        closest_preceeding->setSpeed(merging_car->getSpeed());
-        closest_preceeding->setWidth(merging_car->getWidth());
-        closest_preceeding->setLength(merging_car->getLength());
-        closest_preceeding->setAcceleration(merging_car->getAcceleration());
-        closest_preceeding->setLanePosition(merging_car->getLanePosition() + 1);
-    }
-    if (closest_following == nullptr) {
-        //we create a default one
-        closest_following = std::make_shared<RoadUser>();
-        // FIXME do not cast from a float (in reality a double) to int
-        closest_following->setLongitude(static_cast<int32_t>(RoadUserGPStoProcessedGPS(merging_car->getLongitude() - 10000))); //check
-        // FIXME do not cast from a float (in reality a double) to int
-        closest_following->setLatitude(static_cast<int32_t>(RoadUserGPStoProcessedGPS(merging_car->getLatitude() - 10000))); // check
-        closest_following->setSpeed(merging_car->getSpeed());
-        closest_following->setWidth(merging_car->getWidth());
-        closest_following->setLength(merging_car->getLength());
-        closest_following->setAcceleration(merging_car->getAcceleration());
-        closest_following->setLanePosition(merging_car->getLanePosition() + 1);
+    if (closest_preceeding == nullptr or closest_following == nullptr ) { // Calculate once only
+        Mapper::Merging_Scenario faker = Mapper::getMapper()->getFakeCarMergingScenario(merging_car->getDoubleLatitude(), merging_car->getDoubleLongitude());
+        if (closest_preceeding == nullptr) {
+            //we create a default one
+            closest_preceeding = std::make_shared<RoadUser>();
+            closest_preceeding->setDoubleLongitude(faker.preceeding.latitude);
+            closest_preceeding->setDoubleLatitude(faker.preceeding.longitude);
+            closest_preceeding->setSpeed(merging_car->getSpeed());
+            closest_preceeding->setWidth(merging_car->getWidth());
+            closest_preceeding->setLength(merging_car->getLength());
+            closest_preceeding->setAcceleration(merging_car->getAcceleration());
+            closest_preceeding->setLanePosition(merging_car->getLanePosition() + 1);
+        }
+        if (closest_following == nullptr) {
+            //we create a default one
+            closest_following = std::make_shared<RoadUser>();
+            closest_following->setDoubleLongitude(faker.following.latitude);
+            closest_following->setDoubleLatitude(faker.following.longitude);
+            closest_following->setSpeed(merging_car->getSpeed());
+            closest_following->setWidth(merging_car->getWidth());
+            closest_following->setLength(merging_car->getLength());
+            closest_following->setAcceleration(merging_car->getAcceleration());
+            closest_following->setLanePosition(merging_car->getLanePosition() + 1);
+        }
     }
     return std::make_pair(closest_preceeding, closest_following);
 }
 
 
-at::Tensor GetStateFromActions(at::Tensor action_Tensor,at::Tensor stateTensor){
+at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor stateTensor){
 	int accelerate_tensor = 0;
 	int deccelerate_tensor = 1;
 	int left_tensor = 2;

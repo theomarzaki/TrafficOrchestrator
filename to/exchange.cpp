@@ -8,8 +8,24 @@
 
 // Modified by : Omar Nassef(KCL)
 
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <thread>
+#include <cstdlib>
+#include <ctime>
+#include <experimental/filesystem>
+#include <experimental/random>
+#include <csignal>
+#include <iostream>
+#include <vector>
+#include <random>
+#include <chrono>
+
+#include "rapidjson/document.h"
 #include <torch/torch.h>
 #include <torch/script.h>
+
 #include "detection_interface.cpp"
 #include "database.cpp"
 #include "maneuver_feedback.cpp"
@@ -17,20 +33,6 @@
 #include "subscription_response.cpp"
 #include "CreateTrajectory.cpp"
 #include "unsubscription_response.cpp"
-#include <experimental/filesystem>
-#include <csignal>
-#include <iostream>
-#include <vector>
-#include <random>
-#include <chrono>
-#include "rapidjson/document.h"
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <thread>
-#include <cstdlib>
-#include <ctime>
-
 
 using namespace std;
 
@@ -169,7 +171,7 @@ auto detectedToUnsubscription(Detected_Unsubscription_Response d) {
 
 void generateUuidTo() {
 	// FIXME limited generation : use std random library instead
-	uuidTo = to_string(10000000 + ( std::rand() % ( 99999999 - 10000000 + 1 )));
+	uuidTo = std::to_string(std::experimental::randint(10000000,99999999));
 }
 
 void generateReqID(){
@@ -316,6 +318,7 @@ void terminate_to(int signum ){
 
 
 int main() {
+
     auto returnCode{0};
 
     FILE *file = fopen("include/TO_config.json", "r");
