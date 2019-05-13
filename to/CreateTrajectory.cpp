@@ -21,6 +21,7 @@
 #include <torch/script.h>
 #include <math.h>
 #include <memory>
+#include <time.h>
 
 #include "mapper.cpp"
 
@@ -31,6 +32,7 @@ int TIME_VARIANT = 0.035;
 
 using namespace std::chrono;
 using std::cout;
+time_t waypointTimeCalculator;
 
 int RoadUserSpeedtoProcessedSpeed(int speed){
 	return speed * 100;
@@ -274,10 +276,8 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
 		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
     mergingManeuver->addWaypoint(waypoint);
 		mergingVehicle->setProcessingWaypoint(true);
-		mergingVehicle->setWaypointTimeStamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(), mergingVehicle->getLongitude(),
-                                                                   calculated_n_1_states[0][0].item<float>(),
-                                                                   calculated_n_1_states[0][1].item<float>()) /
-                                                     mergingVehicle->getSpeed()) * 1000));
+
+		mergingVehicle->setWaypointTimeStamp(time(NULL));
 		database->upsert(mergingVehicle);
     return mergingManeuver;
 }
@@ -288,10 +288,11 @@ auto ManeuverParser(Database *database,
                     std::shared_ptr<torch::jit::script::Module> rl_model) {
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
-		auto timeCalculator = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     for (const auto &r : road_users) {
-				if(r->getWaypointTimestamp < timeCalculator.count()){
-					r->setProcessingWaypoint(False);
+				if(difftime(r->getWaypointTimestamp(),time(NULL))){
+					write_to_log("MANUEVER EXPIRED");
+					r->setProcessingWaypoint(false);
+					database->upsert(r);
 				}
 					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
 	            auto neighbours{mapNeighbours(database, distanceRadius)};

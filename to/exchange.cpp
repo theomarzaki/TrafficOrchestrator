@@ -238,13 +238,15 @@ void handleNotifyAdd(Document &document) {
 
 bool handleTrajectoryFeedback(Document &document) {
 	maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
+	auto roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
 	write_to_log("Maneuver Feedback: " + maneuverFeed->getFeedback());
 	if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
 		write_to_log("calculating new Trajectory for Vehicle");
+		roadUser->setProcessingWaypoint(false);
+		database->upsert(roadUser);
 		return false;
 	}
 	if(maneuverFeed->getFeedback() == "checkpoint"){
-		auto roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
 		if(roadUser != nullptr){
 			roadUser->setProcessingWaypoint(false);
 			database->upsert(roadUser);

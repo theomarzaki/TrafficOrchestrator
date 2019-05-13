@@ -9,6 +9,7 @@
 #include <ostream>
 #include <string>
 #include <inttypes.h>
+#include <time.h>
 
 using std::string;
 using std::ostream;
@@ -90,7 +91,7 @@ string source_uuid;
 
 /* flag indicating availability of road user to recieve waypoint */
 bool processing_waypoint;
-uint64_t waypoint_timestamp;
+time_t waypoint_timestamp;
 
 public:
 
@@ -183,7 +184,7 @@ string getSignature();
 string getPositionType();
 string getSouceUUID();
 bool getProcessingWaypoint();
-uint64_t getWaypointTimestamp();
+time_t getWaypointTimestamp();
 
 void setType(string);
 void setContext(string);
@@ -221,7 +222,7 @@ void setSignature(string);
 void setPositionType(string);
 void setSourceUUID(string);
 void setProcessingWaypoint(bool);
-void setWaypointTimeStamp(uint64_t);
+void setWaypointTimeStamp(time_t);
 
 };
 
@@ -263,7 +264,7 @@ string RoadUser::getSignature(){return signature;}
 string RoadUser::getPositionType(){return position_type;}
 string RoadUser::getSouceUUID(){return source_uuid;}
 bool RoadUser::getProcessingWaypoint(){return processing_waypoint;}
-uint64_t RoadUser::getWaypointTimestamp(){return waypoint_timestamp;}
+time_t RoadUser::getWaypointTimestamp(){return waypoint_timestamp;}
 
 void RoadUser::setType(string parameter){type = std::move(parameter);}
 void RoadUser::setContext(string parameter){context = std::move(parameter);}
@@ -301,7 +302,7 @@ void RoadUser::setSignature(string parameter){signature = std::move(parameter);}
 void RoadUser::setPositionType(string parameter){position_type = std::move(parameter);}
 void RoadUser::setSourceUUID(string parameter){source_uuid = std::move(parameter);}
 void RoadUser::setProcessingWaypoint(bool parameter){processing_waypoint = parameter;}
-void RoadUser::setWaypointTimeStamp(uint64_t parameter){waypoint_timestamp = parameter;}
+void RoadUser::setWaypointTimeStamp(time_t parameter){waypoint_timestamp = parameter;}
 
 std::ostream& operator<<(std::ostream& os, RoadUser * roadUser) {
 
