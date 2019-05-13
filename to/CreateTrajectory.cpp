@@ -274,6 +274,10 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
 		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
     mergingManeuver->addWaypoint(waypoint);
 		mergingVehicle->setProcessingWaypoint(true);
+		mergingVehicle->setWaypointTimeStamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(), mergingVehicle->getLongitude(),
+                                                                   calculated_n_1_states[0][0].item<float>(),
+                                                                   calculated_n_1_states[0][1].item<float>()) /
+                                                     mergingVehicle->getSpeed()) * 1000));
 		database->upsert(mergingVehicle);
     return mergingManeuver;
 }
@@ -284,13 +288,17 @@ auto ManeuverParser(Database *database,
                     std::shared_ptr<torch::jit::script::Module> rl_model) {
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
+		auto timeCalculator = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
     for (const auto &r : road_users) {
-        if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
-            auto neighbours{mapNeighbours(database, distanceRadius)};
-            auto input_values{RoadUsertoModelInput(r, neighbours)};
-            auto models_input{torch::tensor(input_values).unsqueeze(0)};
-            recommendations.push_back(calculatedTrajectories(database,r, models_input, lstm_model, rl_model));
-        }
+				if(r->getWaypointTimestamp < timeCalculator.count()){
+					r->setProcessingWaypoint(False);
+				}
+					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
+	            auto neighbours{mapNeighbours(database, distanceRadius)};
+	            auto input_values{RoadUsertoModelInput(r, neighbours)};
+	            auto models_input{torch::tensor(input_values).unsqueeze(0)};
+	            recommendations.push_back(calculatedTrajectories(database,r, models_input, lstm_model, rl_model));
+	        }
     }
     return recommendations;
 
