@@ -169,6 +169,7 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 	return stateTensor;
 	} else if(left_tensor == actionTensor.item<int>()){
 			float displacement = state[0][4].item<float>() * TIME_VARIANT + 0.5 * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
+			cout << "displacement: " << displacement << endl;
 			auto angle = int(state[0][19].item<float>());
 			angle = (angle + 1) % 360;
 			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
@@ -179,6 +180,7 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 		return stateTensor;
 	} else if(right_tensor == actionTensor.item<int>()){
 			auto displacement = state[0][4].item<float>() * TIME_VARIANT + 0.5 * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
+			cout << "displacement: " << displacement << endl;
 			auto angle = int(state[0][19].item<float>());
 			angle = (angle - 1) % 360;
 			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
@@ -253,7 +255,7 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     mergingManeuver->setTimestamp(time(NULL));
     mergingManeuver->setUuidVehicle(mergingVehicle->getUuid());
     mergingManeuver->setUuidTo(mergingVehicle->getUuid());
-    mergingManeuver->setTimestampAction(timeCalculator.count());
+    mergingManeuver->setTimestampAction(time(NULL));
     mergingManeuver->setLongitudeAction(mergingVehicle->getLongitude());
     mergingManeuver->setLatitudeAction(mergingVehicle->getLatitude());
     mergingManeuver->setSpeedAction(ProcessedSpeedtoRoadUserSpeed(mergingVehicle->getSpeed()));
@@ -279,7 +281,7 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
 
 		mergingVehicle->setWaypointTimeStamp(time(NULL) + (distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
                   calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / calculated_n_1_states[0][4].item<float>()) * 1000);
-									
+
 		database->upsert(mergingVehicle);
     return mergingManeuver;
 }
@@ -292,7 +294,6 @@ auto ManeuverParser(Database *database,
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {
 				if(difftime(time(NULL),r->getWaypointTimestamp()) < 0){
-					write_to_log("MANUEVER EXPIRED");
 					r->setProcessingWaypoint(false);
 					database->upsert(r);
 				}
