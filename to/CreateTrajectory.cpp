@@ -100,28 +100,30 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> mergin
             }
         }
     }
+		closest_following = nullptr;
+		closest_preceeding = nullptr;
     if (closest_preceeding == nullptr or closest_following == nullptr ) { // Calculate once only
-        Mapper::Merging_Scenario faker = Mapper::getMapper()->getFakeCarMergingScenario(merging_car->getDoubleLatitude(), merging_car->getDoubleLongitude());
+        // Mapper::Merging_Scenario faker = Mapper::getMapper()->getFakeCarMergingScenario(merging_car->getDoubleLatitude(), merging_car->getDoubleLongitude());
         if (closest_preceeding == nullptr) {
             //we create a default one
             closest_preceeding = std::make_shared<RoadUser>();
-            closest_preceeding->setDoubleLongitude(faker.preceeding.latitude);
-            closest_preceeding->setDoubleLatitude(faker.preceeding.longitude);
-            closest_preceeding->setSpeed(merging_car->getSpeed());
+            closest_preceeding->setLongitude(48624696);
+            closest_preceeding->setLatitude(2243881);
+            closest_preceeding->setSpeed(merging_car->getSpeed() * 2);
             closest_preceeding->setWidth(merging_car->getWidth());
             closest_preceeding->setLength(merging_car->getLength());
-            closest_preceeding->setAcceleration(merging_car->getAcceleration());
+            closest_preceeding->setAcceleration(merging_car->getAcceleration() * 2);
             closest_preceeding->setLanePosition(merging_car->getLanePosition() + 1);
         }
         if (closest_following == nullptr) {
             //we create a default one
             closest_following = std::make_shared<RoadUser>();
-            closest_following->setDoubleLongitude(faker.following.latitude);
-            closest_following->setDoubleLatitude(faker.following.longitude);
-            closest_following->setSpeed(merging_car->getSpeed());
+            closest_following->setLongitude(48624351);
+            closest_following->setLatitude(2243455);
+            closest_following->setSpeed(merging_car->getSpeed() * 2);
             closest_following->setWidth(merging_car->getWidth());
             closest_following->setLength(merging_car->getLength());
-            closest_following->setAcceleration(merging_car->getAcceleration());
+            closest_following->setAcceleration(merging_car->getAcceleration() * 2);
             closest_following->setLanePosition(merging_car->getLanePosition() + 1);
         }
     }
@@ -129,14 +131,14 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> mergin
 }
 
 
-at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor stateTensor){
+at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state){
 	int accelerate_tensor = 0;
 	int deccelerate_tensor = 1;
 	int left_tensor = 2;
 	int right_tensor = 3;
 	int doNothing_tensor = 4;
 
-	auto state = stateTensor;
+	auto stateTensor = state;
 
 	auto actionTensor = torch::argmax(action_Tensor);
 	if(accelerate_tensor == actionTensor.item<int>()){
@@ -248,8 +250,7 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
     std::vector<torch::jit::IValue> rl_inputs;
 
-    auto timeCalculator = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-    mergingManeuver->setTimestamp(timeCalculator.count());
+    mergingManeuver->setTimestamp(time(NULL));
     mergingManeuver->setUuidVehicle(mergingVehicle->getUuid());
     mergingManeuver->setUuidTo(mergingVehicle->getUuid());
     mergingManeuver->setTimestampAction(timeCalculator.count());
@@ -265,10 +266,8 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     auto calculated_n_1_states = GetStateFromActions(calculatedRL, models_input);
 
     auto waypoint{std::make_shared<Waypoint>()};
-    waypoint->setTimestamp(timeCalculator.count() + (distanceEarth(mergingVehicle->getLatitude(), mergingVehicle->getLongitude(),
-                                                                   calculated_n_1_states[0][0].item<float>(),
-                                                                   calculated_n_1_states[0][1].item<float>()) /
-                                                     mergingVehicle->getSpeed()) * 1000); //distance to mergeing point
+    waypoint->setTimestamp(time(NULL) + (distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
+                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / calculated_n_1_states[0][4].item<float>()) * 1000); //distance to mergeing point
     waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][0].item<float>()));
     waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][1].item<float>()));
     waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_n_1_states[0][4].item<float>()));
@@ -277,7 +276,10 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     mergingManeuver->addWaypoint(waypoint);
 		mergingVehicle->setProcessingWaypoint(true);
 
-		mergingVehicle->setWaypointTimeStamp(time(NULL));
+
+		mergingVehicle->setWaypointTimeStamp(time(NULL) + (distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
+                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / calculated_n_1_states[0][4].item<float>()) * 1000);
+									
 		database->upsert(mergingVehicle);
     return mergingManeuver;
 }
@@ -289,7 +291,7 @@ auto ManeuverParser(Database *database,
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {
-				if(difftime(r->getWaypointTimestamp(),time(NULL))){
+				if(difftime(time(NULL),r->getWaypointTimestamp()) < 0){
 					write_to_log("MANUEVER EXPIRED");
 					r->setProcessingWaypoint(false);
 					database->upsert(r);

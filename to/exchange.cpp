@@ -242,8 +242,10 @@ bool handleTrajectoryFeedback(Document &document) {
 	write_to_log("Maneuver Feedback: " + maneuverFeed->getFeedback());
 	if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
 		write_to_log("calculating new Trajectory for Vehicle");
-		roadUser->setProcessingWaypoint(false);
-		database->upsert(roadUser);
+		if(roadUser != nullptr){
+			roadUser->setProcessingWaypoint(false);
+			database->upsert(roadUser);
+		}
 		return false;
 	}
 	if(maneuverFeed->getFeedback() == "checkpoint"){
