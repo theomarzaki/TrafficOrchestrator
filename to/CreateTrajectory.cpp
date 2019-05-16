@@ -28,18 +28,18 @@
 using namespace std;
 using namespace rapidjson;
 
-int TIME_VARIANT = 0.035;
+float TIME_VARIANT = 0.035;
 
 using namespace std::chrono;
 using std::cout;
 time_t waypointTimeCalculator;
 
 int RoadUserSpeedtoProcessedSpeed(int speed){
-	return speed * 100;
+	return speed / 100;
 }
 
 int ProcessedSpeedtoRoadUserSpeed(int speed){
-	return speed / 100;
+	return speed * 100;
 }
 
 double RoadUserGPStoProcessedGPS(float point){
@@ -109,10 +109,10 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> mergin
             closest_preceeding = std::make_shared<RoadUser>();
             closest_preceeding->setLongitude(48624696);
             closest_preceeding->setLatitude(2243881);
-            closest_preceeding->setSpeed(merging_car->getSpeed() * 2);
+            closest_preceeding->setSpeed(merging_car->getSpeed());
             closest_preceeding->setWidth(merging_car->getWidth());
             closest_preceeding->setLength(merging_car->getLength());
-            closest_preceeding->setAcceleration(merging_car->getAcceleration() * 2);
+            closest_preceeding->setAcceleration(merging_car->getAcceleration());
             closest_preceeding->setLanePosition(merging_car->getLanePosition() + 1);
         }
         if (closest_following == nullptr) {
@@ -120,10 +120,10 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> mergin
             closest_following = std::make_shared<RoadUser>();
             closest_following->setLongitude(48624351);
             closest_following->setLatitude(2243455);
-            closest_following->setSpeed(merging_car->getSpeed() * 2);
+            closest_following->setSpeed(merging_car->getSpeed());
             closest_following->setWidth(merging_car->getWidth());
             closest_following->setLength(merging_car->getLength());
-            closest_following->setAcceleration(merging_car->getAcceleration() * 2);
+            closest_following->setAcceleration(merging_car->getAcceleration());
             closest_following->setLanePosition(merging_car->getLanePosition() + 1);
         }
     }
@@ -140,14 +140,21 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 
 	auto stateTensor = state;
 
+	auto merging_Long = state[0][0].item<float>();
+	auto merging_Lat = state[0][1].item<float>();
+	auto merging_Speed = max(state[0][4].item<float>(),float(10));
+	auto merging_Acc = max(state[0][5].item<float>(),float(1));
+	auto angle = state[0][19].item<int>();
+
+	cout << stateTensor << endl;
+
 	auto actionTensor = torch::argmax(action_Tensor);
 	if(accelerate_tensor == actionTensor.item<int>()){
-			auto final_velocity = state[0][4].item<float>() + TIME_VARIANT * (state[0][4].item<float>() + state[0][5].item<float>() * TIME_VARIANT);
-			auto final_acceleration = (pow(final_velocity,2) - pow(state[0][4].item<float>(),2)) / 2 * (0.5 * (state[0][4].item<float>() + final_velocity) * TIME_VARIANT);
+			auto final_velocity = merging_Speed + TIME_VARIANT * (merging_Speed + merging_Acc * TIME_VARIANT);
+			auto final_acceleration = (pow(final_velocity,2) - pow(merging_Speed,2)) / 2 * (0.5 * (merging_Speed + final_velocity) * TIME_VARIANT);
 			auto displacement = final_velocity * TIME_VARIANT + 0.5 * (final_acceleration * TIME_VARIANT * TIME_VARIANT);
-			auto angle = int(state[0][19].item<float>());
-			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
-			auto new_y = state[0][1].item<float>() + displacement * sin((angle * M_PI)/ 180);
+			auto new_x = merging_Long + displacement * cos((angle * M_PI)/ 180);
+			auto new_y = merging_Lat + displacement * sin((angle * M_PI)/ 180);
 			stateTensor[0][0] = new_x;
 			stateTensor[0][1] = new_y;
 			stateTensor[0][4] = final_velocity;
@@ -155,12 +162,11 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 			stateTensor[0][19] = angle;
 		return stateTensor;
 	} else if(deccelerate_tensor == actionTensor.item<int>()){
-		auto final_velocity = state[0][4].item<float>() - TIME_VARIANT * (state[0][4].item<float>() + state[0][5].item<float>() * TIME_VARIANT);
-		auto final_acceleration = (pow(final_velocity,2) - pow(state[0][4].item<float>(),2)) / 2 * (0.5 * (state[0][4].item<float>() + final_velocity) * TIME_VARIANT);
+		auto final_velocity = merging_Speed - TIME_VARIANT * (merging_Speed + merging_Acc * TIME_VARIANT);
+		auto final_acceleration = (pow(final_velocity,2) - pow(merging_Speed,2)) / 2 * (0.5 * (merging_Speed + final_velocity) * TIME_VARIANT);
 		auto displacement = final_velocity * TIME_VARIANT + 0.5 * (final_acceleration * TIME_VARIANT * TIME_VARIANT);
-		auto angle = int(state[0][19].item<float>());
-		auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
-		auto new_y = state[0][1].item<float>() + displacement * sin((angle * M_PI)/ 180);
+		auto new_x = merging_Long + displacement * cos((angle * M_PI)/ 180);
+		auto new_y = merging_Lat + displacement * sin((angle * M_PI)/ 180);
 		stateTensor[0][0] = new_x;
 		stateTensor[0][1] = new_y;
 		stateTensor[0][4] = final_velocity;
@@ -168,32 +174,31 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 		stateTensor[0][19] = angle;
 	return stateTensor;
 	} else if(left_tensor == actionTensor.item<int>()){
-			float displacement = state[0][4].item<float>() * TIME_VARIANT + 0.5 * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
+			cout << "speed: " << merging_Speed << " acceleration: " << merging_Acc << endl;
+			float displacement = merging_Speed * TIME_VARIANT + 0.5 * merging_Acc * TIME_VARIANT * TIME_VARIANT;
 			cout << "displacement: " << displacement << endl;
-			auto angle = int(state[0][19].item<float>());
 			angle = (angle + 1) % 360;
-			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
-			auto new_y = state[0][1].item<float>()  + displacement * sin((angle * M_PI)/ 180);
+			auto new_x = merging_Long + (displacement/1000) * cos((angle * M_PI)/ 180);
+			auto new_y = merging_Lat  + (displacement/1000) * sin((angle * M_PI)/ 180);
 			stateTensor[0][0] = new_x;
 			stateTensor[0][1] = new_y;
 			stateTensor[0][19] = angle;
 		return stateTensor;
 	} else if(right_tensor == actionTensor.item<int>()){
-			auto displacement = state[0][4].item<float>() * TIME_VARIANT + 0.5 * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
+			cout << "speed: " << merging_Speed << " acceleration: " << merging_Acc << endl;
+			float displacement = merging_Speed * TIME_VARIANT + 0.5 * merging_Acc * TIME_VARIANT * TIME_VARIANT;
 			cout << "displacement: " << displacement << endl;
-			auto angle = int(state[0][19].item<float>());
 			angle = (angle - 1) % 360;
-			auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
-			auto new_y = state[0][1].item<float>()  + displacement * sin((angle * M_PI)/ 180);
+			auto new_x = merging_Long + (displacement/1000) * cos((angle * M_PI)/ 180);
+			auto new_y = merging_Lat  + (displacement/1000) * sin((angle * M_PI)/ 180);
 			stateTensor[0][0] = new_x;
 			stateTensor[0][1] = new_y;
 			stateTensor[0][19] = angle;
 		return stateTensor;
 	} else if(doNothing_tensor == actionTensor.item<int>()){
-			auto displacement = state[0][4].item<float>() * TIME_VARIANT + 0.5 * (state[0][5].item<float>() * TIME_VARIANT * TIME_VARIANT);
-	   	auto angle = int(state[0][19].item<float>());
-	    auto new_x = state[0][0].item<float>() + displacement * cos((angle * M_PI)/ 180);
-	    auto new_y = state[0][1].item<float>() + displacement * sin((angle * M_PI)/ 180);
+			auto displacement = merging_Speed * TIME_VARIANT + 0.5 * (merging_Acc * TIME_VARIANT * TIME_VARIANT);
+	    auto new_x = merging_Long + displacement * cos((angle * M_PI)/ 180);
+	    auto new_y = merging_Lat + displacement * sin((angle * M_PI)/ 180);
 	    stateTensor[0][0] = new_x;
 	    stateTensor[0][1] = new_y;
 			stateTensor[0][19] = angle;
@@ -220,29 +225,29 @@ vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> merging_car,
 
 
     std::vector<float> mergingCar;
-    mergingCar.push_back(RoadUserGPStoProcessedGPS(merging_car->getLatitude()));
     mergingCar.push_back(RoadUserGPStoProcessedGPS(merging_car->getLongitude()));
+    mergingCar.push_back(RoadUserGPStoProcessedGPS(merging_car->getLatitude()));
     mergingCar.push_back(merging_car->getLength());
     mergingCar.push_back(merging_car->getWidth());
     mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(merging_car->getSpeed()));
     mergingCar.push_back(merging_car->getAcceleration());
     // FIXME do not cast from a double to a float
-    mergingCar.push_back(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLongitude()),RoadUserGPStoProcessedGPS(merging_car->getLatitude()),RoadUserGPStoProcessedGPS(x.first->getLongitude()),RoadUserGPStoProcessedGPS(x.first->getLatitude())));
-		mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLatitude()));
-    mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLongitude()));
+    mergingCar.push_back(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLatitude()),RoadUserGPStoProcessedGPS(merging_car->getLongitude()),RoadUserGPStoProcessedGPS(x.first->getLatitude()),RoadUserGPStoProcessedGPS(x.first->getLongitude())));
+		mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLongitude()));
+    mergingCar.push_back(RoadUserGPStoProcessedGPS(x.first->getLatitude()));
     mergingCar.push_back(x.first->getLength());
     mergingCar.push_back(x.first->getWidth());
     mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(x.first->getSpeed()));
     mergingCar.push_back(x.first->getAcceleration());
-    mergingCar.push_back(RoadUserGPStoProcessedGPS(x.second->getLatitude()));
     mergingCar.push_back(RoadUserGPStoProcessedGPS(x.second->getLongitude()));
+    mergingCar.push_back(RoadUserGPStoProcessedGPS(x.second->getLatitude()));
     mergingCar.push_back(x.second->getWidth());
     mergingCar.push_back(RoadUserSpeedtoProcessedSpeed(x.second->getSpeed()));
     mergingCar.push_back(x.second->getAcceleration());
-		mergingCar.push_back(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLongitude()),
-                                                RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
-                                                RoadUserGPStoProcessedGPS(x.second->getLongitude()),
-                                                RoadUserGPStoProcessedGPS(x.second->getLatitude())));
+		mergingCar.push_back(distanceEarth(RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
+                                                RoadUserGPStoProcessedGPS(merging_car->getLongitude()),
+                                                RoadUserGPStoProcessedGPS(x.second->getLatitude()),
+                                                RoadUserGPStoProcessedGPS(x.second->getLongitude())));
 		mergingCar.push_back(RoadUserHeadingtoProcessedHeading(merging_car->getHeading()));
     return mergingCar;
 }
@@ -252,10 +257,12 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
     std::vector<torch::jit::IValue> rl_inputs;
 
-    mergingManeuver->setTimestamp(time(NULL));
+		auto timestamp = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+
+    mergingManeuver->setTimestamp(timestamp);
     mergingManeuver->setUuidVehicle(mergingVehicle->getUuid());
     mergingManeuver->setUuidTo(mergingVehicle->getUuid());
-    mergingManeuver->setTimestampAction(time(NULL));
+    mergingManeuver->setTimestampAction(timestamp);
     mergingManeuver->setLongitudeAction(mergingVehicle->getLongitude());
     mergingManeuver->setLatitudeAction(mergingVehicle->getLatitude());
     mergingManeuver->setSpeedAction(ProcessedSpeedtoRoadUserSpeed(mergingVehicle->getSpeed()));
@@ -267,20 +274,26 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     at::Tensor calculatedRL = rl_model->forward(rl_inputs).toTensor();
     auto calculated_n_1_states = GetStateFromActions(calculatedRL, models_input);
 
+		auto merging_Speed = max(calculated_n_1_states[0][4].item<float>(),float(10));
+
     auto waypoint{std::make_shared<Waypoint>()};
-    waypoint->setTimestamp(time(NULL) + (distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
-                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / calculated_n_1_states[0][4].item<float>()) * 1000); //distance to mergeing point
-    waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][0].item<float>()));
-    waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][1].item<float>()));
-    waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(calculated_n_1_states[0][4].item<float>()));
+    waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
+                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / merging_Speed) * 100); //distance to mergeing point
+    waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][0].item<float>()));
+    waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][1].item<float>()));
+    waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(merging_Speed));
     waypoint->setLanePosition(mergingVehicle->getLanePosition());
 		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
     mergingManeuver->addWaypoint(waypoint);
 		mergingVehicle->setProcessingWaypoint(true);
 
+		cout << "Distance of waypoint: m " << distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
+                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) * 1000 << endl;
 
-		mergingVehicle->setWaypointTimeStamp(time(NULL) + (distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
-                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / calculated_n_1_states[0][4].item<float>()) * 1000);
+		cout << "time of Waypoint : ms " << distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
+                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / merging_Speed * 1000 << endl;
+
+		mergingVehicle->setWaypointTimeStamp(time(NULL));
 
 		database->upsert(mergingVehicle);
     return mergingManeuver;
@@ -297,7 +310,7 @@ auto ManeuverParser(Database *database,
 					r->setProcessingWaypoint(false);
 					database->upsert(r);
 				}
-					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
+					if (r->getConnected() && r->getLanePosition() == 0) { //&& !(r->getProcessingWaypoint())
 	            auto neighbours{mapNeighbours(database, distanceRadius)};
 	            auto input_values{RoadUsertoModelInput(r, neighbours)};
 	            auto models_input{torch::tensor(input_values).unsqueeze(0)};

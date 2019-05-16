@@ -21,6 +21,7 @@
 #include <vector>
 #include <random>
 #include <chrono>
+#include <sys/time.h>
 
 #include "rapidjson/document.h"
 #include <torch/torch.h>
