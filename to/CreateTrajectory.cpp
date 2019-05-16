@@ -29,6 +29,7 @@ using namespace std;
 using namespace rapidjson;
 
 float TIME_VARIANT = 0.035;
+int BIAS = 3;
 
 using namespace std::chrono;
 using std::cout;
@@ -51,12 +52,13 @@ double ProcessedGPStoRoadUserGPS(float point){
     return double(point * pow(10,6));
 }
 
+
 float RoadUserHeadingtoProcessedHeading(float point){
-	return point / 100;
+	return float(int((point / 100) + 270) % 360);
 }
 
 float ProcessedHeadingtoRoadUserHeading(float point){
-	return point * 100;
+	return float(int((point * 100) - 270) % 360);
 }
 
 
@@ -100,15 +102,15 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> mergin
             }
         }
     }
-		closest_following = nullptr;
-		closest_preceeding = nullptr;
+		// closest_following = nullptr;
+		// closest_preceeding = nullptr;
     if (closest_preceeding == nullptr or closest_following == nullptr ) { // Calculate once only
         // Mapper::Merging_Scenario faker = Mapper::getMapper()->getFakeCarMergingScenario(merging_car->getDoubleLatitude(), merging_car->getDoubleLongitude());
         if (closest_preceeding == nullptr) {
             //we create a default one
             closest_preceeding = std::make_shared<RoadUser>();
-            closest_preceeding->setLongitude(48624696);
-            closest_preceeding->setLatitude(2243881);
+            closest_preceeding->setLongitude(48624375);
+            closest_preceeding->setLatitude(2243479);
             closest_preceeding->setSpeed(merging_car->getSpeed());
             closest_preceeding->setWidth(merging_car->getWidth());
             closest_preceeding->setLength(merging_car->getLength());
@@ -118,8 +120,8 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> mergin
         if (closest_following == nullptr) {
             //we create a default one
             closest_following = std::make_shared<RoadUser>();
-            closest_following->setLongitude(48624351);
-            closest_following->setLatitude(2243455);
+            closest_following->setLongitude(48624556);
+            closest_following->setLatitude(2243691);
             closest_following->setSpeed(merging_car->getSpeed());
             closest_following->setWidth(merging_car->getWidth());
             closest_following->setLength(merging_car->getLength());
@@ -146,7 +148,6 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 	auto merging_Acc = max(state[0][5].item<float>(),float(1));
 	auto angle = state[0][19].item<int>();
 
-	cout << stateTensor << endl;
 
 	auto actionTensor = torch::argmax(action_Tensor);
 	if(accelerate_tensor == actionTensor.item<int>()){
@@ -174,23 +175,19 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 		stateTensor[0][19] = angle;
 	return stateTensor;
 	} else if(left_tensor == actionTensor.item<int>()){
-			cout << "speed: " << merging_Speed << " acceleration: " << merging_Acc << endl;
 			float displacement = merging_Speed * TIME_VARIANT + 0.5 * merging_Acc * TIME_VARIANT * TIME_VARIANT;
-			cout << "displacement: " << displacement << endl;
 			angle = (angle + 1) % 360;
-			auto new_x = merging_Long + (displacement/1000) * cos((angle * M_PI)/ 180);
-			auto new_y = merging_Lat  + (displacement/1000) * sin((angle * M_PI)/ 180);
+			auto new_x = merging_Long + BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
+			auto new_y = merging_Lat  + BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 			stateTensor[0][0] = new_x;
 			stateTensor[0][1] = new_y;
 			stateTensor[0][19] = angle;
 		return stateTensor;
 	} else if(right_tensor == actionTensor.item<int>()){
-			cout << "speed: " << merging_Speed << " acceleration: " << merging_Acc << endl;
 			float displacement = merging_Speed * TIME_VARIANT + 0.5 * merging_Acc * TIME_VARIANT * TIME_VARIANT;
-			cout << "displacement: " << displacement << endl;
 			angle = (angle - 1) % 360;
-			auto new_x = merging_Long + (displacement/1000) * cos((angle * M_PI)/ 180);
-			auto new_y = merging_Lat  + (displacement/1000) * sin((angle * M_PI)/ 180);
+			auto new_x = merging_Long + BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
+			auto new_y = merging_Lat  + BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 			stateTensor[0][0] = new_x;
 			stateTensor[0][1] = new_y;
 			stateTensor[0][19] = angle;
@@ -287,12 +284,6 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     mergingManeuver->addWaypoint(waypoint);
 		mergingVehicle->setProcessingWaypoint(true);
 
-		cout << "Distance of waypoint: m " << distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
-                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) * 1000 << endl;
-
-		cout << "time of Waypoint : ms " << distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
-                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / merging_Speed * 1000 << endl;
-
 		mergingVehicle->setWaypointTimeStamp(time(NULL));
 
 		database->upsert(mergingVehicle);
@@ -310,7 +301,7 @@ auto ManeuverParser(Database *database,
 					r->setProcessingWaypoint(false);
 					database->upsert(r);
 				}
-					if (r->getConnected() && r->getLanePosition() == 0) { //&& !(r->getProcessingWaypoint())
+					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
 	            auto neighbours{mapNeighbours(database, distanceRadius)};
 	            auto input_values{RoadUsertoModelInput(r, neighbours)};
 	            auto models_input{torch::tensor(input_values).unsqueeze(0)};
