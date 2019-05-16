@@ -53,9 +53,9 @@ int sendPort;
 string receiveAddress;
 int receivePort;
 
-double distanceRadius;
-uint32_t mergingLongitude;
-uint32_t mergingLatitude;
+
+pair<int,int> northeast;
+pair<int,int> southwest;
 string uuidTo;
 int request_id;
 int socket_c;
@@ -188,18 +188,18 @@ void sendTrajectoryRecommendations(vector<std::shared_ptr<ManeuverRecommendation
 	}
 }
 
-void initiateSubscription(const string &sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter,int radius,uint32_t longitude, uint32_t latitude) {
+void initiateSubscription(const string &sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter) {
 	milliseconds timeSub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	auto subscriptionReq{std::make_shared<SubscriptionRequest>()};
 	generateReqID();
 	subscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 	subscriptionReq->setFilter(filter);
-	subscriptionReq->setRadius(radius);
-	subscriptionReq->setLongitude(longitude);
-	subscriptionReq->setLatitude(latitude);
-	subscriptionReq->setShape("circle");
+
+	subscriptionReq->setShape("rectangle");
 	subscriptionReq->setSignature("TEMPLATE");
 	subscriptionReq->setRequestId(request_id);
+	subscriptionReq->setNorthEast(northeast);
+	subscriptionReq->setSouthWest(southwest);
 	// FIXME do not cast an unsigned int 64 from a long
 	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
@@ -212,7 +212,7 @@ void initiateUnsubscription(const string &sendAddress, int sendPort, std::shared
 	milliseconds timeUnsub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	auto unsubscriptionReq{std::make_shared<UnsubscriptionRequest>()};
 	unsubscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
-	unsubscriptionReq->setSubscriptionId(subscriptionResp->getSubscriptionId());
+	unsubscriptionReq->setSubscriptionId(request_id);
 	// FIXME do not cast an unsigned int 64 from a long
 	unsubscriptionReq->setTimestamp(static_cast<uint64_t>(timeUnsub.count()));
 	sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createUnsubscriptionRequestJSON(unsubscriptionReq));
@@ -286,13 +286,12 @@ void inputReceiveAddress(string address) {
 	receiveAddress = address;
 }
 
-void inputMergeLocation(uint32_t longt, uint32_t lat){
-	mergingLongitude = longt;
-	mergingLatitude = lat;
+void inputNorthEast(int longt, int lat){
+	northeast = make_pair(longt,lat);
 }
 
-void inputDistanceRadius(int radius) {
-	distanceRadius = radius;
+void inputSouthWest(int longt, int lat){
+	southwest = make_pair(longt,lat);
 }
 
 void initaliseDatabase() {
@@ -301,7 +300,7 @@ void initaliseDatabase() {
 
 void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
                       const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
-  auto recommendations = ManeuverParser(database,distanceRadius,lstm_model,rl_model);
+  auto recommendations = ManeuverParser(database,rl_model);
   if(!recommendations.empty()) {
 					write_to_log("Sending recommendations.\n");
 					sendTrajectoryRecommendations(recommendations,socket);
@@ -351,14 +350,12 @@ int main() {
 
         inputSendAddress(document["sendAddress"].GetString());
         inputSendPort(document["sendPort"].GetInt());
-        inputDistanceRadius(document["distanceRadius"].GetInt());
-        inputMergeLocation(document["longitude"].GetUint(), document["latitude"].GetUint());
+        inputNorthEast(document["northeast"]["longitude"].GetInt(), document["northeast"]["latitude"].GetInt());
+				inputSouthWest(document["southwest"]["longitude"].GetInt(), document["southwest"]["latitude"].GetInt());
         inputReceivePort(document["receivePort"].GetInt());
         inputReceiveAddress(document["receiveAddress"].GetString());
 
-        initiateSubscription(sendAddress, sendPort, receiveAddress, receivePort, filter,
-                                           document["distanceRadius"].GetInt(), document["longitude"].GetUint(),
-                                           document["latitude"].GetUint());
+        initiateSubscription(sendAddress, sendPort, receiveAddress, receivePort, filter);
         initaliseDatabase();
         bool listening = false;
         string reconnect_flag;

@@ -31,9 +31,6 @@ string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscr
 	Document::AllocatorType& allocator = document.GetAllocator();
 
 	Value timestamp(subscriptionReq->getTimestamp());
-	Value longitude(subscriptionReq->getLongitude());
-	Value latitude(subscriptionReq->getLatitude());
-	Value radius(subscriptionReq->getRadius());
 
 	if(subscriptionReq->getFilter() == false) {
 		document.AddMember("type",Value().SetString(subscriptionReq->getType().c_str(),allocator),allocator)
@@ -46,7 +43,7 @@ string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscr
 		Value filter(kObjectType);
 
 		message.AddMember("filter", filter, allocator);
-		message.AddMember("request_id",Value().SetInt(subscriptionReq->getRequestId()),allocator); // TODO CHANGED
+		message.AddMember("request_id",Value().SetInt(subscriptionReq->getRequestId()),allocator);
 
 		document.AddMember("message", message, allocator)
 		.AddMember("signature",Value().SetString(subscriptionReq->getSignature().c_str(),allocator),allocator);
@@ -64,12 +61,14 @@ string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscr
 		Value objectTwo(kObjectType);
 		Value objectThree(kObjectType);
 		Value objectFour(kObjectType);
+		Value objectFive(kObjectType);
 
-		objectTwo.AddMember("latitude",latitude,allocator).AddMember("longitude",longitude,allocator);
+		objectTwo.AddMember("latitude",Value().SetInt(subscriptionReq->getNorthEast().second),allocator).AddMember("longitude",Value().SetInt(subscriptionReq->getNorthEast().first),allocator);
+		objectFive.AddMember("latitude",Value().SetInt(subscriptionReq->getSouthWest().second),allocator).AddMember("longitude",Value().SetInt(subscriptionReq->getSouthWest().first),allocator);
 
 		object.AddMember("shape", Value().SetString(subscriptionReq->getShape().c_str(), allocator),allocator);
-		object.AddMember("center",objectTwo,allocator);
-		object.AddMember("radius",radius,allocator);
+		object.AddMember("northeast",objectTwo,allocator);
+		object.AddMember("southwest",objectFive,allocator);
 		objectFour.AddMember("area", object, allocator);
 		objectThree.AddMember("filter", objectFour, allocator);
 		objectThree.AddMember("request_id",Value().SetInt(subscriptionReq->getRequestId()),allocator);

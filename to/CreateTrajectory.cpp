@@ -249,8 +249,7 @@ vector<float> RoadUsertoModelInput(const std::shared_ptr<RoadUser> merging_car,
     return mergingCar;
 }
 
-auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergingVehicle, at::Tensor models_input, std::shared_ptr<torch::jit::script::Module> lstm_model,
-                            std::shared_ptr<torch::jit::script::Module> rl_model) {
+auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergingVehicle, at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> rl_model) {
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
     std::vector<torch::jit::IValue> rl_inputs;
 
@@ -290,10 +289,7 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     return mergingManeuver;
 }
 
-auto ManeuverParser(Database *database,
-                    double distanceRadius,
-                    std::shared_ptr<torch::jit::script::Module> lstm_model,
-                    std::shared_ptr<torch::jit::script::Module> rl_model) {
+auto ManeuverParser(Database *database,std::shared_ptr<torch::jit::script::Module> rl_model) {
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {
@@ -302,10 +298,10 @@ auto ManeuverParser(Database *database,
 					database->upsert(r);
 				}
 					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
-	            auto neighbours{mapNeighbours(database, distanceRadius)};
+	            auto neighbours{mapNeighbours(database, 10000)};
 	            auto input_values{RoadUsertoModelInput(r, neighbours)};
 	            auto models_input{torch::tensor(input_values).unsqueeze(0)};
-	            recommendations.push_back(calculatedTrajectories(database,r, models_input, lstm_model, rl_model));
+	            recommendations.push_back(calculatedTrajectories(database,r, models_input,rl_model));
 	        }
     }
     return recommendations;
