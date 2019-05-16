@@ -100,14 +100,14 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> mergin
         }
     }
     if (closest_preceeding == nullptr or closest_following == nullptr ) { // Calculate once only
-        // Mapper::Merging_Scenario faker = Mapper::getMapper()->getFakeCarMergingScenario(merging_car->getDoubleLatitude(), merging_car->getDoubleLongitude());
+        auto faker = Mapper::getMapper()->getFakeCarMergingScenario(merging_car->getDoubleLatitude(), merging_car->getDoubleLongitude());
         if (closest_preceeding == nullptr) {
             //we create a default one
             closest_preceeding = std::make_shared<RoadUser>();
-            // closest_preceeding->setDoubleLongitude(faker.preceeding.latitude);
-            // closest_preceeding->setDoubleLatitude(faker.preceeding.longitude);
-						closest_preceeding->setLongitude(merging_car->getLongitude());
-						closest_preceeding->setLatitude(merging_car->getLatitude());
+             closest_preceeding->setDoubleLongitude(faker.preceeding.latitude);
+             closest_preceeding->setDoubleLatitude(faker.preceeding.longitude);
+//						closest_preceeding->setLongitude(merging_car->getLongitude());
+//						closest_preceeding->setLatitude(merging_car->getLatitude());
             closest_preceeding->setSpeed(merging_car->getSpeed());
             closest_preceeding->setWidth(merging_car->getWidth());
             closest_preceeding->setLength(merging_car->getLength());
@@ -117,10 +117,10 @@ auto getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser> mergin
         if (closest_following == nullptr) {
             //we create a default one
             closest_following = std::make_shared<RoadUser>();
-            // closest_following->setDoubleLongitude(faker.following.latitude);
-            // closest_following->setDoubleLatitude(faker.following.longitude);
-						closest_following->setLongitude(merging_car->getLongitude());
-						closest_following->setLatitude(merging_car->getLatitude());
+             closest_following->setDoubleLongitude(faker.following.latitude);
+             closest_following->setDoubleLatitude(faker.following.longitude);
+//						closest_following->setLongitude(merging_car->getLongitude());
+//						closest_following->setLatitude(merging_car->getLatitude());
             closest_following->setSpeed(merging_car->getSpeed());
             closest_following->setWidth(merging_car->getWidth());
             closest_following->setLength(merging_car->getLength());
