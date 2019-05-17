@@ -52,7 +52,7 @@ private:
         std::map<int,Lane_Descriptor> lanes{std::map<int,Lane_Descriptor>()};
     };
 
-    std::vector<Road_Descriptor> m_roads = std::vector<Road_Descriptor>();
+    std::vector<Road_Descriptor> m_roads;
 
     int numberOfRoad = 0;
 
