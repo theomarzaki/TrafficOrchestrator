@@ -177,7 +177,7 @@ public:
         auto deltalat {latitude2 - latitude};
         auto deltalong {longitude2 - longitude};
 
-        double a = sin(deltalat/2) * sin(deltalat/2) + cos(latitude) * cos(longitude) * sin(deltalong/2) * sin(deltalong/2);
+        double a = sin(deltalat/2) * sin(deltalat/2) + cos(latitude) * cos(latitude2) * sin(deltalong/2) * sin(deltalong/2);
         double c = 2 * atan2(sqrt(a), sqrt(1-a));
 
         return EARTH_RADIUS * c;

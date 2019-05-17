@@ -234,8 +234,8 @@ string RoadUser::getItsStationType(){return its_station_type;}
 bool RoadUser::getConnected(){return connected;}
 int32_t RoadUser::getLatitude(){return latitude;}
 int32_t RoadUser::getLongitude(){return longitude;}
-double RoadUser::getDoubleLatitude(){return latitude/1000000.0;}
-double RoadUser::getDoubleLongitude(){return longitude/1000000.0;}
+double RoadUser::getDoubleLatitude(){return latitude/10000000.0;}
+double RoadUser::getDoubleLongitude(){return longitude/10000000.0;}
 uint16_t RoadUser::getHeading(){return heading;}
 uint16_t RoadUser::getSpeed(){return speed;}
 uint16_t RoadUser::getAcceleration(){return acceleration;}
@@ -271,8 +271,8 @@ void RoadUser::setItsStationType(string parameter){its_station_type = std::move(
 void RoadUser::setConnected(bool parameter){connected = parameter;}
 void RoadUser::setLatitude(int32_t parameter){latitude = parameter;}
 void RoadUser::setLongitude(int32_t parameter){longitude = parameter;}
-void RoadUser::setDoubleLatitude(double parameter){latitude = static_cast<int32_t >(parameter * 1000000);}
-void RoadUser::setDoubleLongitude(double parameter){longitude = static_cast<int32_t >(parameter * 1000000);}
+void RoadUser::setDoubleLatitude(double parameter){latitude = static_cast<int32_t >(parameter * 10000000);}
+void RoadUser::setDoubleLongitude(double parameter){longitude = static_cast<int32_t >(parameter * 10000000);}
 void RoadUser::setHeading(uint16_t parameter){heading = parameter;}
 void RoadUser::setSpeed(uint16_t parameter){speed = parameter;}
 void RoadUser::setAcceleration(uint16_t parameter){acceleration = parameter;}
