@@ -109,8 +109,6 @@ private:
 
 public:
 
-//    std::vector<Road_Descriptor> m_roads = std::vector<Road_Descriptor>();
-
     enum Mapper_Result_State{
         ERROR,
         OUT_OF_MAP,
@@ -281,8 +279,6 @@ public:
                 xP = latitude < compareNode->latitude ? -xP : xP;
                 yP = longitude < compareNode->longitude ? -yP : yP;
 
-//                std::cout << "Dist : " << distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) << std::endl;
-
                 if (distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) <= lane.size/2) { // TODO implement Square B-Spline distance check
                     nearestDescription.state = Mapper_Result_State::OK;
                 }
@@ -325,57 +321,3 @@ public:
         }
     }
 };
-
-//int main() {
-//
-//    double vectors[9][2] = {{48.623256, 2.242104},  // lane0 in the grass
-//                            {48.623206, 2.242140},  // lane1
-//                            {48.623183, 2.242167},  // lane2
-//                            {48.623162, 2.241968},  // lane1 on the emergency stop strip
-//                            {48.623140, 2.241996},  // lane1
-//                            {48.623115, 2.242018},  // lane2
-//                            {48.623107, 2.241817},  // lane1 on the emergency stop strip
-//                            {48.623083, 2.241847},  // lane1
-//                            {48.623055, 2.241863}};  // lane2
-//
-//    for (auto& vector : vectors) {
-//        Mapper::Gps_Descriptor buff = Mapper::getMapper()->getPositionDescriptor(vector[0],vector[1]);
-//        std::cout << "Lane : " << buff.laneId << std::endl;
-//        std::cout << "Status : " << std::to_string(buff.state) << "\n\n"; // 3 = OK , 2 = OUT_OF_ROAD
-//    }
-//
-//    Mapper::Gps_Point gps;
-//    gps.latitude = 48.627456;
-//    gps.longitude = 2.246525;
-//
-////    auto derch = Mapper::getMapper()->getFakeCarMergingScenario(gps.latitude,gps.longitude);
-////    std::cout << std::setprecision(6) << std::fixed << derch.preceeding.latitude << ", "  << derch.preceeding.longitude << " / " << derch.following.latitude << ", "  << derch.following.longitude;
-//
-//    std::cout << "\nLane 0 stub\n\n";
-//
-//    auto nodes = Mapper::getMapper()->m_roads.at(2).lanes.find(0)->second.nodes;
-//
-//    for (auto i=0; i< nodes.size(); i++) {
-//        auto derch = Mapper::getMapper()->getFakeCarMergingScenario(nodes.at(i).latitude,nodes.at(i).longitude);
-//        std::cout << std::setprecision(6) << std::fixed << i << "\t\t preceeding = (" << derch.preceeding.latitude << ","  << derch.preceeding.longitude << ")   following = (" << derch.following.latitude << ","  << derch.following.longitude << ")\n";
-//    }
-//
-//    std::cout << "\nLane 1 stub\n\n";
-//
-//    nodes = Mapper::getMapper()->m_roads.at(1).lanes.find(1)->second.nodes;
-//
-//    for (auto i=0; i< nodes.size(); i++) {
-//        auto derch = Mapper::getMapper()->getFakeCarMergingScenario(nodes.at(i).latitude,nodes.at(i).longitude);
-//        std::cout << std::setprecision(6) << std::fixed << i << "\t\t preceeding = (" << derch.preceeding.latitude << ","  << derch.preceeding.longitude << ")   following = (" << derch.following.latitude << ","  << derch.following.longitude << ")\n";
-//    }
-//
-//    std::cout << "\nLane 2 stub\n\n";
-//
-//    nodes = Mapper::getMapper()->m_roads.at(1).lanes.find(2)->second.nodes;
-//
-//    for (auto i=0; i< nodes.size(); i++) {
-//        auto derch = Mapper::getMapper()->getFakeCarMergingScenario(nodes.at(i).latitude,nodes.at(i).longitude);
-//        std::cout << std::setprecision(6) << std::fixed << i << "\t\t preceeding = (" << derch.preceeding.latitude << ","  << derch.preceeding.longitude << ")   following = (" << derch.following.latitude << ","  << derch.following.longitude << ")\n";
-//    }
-//
-//}
