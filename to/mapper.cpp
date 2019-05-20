@@ -18,6 +18,7 @@
 #include <iomanip>
 
 #define EARTH_RADIUS 6371000
+#define OUT_OF_MAP_VALUE 10000
 
 class Mapper {
 private:
@@ -226,7 +227,7 @@ public:
         }
 
         if (nearestDescription.nodeId > -1) {
-            if (distance < 10000) { // TODO Find the extremum of the serie and define the limit with it.
+            if (distance < OUT_OF_MAP_VALUE) { // TODO Find the extremum of the serie and define the limit with it.
                 auto lane{m_roads.at(nearestDescription.roadId).lanes.find(nearestDescription.laneId)->second};
                 auto node{lane.nodes.at(nearestDescription.nodeId)};
 
@@ -284,13 +285,14 @@ public:
                 }
             } else {
                 nearestDescription.state = Mapper_Result_State::OUT_OF_MAP;
+                write_to_log(std::string("[WARN] Coordinates out of map, at least "+std::to_string(OUT_OF_MAP_VALUE)+" m away => ("+std::to_string(latitude)+","+std::to_string(longitude)+")"));
             }
         }
 
         return std::move(nearestDescription);
     }
 
-    Merging_Scenario getFakeCarMergingScenario(double latitude, double longitude) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
+    std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
         Gps_Descriptor gps{getPositionDescriptor(latitude,longitude,1)}; // 1 = highway
         if (gps.state != Mapper_Result_State::OUT_OF_MAP) {
             auto nodes{m_roads.at(gps.roadId).lanes.find(1)->second.nodes}; // 1 = First lane
@@ -317,7 +319,7 @@ public:
 
             return ret;
         } else {
-            throw std::runtime_error("[Error] The coordinates are out of map.");
+            return std::nullopt;
         }
     }
 };
