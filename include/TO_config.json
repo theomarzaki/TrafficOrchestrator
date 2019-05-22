@@ -3,7 +3,10 @@
   "sendPort": 9202,
   "receiveAddress": "0.0.0.0",
   "receivePort": 7000,
-  "distanceRadius": 10000,
-  "longitude": 476947023,
-  "latitude": 65357796
+  "northeast":
+    {"latitude":486250830,
+    "longitude":22441360},
+  "southwest":
+    {"latitude":486241289,
+    "longitude":22434579}
 }

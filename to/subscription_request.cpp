@@ -22,33 +22,29 @@ class SubscriptionRequest {
 		uint64_t timestamp;
 		bool filter;
 		string shape;
-		double longitude;
-		double latitude;
-		double radius;
+		pair <int,int> northeast;
+		pair <int,int> southwest;
 		string signature;
 		string source_uuid;
 		string destination_uuid;
-		int request_id;  // added later TODO
+		int request_id;
 		string message_id;
 
 	public:
 		SubscriptionRequest(string type, string context,string origin, string version, uint64_t timestamp,
-		bool filter,int request_id,string shape, double longitude, double latitude, double radius, string signature,string source_uuid) :
+		bool filter,int request_id,string shape, string signature,string source_uuid) :
 		type(type),
 		context(context),
 		origin(origin),
 		timestamp(timestamp),
 		filter(filter),
 		shape(shape),
-		longitude(longitude),
-		latitude(latitude),
-		radius(radius),
 		signature(signature),
-		request_id(request_id), //TODO CHANGED
+		request_id(request_id),
 		source_uuid(source_uuid)
 		{
 			type = "subscription_request";
-			context = "subscriptions"; //changed from subscription_mechanism
+			context = "subscriptions";
 			origin = "traffic_orchestrator";
 			source_uuid = "traffic_orchestrator";
 			destination_uuid = "v2x_gateway";
@@ -56,9 +52,9 @@ class SubscriptionRequest {
 
 		SubscriptionRequest() {
 			type = "subscription_request";
-			context = "subscriptions"; // same as above
+			context = "subscriptions";
 			origin = "traffic_orchestrator";
-			source_uuid = "traffic_orchestrator"; // add to json format properly
+			source_uuid = "traffic_orchestrator";
 			destination_uuid = "v2x_gateway";
 		}
 
@@ -73,9 +69,9 @@ class SubscriptionRequest {
 	uint64_t getTimestamp();
 	bool getFilter();
 	string getShape();
-	double getLongitude();
-	double getLatitude();
-	double getRadius();
+	pair<int,int> getNorthEast();
+	pair<int,int> getSouthWest();
+
 	string getSignature();
 	int getRequestId();
 	string getSourceUUID();
@@ -98,6 +94,8 @@ class SubscriptionRequest {
 	void setSourceUUID(string);
 	void setDestinationUUID(string);
 	void setMessageID(string);
+	void setNorthEast(pair<int,int>);
+	void setSouthWest(pair<int,int>);
 
 };
 
@@ -110,14 +108,13 @@ string SubscriptionRequest::getVersion(){return version;}
 uint64_t SubscriptionRequest::getTimestamp(){return timestamp;}
 bool SubscriptionRequest::getFilter(){return filter;}
 string SubscriptionRequest::getShape(){return shape;};
-double SubscriptionRequest::getLongitude(){return longitude;}
-double SubscriptionRequest::getLatitude(){return latitude;}
-double SubscriptionRequest::getRadius(){return radius;}
 string SubscriptionRequest::getSignature(){return signature;}
 int SubscriptionRequest::getRequestId(){return request_id;}
 string SubscriptionRequest::getSourceUUID(){return source_uuid;}
 string SubscriptionRequest::getDestinationUUID(){return destination_uuid;}
 string SubscriptionRequest::getMessageID(){return message_id;}
+pair<int,int> SubscriptionRequest::getNorthEast(){return northeast;}
+pair<int,int> SubscriptionRequest::getSouthWest(){return southwest;}
 
 void SubscriptionRequest::setType(string parameter){type = parameter;}
 void SubscriptionRequest::setContext(string parameter){context = parameter;}
@@ -126,14 +123,13 @@ void SubscriptionRequest::setVersion(string parameter){version = parameter;}
 void SubscriptionRequest::setTimestamp(uint64_t parameter){timestamp = parameter;}
 void SubscriptionRequest::setFilter(bool parameter){filter = parameter;}
 void SubscriptionRequest::setShape(string parameter){shape = parameter;}
-void SubscriptionRequest::setLongitude(double parameter){longitude = parameter;}
-void SubscriptionRequest::setLatitude(double parameter){latitude = parameter;}
-void SubscriptionRequest::setRadius(double parameter){radius = parameter;}
 void SubscriptionRequest::setSignature(string parameter){signature = parameter;}
 void SubscriptionRequest::setRequestId(int parameter){request_id = parameter;}
 void SubscriptionRequest::setSourceUUID(string parameter){source_uuid = parameter;}
 void SubscriptionRequest::setDestinationUUID(string parameter){destination_uuid = parameter;}
 void SubscriptionRequest::setMessageID(string parameter){message_id = parameter;}
+void SubscriptionRequest::setNorthEast(pair<int,int> parameter){northeast = make_pair(parameter.first,parameter.second);}
+void SubscriptionRequest::setSouthWest(pair<int,int> parameter){southwest = make_pair(parameter.first,parameter.second);}
 
 std::ostream& operator<<(std::ostream& os, SubscriptionRequest * subscriptionReq) {
 
@@ -158,12 +154,6 @@ std::ostream& operator<<(std::ostream& os, SubscriptionRequest * subscriptionReq
 	<<subscriptionReq->getRequestId()
 	<< ","
   << subscriptionReq->getShape()
-  << ","
-  << subscriptionReq->getLongitude()
-  << ","
-  << subscriptionReq->getLatitude()
-  << ","
-  << subscriptionReq->getRadius()
   << ","
   << subscriptionReq->getSignature()
   << "]\n";
