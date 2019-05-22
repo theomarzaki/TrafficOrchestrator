@@ -18,6 +18,7 @@
 #include <iomanip>
 
 #define EARTH_RADIUS 6371000
+#define OUT_OF_MAP_VALUE 10000
 
 class Mapper {
 private:
@@ -52,7 +53,8 @@ private:
         std::map<int,Lane_Descriptor> lanes{std::map<int,Lane_Descriptor>()};
     };
 
-    std::unique_ptr<std::vector<Road_Descriptor>> roads = std::make_unique<std::vector<Road_Descriptor>>();
+    std::vector<Road_Descriptor> m_roads;
+
     int numberOfRoad = 0;
 
     Mapper() {
@@ -99,7 +101,7 @@ private:
                     }
                     roadStruct.lanes.insert( std::pair<int,Lane_Descriptor>(laneStruct.id,laneStruct));
                 }
-                roads->push_back(roadStruct);
+                m_roads.push_back(roadStruct);
             }
         } else {
             throw std::runtime_error("[ERROR] File is not a valid JSON");
@@ -174,7 +176,7 @@ public:
         auto deltalat {latitude2 - latitude};
         auto deltalong {longitude2 - longitude};
 
-        double a = sin(deltalat/2) * sin(deltalat/2) + cos(latitude) * cos(longitude) * sin(deltalong/2) * sin(deltalong/2);
+        double a = sin(deltalat/2) * sin(deltalat/2) + cos(latitude) * cos(latitude2) * sin(deltalong/2) * sin(deltalong/2);
         double c = 2 * atan2(sqrt(a), sqrt(1-a));
 
         return EARTH_RADIUS * c;
@@ -200,10 +202,10 @@ public:
         auto distance = std::numeric_limits<double>::max();
         int maxIndex = 0;
 
-        auto listRoads = *this->roads;
+        auto listRoads = m_roads;
         if (forcedRoadID > -1) {
             auto buff = std::vector<Road_Descriptor>();
-            buff.push_back(this->roads->at(forcedRoadID));
+            buff.push_back(m_roads.at(forcedRoadID));
             listRoads = buff;
         }
 
@@ -225,13 +227,13 @@ public:
         }
 
         if (nearestDescription.nodeId > -1) {
-            if (distance < 10000) { // TODO Find the extremum of the serie and define the limit with it.
-                auto lane{this->roads->at(nearestDescription.roadId).lanes.find(nearestDescription.laneId)->second};
+            if (distance < OUT_OF_MAP_VALUE) { // TODO Find the extremum of the serie and define the limit with it.
+                auto lane{m_roads.at(nearestDescription.roadId).lanes.find(nearestDescription.laneId)->second};
                 auto node{lane.nodes.at(nearestDescription.nodeId)};
 
                 Lane_Node* compareNode;
 
-                if ( this->roads->at(nearestDescription.roadId).type == Road_Type::LOOP ) {
+                if ( this->m_roads.at(nearestDescription.roadId).type == Road_Type::LOOP ) {
 
                     Lane_Node* previousNode ;
                     Lane_Node* nextNode ;
@@ -278,70 +280,46 @@ public:
                 xP = latitude < compareNode->latitude ? -xP : xP;
                 yP = longitude < compareNode->longitude ? -yP : yP;
 
-//                std::cout << "Dist : " << distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) << std::endl;
-
                 if (distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) <= lane.size/2) { // TODO implement Square B-Spline distance check
                     nearestDescription.state = Mapper_Result_State::OK;
                 }
             } else {
                 nearestDescription.state = Mapper_Result_State::OUT_OF_MAP;
+                write_to_log(std::string("[WARN] Coordinates out of map, at least "+std::to_string(OUT_OF_MAP_VALUE)+" m away => ("+std::to_string(latitude)+","+std::to_string(longitude)+")"));
             }
         }
 
         return std::move(nearestDescription);
     }
 
-    Merging_Scenario getFakeCarMergingScenario(double latitude, double longitude) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
+    std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
         Gps_Descriptor gps{getPositionDescriptor(latitude,longitude,1)}; // 1 = highway
-        auto nodes{this->roads->at(gps.roadId).lanes.find(1)->second.nodes}; // 1 = First lane
-        long max = nodes.size()-1;
-        long spread = nodes.size()/6; // size factor
+        if (gps.state != Mapper_Result_State::OUT_OF_MAP) {
+            auto nodes{m_roads.at(gps.roadId).lanes.find(1)->second.nodes}; // 1 = First lane
+            long max = nodes.size()-1;
+            long spread = nodes.size()/6; // size factor
 
-        unsigned int indexFollowing = gps.nodeId - spread < 0 ? max + (gps.nodeId - spread + 1) : gps.nodeId - spread;
-        unsigned int indexPreceeding = gps.nodeId + spread > max ? (gps.nodeId + spread) % max - 1 : gps.nodeId + spread;
+            unsigned int indexFollowing = gps.nodeId - spread < 0 ? max + (gps.nodeId - spread + 1) : gps.nodeId - spread;
+            unsigned int indexPreceeding = gps.nodeId + spread > max ? (gps.nodeId + spread) % max - 1 : gps.nodeId + spread;
 
-        Gps_Point carPreceeding = {
-                nodes.at(indexPreceeding).latitude,
-                nodes.at(indexPreceeding).longitude,
-        };
+            Gps_Point carPreceeding = {
+                    nodes.at(indexPreceeding).latitude,
+                    nodes.at(indexPreceeding).longitude,
+            };
 
-        Gps_Point carFollowing = {
-                nodes.at(indexFollowing).latitude,
-                nodes.at(indexFollowing).longitude,
-        };
+            Gps_Point carFollowing = {
+                    nodes.at(indexFollowing).latitude,
+                    nodes.at(indexFollowing).longitude,
+            };
 
-        Merging_Scenario ret = {
-                carPreceeding,
-                carFollowing,
-        };
+            Merging_Scenario ret = {
+                    carPreceeding,
+                    carFollowing,
+            };
 
-        return ret;
+            return ret;
+        } else {
+            return std::nullopt;
+        }
     }
 };
-
-//int main() {
-//
-//    double vectors[9][2] = {{48.623256, 2.242104},  // lane0 in the grass
-//                            {48.623206, 2.242140},  // lane1
-//                            {48.623183, 2.242167},  // lane2
-//                            {48.623162, 2.241968},  // lane1 on the emergency stop strip
-//                            {48.623140, 2.241996},  // lane1
-//                            {48.623115, 2.242018},  // lane2
-//                            {48.623107, 2.241817},  // lane1 on the emergency stop strip
-//                            {48.623083, 2.241847},  // lane1
-//                            {48.623055, 2.241863}};  // lane2
-//
-//    for (auto& vector : vectors) {
-//        Mapper::Gps_Descriptor buff = Mapper::getMapper()->getPositionDescriptor(vector[0],vector[1]);
-//        std::cout << "Lane : " << buff.laneId << std::endl;
-//        std::cout << "Status : " << std::to_string(buff.state) << "\n\n"; // 3 = OK , 2 = OUT_OF_ROAD
-//    }
-//
-//    Mapper::Gps_Point gps;
-//    gps.latitude = 48.627456;
-//    gps.longitude = 2.246525;
-//
-//    auto derch = Mapper::getMapper()->getFakeCarMergingScenario(gps.latitude,gps.longitude);
-//    std::cout << std::setprecision(6) << std::fixed << derch.preceeding.latitude << ", "  << derch.preceeding.longitude << " / " << derch.following.latitude << ", "  << derch.following.longitude;
-//
-//}
