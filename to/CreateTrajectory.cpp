@@ -50,6 +50,13 @@ double ProcessedGPStoRoadUserGPS(float point){
     return double(point * pow(10,6));
 }
 
+double toRealGPS(int32_t point){
+    return point / pow(10,7);
+}
+int32_t toGPSMantissa(double point){
+    return point * pow(10,7);
+}
+
 float RoadUserHeadingtoProcessedHeading(float point){
 	return point / 100;
 }
@@ -100,13 +107,13 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
         }
     }
     if (closest_preceeding == nullptr or closest_following == nullptr ) { // Calculate once only
-        auto faker = Mapper::getMapper()->getFakeCarMergingScenario(merging_car->getDoubleLatitude(), merging_car->getDoubleLongitude());
+        auto faker = Mapper::getMapper()->getFakeCarMergingScenario(toRealGPS(merging_car->getLatitude()),toRealGPS(merging_car->getLongitude()));
         if (faker) {
             if (closest_preceeding == nullptr) {
                 //we create a default one
                 closest_preceeding = std::make_shared<RoadUser>();
-                closest_preceeding->setDoubleLongitude(faker->preceeding.latitude);
-                closest_preceeding->setDoubleLatitude(faker->preceeding.longitude);
+                closest_preceeding->setLongitude(toGPSMantissa(faker->preceeding.longitude));
+                closest_preceeding->setLatitude(toGPSMantissa(faker->preceeding.latitude));
                 closest_preceeding->setSpeed(merging_car->getSpeed());
                 closest_preceeding->setWidth(merging_car->getWidth());
                 closest_preceeding->setLength(merging_car->getLength());
@@ -116,8 +123,8 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
             if (closest_following == nullptr) {
                 //we create a default one
                 closest_following = std::make_shared<RoadUser>();
-                closest_following->setDoubleLongitude(faker->following.latitude);
-                closest_following->setDoubleLatitude(faker->following.longitude);
+                closest_following->setLongitude(toGPSMantissa(faker->following.longitude));
+                closest_following->setLatitude(toGPSMantissa(faker->following.latitude));
                 closest_following->setSpeed(merging_car->getSpeed());
                 closest_following->setWidth(merging_car->getWidth());
                 closest_following->setLength(merging_car->getLength());
