@@ -4,9 +4,9 @@
   "receiveAddress": "0.0.0.0",
   "receivePort": 7000,
   "northeast":
-    {"latitude":48625083,
-    "longitude":2244136},
+    {"latitude":486250830,
+    "longitude":22441360},
   "southwest":
-    {"latitude":48624128,
-    "longitude":2243457}
+    {"latitude":486241289,
+    "longitude":22434579}
 }

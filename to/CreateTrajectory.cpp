@@ -52,7 +52,6 @@ double ProcessedGPStoRoadUserGPS(float point){
     return double(point * pow(10,6));
 }
 
-
 float RoadUserHeadingtoProcessedHeading(float point){
 	return float(int((point / 100) + 270) % 360);
 }
