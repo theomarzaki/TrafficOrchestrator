@@ -314,7 +314,7 @@ auto ManeuverParser(Database *database,std::shared_ptr<torch::jit::script::Modul
 	            auto input_values{RoadUsertoModelInput(r, neighbours)};
 							if (input_values) {
 	                auto models_input{torch::tensor(input_values.value()).unsqueeze(0)};
-	                recommendations.push_back(calculatedTrajectories(database,r, models_input, lstm_model, rl_model));
+	                recommendations.push_back(calculatedTrajectories(database,r, models_input, rl_model));
 	            }
 	        }
     }
