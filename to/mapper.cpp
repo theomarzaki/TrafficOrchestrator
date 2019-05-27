@@ -285,7 +285,7 @@ public:
                 }
             } else {
                 nearestDescription.state = Mapper_Result_State::OUT_OF_MAP;
-                write_to_log(std::string("[WARN] Coordinates out of map, at least "+std::to_string(OUT_OF_MAP_VALUE)+" m away => ("+std::to_string(latitude)+","+std::to_string(longitude)+")"));
+                logger::write(std::string("[WARN] Coordinates out of map, at least "+std::to_string(OUT_OF_MAP_VALUE)+" m away => ("+std::to_string(latitude)+","+std::to_string(longitude)+")"));
             }
         }
 
