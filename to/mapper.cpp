@@ -137,11 +137,11 @@ public:
 
     static bool setMap(const std::string& mapPath) {
         if ( access( std::string("./include/"+mapPath+".json").c_str(), F_OK ) > -1) {
-            std::cout << "[INFO] Map path set" << std::endl;
+            logger::write("[INFO] Map path set");
             pathToMap = mapPath;
             return true;
         } else {
-            std::cout << "[ERROR] '" << mapPath.c_str() << "' don't exist in the include folder" << std::endl;
+            logger::write("[ERROR] '" + mapPath + "' don't exist in the include folder");
             return false;
         }
     }
@@ -153,7 +153,7 @@ public:
             }
             return mapper;
         } catch (const std::exception& e) {
-            std::cout << "[ERROR] Mapper initializer : " << e.what() << std::endl;
+            logger::write("[ERROR] Mapper initializer : " + std::string(e.what()));
         }
         return nullptr;
     }

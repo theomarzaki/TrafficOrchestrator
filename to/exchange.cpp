@@ -36,12 +36,7 @@
 #include "unsubscription_response.cpp"
 #include "logger.h"
 
-using namespace std;
-
 using namespace rapidjson;
-
-using namespace std::chrono;
-
 using namespace experimental;
 
 Database * database;
@@ -329,10 +324,10 @@ int main() {
 
     FILE *file = fopen("include/TO_config.json", "r");
     if (file == 0) {
-        std::cout << "Config File failed to load." << std::endl;
+        logger::write("Config File failed to load.");
         returnCode = 1;
     } else if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
-        std::cout << "Unable to create the logs directory, we stop" << std::endl;
+        logger::write("Unable to create the logs directory, we stop");
         returnCode = 2;
     } else {
         lstm_model = torch::jit::load("include/lstm_model.pt");
@@ -398,15 +393,14 @@ int main() {
                     logger::write("Reconnecting");
                     break;
                 default:
-                    cout << "Captured Data leading to Error Message:" << captured_data << "End " << endl;
-                    logger::write("error: Couldn't handle message.");
+                    logger::write("error: couldn't handle message " + captured_data);
                     break;
             }
             reconnect_flag = captured_data;
         } while (reconnect_flag != "RECONNECT");
         listening = false;
         while (!listening) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+            std::this_thread::sleep_for(std::chrono::seconds(10));
 						close(socket_c);
 						lstm_model.reset();
 						rl_model.reset();

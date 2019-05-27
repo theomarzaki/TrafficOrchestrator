@@ -25,15 +25,12 @@
 
 #include "mapper.cpp"
 
-using namespace std;
 using namespace rapidjson;
+using namespace std::chrono;
 
 float TIME_VARIANT = 0.035;
-int BIAS = 3;
 
-using namespace std::chrono;
-using std::cout;
-time_t waypointTimeCalculator;
+int BIAS = 3;
 
 int RoadUserSpeedtoProcessedSpeed(int speed){
 	return speed / 100;

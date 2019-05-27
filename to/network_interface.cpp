@@ -20,8 +20,6 @@
 #include "unsubscription_request.cpp"
 
 using namespace rapidjson;
-using std::string;
-using std::cout;
 
 string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq) {
     Document document;

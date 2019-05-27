@@ -39,7 +39,9 @@ public:
 */
 void Database::displayDatabase() {
   for_each(database.begin(), database.end() , [](pair<string, shared_ptr<RoadUser>> element){
-      cout << element.first << " :: " << element.second << endl;
+      std::ostringstream elementStream{};
+      elementStream << element.first << " :: " << element.second;
+      logger::write(elementStream.str());
   });
 }
 

@@ -31,7 +31,6 @@
 using namespace rapidjson;
 using namespace std;
 using std::string;
-using std::cout;
 using std::tuple;
 using std::vector;
 

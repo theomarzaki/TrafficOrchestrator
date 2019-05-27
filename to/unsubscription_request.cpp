@@ -10,8 +10,6 @@
 
 using namespace std;
 
-using std::cout;
-
 class UnsubscriptionRequest {
 private:
 	string type;
