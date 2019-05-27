@@ -90,28 +90,30 @@ float height_c; // Variance of RU height measurements.
 string signature; // Used for signing the message content.
 string source_uuid;
 
-/* flag indicating availability of road user to recieve waypoint */
+/* flag indicating availability of road user to receive waypoint */
 bool processing_waypoint;
 time_t waypoint_timestamp;
 
 public:
 
-RoadUser(string type,string context,string origin,string version,uint64_t timestamp,string uuid,string its_station_type,bool connected,int32_t latitude,int32_t longitude,string position_type,
-uint16_t heading,uint16_t speed,uint16_t acceleration,uint16_t yaw_rate,float length,float width,
-float height,string color,uint4 lane_position,uint8_t existence_probability,uint16_t position_semi_major_confidence,
-uint16_t position_semi_minor_confidence,uint16_t position_semi_major_orientation,uint16_t heading_c,
-uint16_t speed_c,uint16_t acceleration_c,uint16_t yaw_rate_c,float length_c,float width_c,float height_c,string signature, string source_uuid) :
-type(type),
-context(context),
-origin(origin),
-version(version),
+RoadUser(string type,string context,string origin,string version,uint64_t timestamp,string uuid,string its_station_type,
+        bool connected,int32_t latitude,int32_t longitude,string position_type,
+        uint16_t heading,uint16_t speed,uint16_t acceleration,uint16_t yaw_rate,float length,float width,
+        float height,string color,uint4 lane_position,uint8_t existence_probability,uint16_t position_semi_major_confidence,
+        uint16_t position_semi_minor_confidence,uint16_t position_semi_major_orientation,uint16_t heading_c,
+        uint16_t speed_c,uint16_t acceleration_c,uint16_t yaw_rate_c,float length_c,float width_c,float height_c,
+        string signature, string source_uuid) :
+type(std::move(type)),
+context(std::move(context)),
+origin(std::move(origin)),
+version(std::move(version)),
 timestamp(timestamp),
-uuid(uuid),
-its_station_type(its_station_type),
+uuid(std::move(uuid)),
+its_station_type(std::move(its_station_type)),
 connected(connected),
 latitude(latitude),
 longitude(longitude),
-position_type(position_type),
+position_type(std::move(position_type)),
 heading(heading),
 speed(speed),
 acceleration(acceleration),
@@ -119,7 +121,7 @@ yaw_rate(yaw_rate),
 length(length),
 width(width),
 height(height),
-color(color),
+color(std::move(color)),
 lane_position(lane_position),
 existence_probability(existence_probability),
 position_semi_major_confidence(position_semi_major_confidence),
@@ -132,8 +134,10 @@ yaw_rate_c(yaw_rate_c),
 length_c(length_c),
 width_c(width_c),
 height_c(height_c),
-signature(signature),
-source_uuid(source_uuid)
+signature(std::move(signature)),
+source_uuid(std::move(source_uuid)),
+processing_waypoint{false},
+waypoint_timestamp{0}
 {}
 
 /* Default constructor assigns relevant fields to 'No Value Assigned' if not all values are handed to the above constructor. */
@@ -143,6 +147,7 @@ context = "lane_merge";
 origin = "self";
 version = "1.0.0";
 processing_waypoint = false;
+waypoint_timestamp = 0;
 }
 
 ~RoadUser(); // Destructor declaration.
@@ -223,7 +228,7 @@ void setWaypointTimeStamp(time_t);
 
 };
 
-RoadUser::~RoadUser(){}
+RoadUser::~RoadUser()= default;
 
 string RoadUser::getType(){return type;}
 string RoadUser::getContext(){return context;}
@@ -298,9 +303,7 @@ void RoadUser::setProcessingWaypoint(bool parameter){processing_waypoint = param
 void RoadUser::setWaypointTimeStamp(time_t parameter){waypoint_timestamp = parameter;}
 
 std::ostream& operator<<(std::ostream& os, RoadUser * roadUser) {
-
   os
-
   << "["
   << roadUser->getType()
   << ","
@@ -323,6 +326,8 @@ std::ostream& operator<<(std::ostream& os, RoadUser * roadUser) {
   << roadUser->getLongitude()
   << ","
   << roadUser->getPositionType()
+  << ","
+  << roadUser->getSouceUUID()
   << ","
   << roadUser->getHeading()
   << ","
@@ -370,5 +375,4 @@ std::ostream& operator<<(std::ostream& os, RoadUser * roadUser) {
   << "]\n";
 
   return os;
-
 }
