@@ -305,7 +305,7 @@ auto ManeuverParser(Database *database,std::shared_ptr<torch::jit::script::Modul
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {
-				if(difftime(time(NULL),r->getWaypointTimestamp()) < 0){
+				if(difftime(time(nullptr),r->getWaypointTimestamp()) < 0){
 					r->setProcessingWaypoint(false);
 					database->upsert(r);
 				}
