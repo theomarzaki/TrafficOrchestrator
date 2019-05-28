@@ -11,10 +11,6 @@
 #include <tuple>
 
 using namespace std;
-using std::cout;
-using std::string;
-using std::ostream;
-using std::tuple;
 
 class ManeuverFeedback {
 private:

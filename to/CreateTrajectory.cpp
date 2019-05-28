@@ -25,15 +25,12 @@
 
 #include "mapper.cpp"
 
-using namespace std;
 using namespace rapidjson;
+using namespace std::chrono;
 
 float TIME_VARIANT = 0.035;
-int BIAS = 3;
 
-using namespace std::chrono;
-using std::cout;
-time_t waypointTimeCalculator;
+int BIAS = 3;
 
 int RoadUserSpeedtoProcessedSpeed(int speed){
 	return speed / 100;
@@ -305,7 +302,7 @@ auto ManeuverParser(Database *database,std::shared_ptr<torch::jit::script::Modul
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {
-				if(difftime(time(NULL),r->getWaypointTimestamp()) < 0){
+				if(difftime(time(nullptr),r->getWaypointTimestamp()) < 0){
 					r->setProcessingWaypoint(false);
 					database->upsert(r);
 				}

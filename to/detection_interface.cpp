@@ -9,6 +9,7 @@
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
+#include "logger.h"
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -30,7 +31,6 @@
 using namespace rapidjson;
 using namespace std;
 using std::string;
-using std::cout;
 using std::tuple;
 using std::vector;
 
@@ -153,11 +153,6 @@ struct Detected_Unsubscription_Response {
   string message_id;
 };
 
-void write_to_log(const string & text){
-	std::ofstream log_file("logs/to_logs.log",std::ios_base::out | std::ios_base::app);
-	log_file << text << endl;
-}
-
 Document parse(string readFromServer) {
   Document document;
   Document::AllocatorType& allocator = document.GetAllocator();
@@ -234,7 +229,7 @@ std::vector<string> assignNotificationDeleteVals(Document &document) {
       values.emplace_back(array[i].GetString());
     }
   } else {
-    write_to_log("error: notify_delete do not contain member ru_uuid_list.");
+    logger::write("error: notify_delete do not contain member ru_uuid_list.");
   }
   return values;
 }
@@ -250,7 +245,7 @@ Detected_To_Notification assignNotificationVals(Document &document) {
   (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
   (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
   (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
-  write_to_log("received notification with timestamp=" + to_string(values.timestamp));
+  logger::write("received notification with timestamp=" + to_string(values.timestamp));
   for(auto& v : document["message"]["ru_description_list"].GetArray()) {
     StringBuffer sb;
     Writer<StringBuffer> writer(sb);
@@ -258,7 +253,7 @@ Detected_To_Notification assignNotificationVals(Document &document) {
     Document ruDocument = parse(sb.GetString());
     const Detected_Road_User &ru = assignRoadUserVals(ruDocument);
     if (ru.timestamp == 0){
-      write_to_log("received invalid road user description in notify_add");
+      logger::write("received invalid road user description in notify_add");
     } else {
       values.ru_description_list.push_back(ru);
     }
@@ -362,7 +357,7 @@ message_type filterInput(Document &document) {
       return message_type::notify_delete;
   }
   else {
-    write_to_log("error: received message with unknown type: " + string(document["type"].GetString()));
+    logger::write("error: received message with unknown type: " + string(document["type"].GetString()));
     return message_type::unknown;
   }
 
@@ -378,12 +373,12 @@ string listenDataTCP(int socket_c) {
     int i = read(socket_c, dataReceived, sizeof(dataReceived));
 
     if(i < 0) {
-      write_to_log("Error: Failed to receive transmitted data.\n");
-      write_to_log("trying to reconnect.\n");
+      logger::write("Error: Failed to receive transmitted data.\n");
+      logger::write("trying to reconnect.\n");
       return "RECONNECT";
     }
     else if(i == 0) {
-      write_to_log("Socket closed from the remote server.\n");
+      logger::write("Socket closed from the remote server.\n");
       return "RECONNECT";
     }
     else if(i > 0){
@@ -401,7 +396,7 @@ string listenDataTCP(int socket_c) {
 
     if (!incomplete_messages.empty()) {
       returning = incomplete_messages.front();
-      if(returning != "\n" && returning != string()) write_to_log(returning + "\n");
+      if(returning != "\n" && returning != string()) logger::write(returning + "\n");
       incomplete_messages.pop_front();
     }
   }

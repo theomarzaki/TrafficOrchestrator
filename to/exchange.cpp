@@ -34,13 +34,9 @@
 #include "subscription_response.cpp"
 #include "CreateTrajectory.cpp"
 #include "unsubscription_response.cpp"
-
-using namespace std;
+#include "logger.h"
 
 using namespace rapidjson;
-
-using namespace std::chrono;
-
 using namespace experimental;
 
 Database * database;
@@ -66,7 +62,7 @@ std::shared_ptr<torch::jit::script::Module> rl_model;
 
 vector<shared_ptr<RoadUser>> detectedToRoadUserList(vector<Detected_Road_User> v) {
 
-	write_to_log("Detected number of RoadUsers: " + string(to_string(v.size())) + ".\n");
+	logger::write("Detected number of RoadUsers: " + string(to_string(v.size())));
 
 	vector<shared_ptr<RoadUser>> road_users;
 
@@ -85,7 +81,8 @@ vector<shared_ptr<RoadUser>> detectedToRoadUserList(vector<Detected_Road_User> v
 		roadUser->setConnected(d.connected);
 		roadUser->setLatitude(d.latitude);
 		roadUser->setLongitude(d.longitude);
-		roadUser->setPositionType(d.position_type);
+        roadUser->setPositionType(d.position_type);
+        roadUser->setSourceUUID(d.source_uuid);
 		roadUser->setHeading(d.heading);
 		roadUser->setSpeed(d.speed);
 		roadUser->setAcceleration(d.acceleration);
@@ -183,7 +180,7 @@ void generateReqID(){
 void sendTrajectoryRecommendations(vector<std::shared_ptr<ManeuverRecommendation>> v,int socket) {
 	for(const auto &m : v) {
 		m->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
-		write_to_log(createManeuverJSON(m));
+		logger::write(createManeuverJSON(m));
 		sendDataTCP(socket, sendAddress, sendPort, receiveAddress, receivePort, createManeuverJSON(m));
 	}
 }
@@ -204,7 +201,7 @@ void initiateSubscription(const string &sendAddress, int sendPort,string receive
 	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
 	socket_c = sendDataTCP(-999,sendAddress,sendPort,std::move(receiveAddress),receivePort,createSubscriptionRequestJSON(subscriptionReq));
-	write_to_log("Sent subscription request to " + sendAddress + ":"+ to_string(sendPort));
+	logger::write("Sent subscription request to " + sendAddress + ":"+ to_string(sendPort));
 }
 
 void initiateUnsubscription(const string &sendAddress, int sendPort, std::shared_ptr<SubscriptionResponse> subscriptionResp) {
@@ -219,17 +216,17 @@ void initiateUnsubscription(const string &sendAddress, int sendPort, std::shared
 }
 
 auto handleSubscriptionResponse(Document &document) {
-	write_to_log("Subscription Response Received.");
+	logger::write("Subscription Response Received.");
 	return detectedToSubscription(assignSubResponseVals(document));
 }
 
 auto handleUnSubscriptionResponse(Document &document) {
-	write_to_log("unsubscription response Received.");
+	logger::write("unsubscription response Received.");
 	return detectedToUnsubscription(assignUnsubResponseVals(document));
 }
 
 void handleNotifyAdd(Document &document) {
-	write_to_log("Notify Add Received.");
+	logger::write("Notify Add Received.");
 	const vector<Detected_Road_User> &roadUsers = assignNotificationVals(document).ru_description_list;
 	auto road_users{detectedToRoadUserList(roadUsers)};
 	for(const auto &road_user : road_users) {
@@ -240,9 +237,9 @@ void handleNotifyAdd(Document &document) {
 bool handleTrajectoryFeedback(Document &document) {
 	maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
 	auto roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
-	write_to_log("Maneuver Feedback: " + maneuverFeed->getFeedback());
+	logger::write("Maneuver Feedback: " + maneuverFeed->getFeedback());
 	if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
-		write_to_log("calculating new Trajectory for Vehicle");
+		logger::write("calculating new Trajectory for Vehicle");
 		if(roadUser != nullptr){
 			roadUser->setProcessingWaypoint(false);
 			database->upsert(roadUser);
@@ -259,13 +256,13 @@ bool handleTrajectoryFeedback(Document &document) {
 }
 
 void handleNotifyDelete(Document &document) {
-	write_to_log("Notify delete Received.");
+	logger::write("Notify delete Received.");
 	auto uuidsVector{assignNotificationDeleteVals(document)};
 	for_each(uuidsVector.begin(), uuidsVector.end(),
 					 [](string uuid)
 					 {
 							 database->deleteRoadUser(uuid);
-							 write_to_log("Deleted road user " + uuid);
+							 logger::write("Deleted road user " + uuid);
 					 });
 
 }
@@ -302,16 +299,16 @@ void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
                       const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
   auto recommendations = ManeuverParser(database,rl_model);
   if(!recommendations.empty()) {
-					write_to_log("Sending recommendations.\n");
+					logger::write("Sending recommendations.\n");
 					sendTrajectoryRecommendations(recommendations,socket);
 				} else {
-					write_to_log("No Trajectories Calculated.\n");
+					logger::write("No Trajectories Calculated.\n");
 				}
 }
 
 // Function Handling the exit of TO
 void terminate_to(int signum ){
-	write_to_log("Sending unsubscription request.\n");
+	logger::write("Sending unsubscription request.\n");
 	initiateUnsubscription(sendAddress,sendPort,subscriptionResp);
 	std::this_thread::sleep_for(std::chrono::milliseconds(15000));
 	close(socket_c);
@@ -327,19 +324,19 @@ int main() {
 
     FILE *file = fopen("include/TO_config.json", "r");
     if (file == 0) {
-        std::cout << "Config File failed to load." << std::endl;
+        logger::write("Config File failed to load.");
         returnCode = 1;
     } else if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
-        std::cout << "Unable to create the logs directory, we stop" << std::endl;
+        logger::write("Unable to create the logs directory, we stop");
         returnCode = 2;
     } else {
         lstm_model = torch::jit::load("include/lstm_model.pt");
 
-        if (lstm_model != nullptr) write_to_log("import of lstm model successful\n");
+        if (lstm_model != nullptr) logger::write("import of lstm model successful\n");
 
         rl_model = torch::jit::load("include/rl_model_deuling.pt");
 
-        if (rl_model != nullptr) write_to_log("import of rl model successful\n");
+        if (rl_model != nullptr) logger::write("import of rl model successful\n");
 
 
         char readBuffer[65536];
@@ -393,18 +390,17 @@ int main() {
                 case message_type::heart_beat:
                     break;
                 case message_type::reconnect:
-                    write_to_log("Reconnecting");
+                    logger::write("Reconnecting");
                     break;
                 default:
-                    cout << "Captured Data leading to Error Message:" << captured_data << "End " << endl;
-                    write_to_log("error: Couldn't handle message.");
+                    logger::write("error: couldn't handle message " + captured_data);
                     break;
             }
             reconnect_flag = captured_data;
         } while (reconnect_flag != "RECONNECT");
         listening = false;
         while (!listening) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+            std::this_thread::sleep_for(std::chrono::seconds(10));
 						close(socket_c);
 						lstm_model.reset();
 						rl_model.reset();

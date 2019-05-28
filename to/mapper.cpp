@@ -137,11 +137,11 @@ public:
 
     static bool setMap(const std::string& mapPath) {
         if ( access( std::string("./include/"+mapPath+".json").c_str(), F_OK ) > -1) {
-            std::cout << "[INFO] Map path set" << std::endl;
+            logger::write("[INFO] Map path set");
             pathToMap = mapPath;
             return true;
         } else {
-            std::cout << "[ERROR] '" << mapPath.c_str() << "' don't exist in the include folder" << std::endl;
+            logger::write("[ERROR] '" + mapPath + "' don't exist in the include folder");
             return false;
         }
     }
@@ -153,7 +153,7 @@ public:
             }
             return mapper;
         } catch (const std::exception& e) {
-            std::cout << "[ERROR] Mapper initializer : " << e.what() << std::endl;
+            logger::write("[ERROR] Mapper initializer : " + std::string(e.what()));
         }
         return nullptr;
     }
@@ -285,7 +285,7 @@ public:
                 }
             } else {
                 nearestDescription.state = Mapper_Result_State::OUT_OF_MAP;
-                write_to_log(std::string("[WARN] Coordinates out of map, at least "+std::to_string(OUT_OF_MAP_VALUE)+" m away => ("+std::to_string(latitude)+","+std::to_string(longitude)+")"));
+                logger::write(std::string("[WARN] Coordinates out of map, at least "+std::to_string(OUT_OF_MAP_VALUE)+" m away => ("+std::to_string(latitude)+","+std::to_string(longitude)+")"));
             }
         }
 
