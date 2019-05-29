@@ -5,8 +5,6 @@
 
 #include "include/mapper.h"
 
-#include "../logger.h"
-
 Mapper::Mapper() {
     pathToMap = pathToMap.empty() ? MONTLHERY_MAP : pathToMap; // By default
 

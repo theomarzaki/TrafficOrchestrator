@@ -7,8 +7,9 @@ project(exchange)
 
 add_subdirectory(mapper)
 add_subdirectory(optimizer)
+add_subdirectory(logger)
 
-add_executable(${PROJECT_NAME} exchange.cpp logger.cpp logger.h)
+add_executable(${PROJECT_NAME} exchange.cpp logger/logger.cpp logger/include/logger.h) #cmake is a stupid shit
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
@@ -16,5 +17,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_link_libraries(${PROJECT_NAME}
                       "${TORCH_LIBRARIES}"
                       stdc++fs
+                      logger
                       optimizer
                       mapper)

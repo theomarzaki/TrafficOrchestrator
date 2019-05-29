@@ -1,20 +1,19 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(mapper
+project(logger
         VERSION 0.1.0
         LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
 set(LIB_SRC
-        mapper.cpp)
+        logger.cpp)
 
 set(LIB_H
-        include/mapper.h)
+        include/logger.h)
+
 
 add_library(${PROJECT_NAME} STATIC ${LIB_SRC} ${LIB_H})
-
-target_link_libraries(${PROJECT_NAME} logger)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}
