@@ -1,6 +1,6 @@
 {
-  "sendAddress": "129.192.68.182",
-  "sendPort": 9202,
+  "sendAddress": "127.0.0.1",
+  "sendPort": 8124,
   "receiveAddress": "0.0.0.0",
   "receivePort": 7000,
   "northeast": {
@@ -10,5 +10,10 @@
   "southwest": {
     "latitude":486241289,
     "longitude":22434579
+<<<<<<< HEAD
   }
+=======
+  },
+  "computation_with_ai": false
+>>>>>>> 7ea58fc... MASSIVE REFACTORING with Errors
 }

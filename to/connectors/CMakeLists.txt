@@ -1,21 +1,25 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(optimizer
+project(connectors
         VERSION 0.1.0
         LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
 set(LIB_SRC
-        optimizer_engine.cpp)
+        detection_interface.cpp
+        network_interface.cpp)
 
 set(LIB_H
-        include/optimizer_engine.h)
+        include/detection_interface.h
+        include/network_interface.h)
 
 
 add_library(${PROJECT_NAME} STATIC ${LIB_SRC} ${LIB_H})
 
-target_link_libraries(${PROJECT_NAME} logger)
+target_link_libraries(${PROJECT_NAME}
+                      models
+                      logger)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}

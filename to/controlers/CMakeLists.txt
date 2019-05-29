@@ -1,21 +1,29 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(optimizer
+project(controlers
         VERSION 0.1.0
         LANGUAGES CXX)
 
 include(GNUInstallDirs)
 
 set(LIB_SRC
-        optimizer_engine.cpp)
+        collision_alert.cpp
+        create_trajectory.cpp
+        nearest_neighbour.cpp)
 
 set(LIB_H
-        include/optimizer_engine.h)
+        include/collision_alert.h
+        include/create_trajectory.h
+        include/nearest_neighbour.h)
 
 
 add_library(${PROJECT_NAME} STATIC ${LIB_SRC} ${LIB_H})
 
-target_link_libraries(${PROJECT_NAME} logger)
+target_link_libraries(${PROJECT_NAME}
+                      "${TORCH_LIBRARIES}"
+                      models
+                      mapper
+                      logger)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}

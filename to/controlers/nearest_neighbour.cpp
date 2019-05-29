@@ -1,17 +1,7 @@
 // This script provides the closest cars in terms of longitude and latitude
 
 // Created by: KCL
-
-
-
-#include <iostream>
-#include <vector>
-#include <cmath>
-
-#define EARTH_RADIUS_KM 6371.0
-
-using std::vector;
-using std::pair;
+#include "include/nearest_neighbour.h"
 
 double rad2deg(double rad) {
   return (rad * 180 / M_PI);
@@ -32,7 +22,7 @@ double distanceEarth(double lat1d, double lon1d, double lat2d, double lon2d) {
   return 2.0 * EARTH_RADIUS_KM * asin(sqrt(u * u + cos(lat1r) * cos(lat2r) * v * v));
 }
 
-auto mapNeighbours(const std::shared_ptr<Database> &database, double distanceRadius) {
+auto mapNeighbours(const std::shared_ptr<Database>& database, double distanceRadius) -> vector<pair<std::shared_ptr<RoadUser>, vector<std::shared_ptr<RoadUser>>>> {
 	vector<pair<std::shared_ptr<RoadUser>, vector<std::shared_ptr<RoadUser>>>> neighbours;
 	vector<std::shared_ptr<RoadUser>> closeBy;
 	if (database->getSize() != 1) {

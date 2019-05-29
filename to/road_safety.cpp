@@ -11,6 +11,13 @@
 #include <vector>
 #include <time.h>
 
+#include <nearest_neighbour.h>
+#include <maneuver_recommendation.h>
+#include <waypoint.h>
+#include <mapper.h>
+#include <database.h>
+#include <create_trajectory.h>
+
 using namespace std;
 using namespace std::chrono;
 
@@ -38,7 +45,7 @@ vector<std::shared_ptr<RoadUser>>>> neighbours){
     }
   }
 
-return safetyManeuver;
+  return safetyManeuver;
 }
 
 

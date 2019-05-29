@@ -27,17 +27,20 @@
 #include <torch/torch.h>
 #include <torch/script.h>
 
-#include "detection_interface.cpp"
-#include "database.cpp"
-#include "maneuver_feedback.cpp"
-#include "network_interface.cpp"
-#include "subscription_response.cpp"
-#include "CreateTrajectory.cpp"
-#include "unsubscription_response.cpp"
 #include "road_safety.cpp"
 
 #include <logger.h>
-#include <optimizer-engine.h>
+#include <optimizer_engine.h>
+#include <database.h>
+#include <subscription_request.h>
+#include <subscription_response.h>
+#include <optimizer_engine.h>
+#include <detection_interface.h>
+#include <maneuver_feedback.h>
+#include <unsubscription_response.h>
+#include <maneuver_recommendation.h>
+#include <network_interface.h>
+#include <create_trajectory.h>
 
 using namespace rapidjson;
 using namespace experimental;
@@ -45,6 +48,7 @@ using namespace std::chrono;
 
 auto database{std::make_shared<Database>()};
 std::shared_ptr<SubscriptionResponse> subscriptionResponse;
+std::shared_ptr<OptimizerEngine> optimizerengine;
 
 string sendAddress;
 int sendPort;
@@ -194,7 +198,7 @@ void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommen
 }
 
 void initiateSubscription() {
-	milliseconds timeSub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+	std::chrono::milliseconds timeSub = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 	auto subscriptionReq{std::make_shared<SubscriptionRequest>()};
 	generateReqID();
 	subscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
@@ -214,7 +218,7 @@ void initiateSubscription() {
 
 void initiateUnsubscription() {
 
-	milliseconds timeUnsub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    std::chrono::milliseconds timeUnsub = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 	auto unsubscriptionReq{std::make_shared<UnsubscriptionRequest>()};
 	unsubscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
 	unsubscriptionReq->setSubscriptionId(request_id);
@@ -404,6 +408,8 @@ void handleMessage(const string &captured_data){
 
 
 int main() {
+
+    //optimizerengine{std::make_shared<OptimizerEngine>(database)};
 
     auto returnCode{0};
 

@@ -3,25 +3,9 @@
 // Created by: KCL
 
 // Modified by: Omar Nassef (KCL)
+#include "include/network_interface.h"
 
-
-#include "rapidjson/document.h"
-#include "rapidjson/prettywriter.h"
-#include "rapidjson/stringbuffer.h"
-#include <stdio.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <iostream>
-
-#include "maneuver_recommendation.cpp"
-#include "subscription_request.cpp"
-#include "unsubscription_request.cpp"
-
-using namespace rapidjson;
-
-string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq) {
+std::string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq) {
     Document document;
 
     document.SetObject();
@@ -86,7 +70,7 @@ string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscr
 
 }
 
-string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq) {
+std::string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq) {
     Document document;
 
     document.SetObject();
@@ -127,9 +111,9 @@ string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> un
 *	containing all the fields relating to that recommendation.
 *
 *	@param trajectoryRec is a pointer to a TrajectoryRecommendation.
-*	@return strbuf.GetString() is the trajectory recommendation in JSON string format.
+*	@return strbuf.GetString() is the trajectory recommendation in JSON std::string format.
 */
-string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec) {
+std::string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec) {
 
     Document document; // RapidJSON Document to build JSON message.
     document.SetObject();
@@ -196,7 +180,7 @@ string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec) {
 
 }
 
-int sendDataTCP(int pre_socket, string connectionAddress, int port, string receiveAddress, int receivePort, string jsonString) {
+int sendDataTCP(int pre_socket, std::string connectionAddress, int port, std::string receiveAddress, int receivePort, std::string jsonString) {
     int socket_connect;
     struct sockaddr_in address, client_addr;
 

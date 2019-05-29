@@ -2,8 +2,8 @@
 // Created by Johan Maurel <johan.maurel@orange.com> on 15/04/19.
 // Copyright (c) Orange Labs all rights reserved.
 //
-#ifndef COMMUNICATION_LAYER_MAPPER_H
-#define COMMUNICATION_LAYER_MAPPER_H
+#ifndef TO_MAPPER_H
+#define TO_MAPPER_H
 
 #include "rapidjson/document.h"
 #include "rapidjson/rapidjson.h"
@@ -107,9 +107,9 @@ public:
                                                         double xL, double yL,
                                                         double xH, double yH);
 
-    Gps_Descriptor getPositionDescriptor(double latitude, double longitude, int forcedRoadID = -1);
+    Gps_Descriptor getPositionDescriptor(double latitude, double longitude, int forcedRoadID = -1, int forcedLaneID = -1);
 
-    std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude);
+    std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude, int laneId = -1);
 
 };
 

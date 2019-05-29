@@ -1,45 +1,14 @@
 // this file stores the road user information presented by the v2x gateway
 
 // Created by : KCL
-
-#include "road_user.cpp"
-
-#include <iostream>
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <memory>
-#include <algorithm>
-
-using namespace std;
-
-class Database {
-
-private:
-    unordered_map<string, shared_ptr<RoadUser>> database;
-
-public:
-
-  Database() {
-  }
-
-  /* General access and display functions. */
-  void displayDatabase();
-  void upsert(shared_ptr<RoadUser> roadUser);
-  void deleteRoadUser(string uuid);
-  void deleteAll();
-  std::shared_ptr<RoadUser> findRoadUser(string uuid);
-  int getSize();
-  vector<shared_ptr<RoadUser>> findAll();
-};
-
+#include "include/database.h"
 
 /**
 *   @description Displays all RoadUsers in the database.
 */
 void Database::displayDatabase() {
   for_each(database.begin(), database.end() , [](pair<string, shared_ptr<RoadUser>> element){
-      std::ostringstream elementStream{};
+      std::ostringstream elementStream;
       elementStream << element.first << " :: " << element.second;
       logger::write(elementStream.str());
   });

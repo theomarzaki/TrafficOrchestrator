@@ -6,6 +6,11 @@
 #include <memory>
 #include <time.h>
 
+#include <maneuver_recommendation.h>
+#include <waypoint.h>
+#include <mapper.h>
+#include <database.h>
+
 
 using namespace std;
 using namespace std::chrono;

@@ -8,6 +8,7 @@
 
 // Created by: Omar Nassef (KCL)
 
+#include "include/create_trajectory.h"
 
 #include <iostream>
 #include <vector>
@@ -16,13 +17,13 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "to/nearest_neighbour.cpp"
 #include <torch/torch.h>
 #include <torch/script.h>
 #include <math.h>
 #include <memory>
 #include <time.h>
-#include "to/road_actions.cpp"
+
+#include "road_actions.cpp"
 
 #include <mapper.h>
 
@@ -30,7 +31,7 @@ using namespace rapidjson;
 using namespace std::chrono;
 
 
-std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> getClosestFollowingandPreceedingCars(std::shared_ptr<RoadUser> merging_car, std::vector<std::shared_ptr<RoadUser>> close_by, int number_lanes_offset) {
+std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser>& merging_car, const std::vector<std::shared_ptr<RoadUser>>& close_by, int number_lanes_offset) {
     std::shared_ptr<RoadUser> closest_following{nullptr};
     std::shared_ptr<RoadUser> closest_preceeding{nullptr};
     double minFollowing{9999};
@@ -99,7 +100,7 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
 }
 
 
-at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state){
+at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,const at::Tensor &state) {
 	const int accelerate_tensor = 0;
 	const int deccelerate_tensor = 1;
 	const int left_tensor = 2;
@@ -124,9 +125,9 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 }
 
 
-std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser> merging_car,
-                                   vector<pair<std::shared_ptr<RoadUser>,
-                                   vector<std::shared_ptr<RoadUser>>>> neighbours) {
+std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser> &merging_car,
+                                   const vector<pair<std::shared_ptr<RoadUser>,
+                                   vector<std::shared_ptr<RoadUser>>>>& neighbours) {
 
     std::vector<std::shared_ptr<RoadUser>> no_neighbours;
 
@@ -172,10 +173,10 @@ std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser
     return mergingCar;
 }
 
-auto calculatedTrajectories(const std::shared_ptr<Database> &database,
-                            const std::shared_ptr<RoadUser> &mergingVehicle,
-                            at::Tensor models_input,
-                            const std::shared_ptr<torch::jit::script::Module> &rl_model) {
+auto calculatedTrajectories(const std::shared_ptr<Database>& database,
+                            const std::shared_ptr<RoadUser>& mergingVehicle,
+                            const at::Tensor& models_input,
+                            const std::shared_ptr<torch::jit::script::Module>& rl_model) -> std::shared_ptr<ManeuverRecommendation> {
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
     std::vector<torch::jit::IValue> rl_inputs;
 
@@ -216,7 +217,7 @@ auto calculatedTrajectories(const std::shared_ptr<Database> &database,
     return mergingManeuver;
 }
 
-auto ManeuverParser(std::shared_ptr<Database> database, std::shared_ptr<torch::jit::script::Module> rl_model) {
+auto ManeuverParser(const std::shared_ptr<Database>& database,const std::shared_ptr<torch::jit::script::Module>& rl_model) -> vector<std::shared_ptr<ManeuverRecommendation>> {
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {
