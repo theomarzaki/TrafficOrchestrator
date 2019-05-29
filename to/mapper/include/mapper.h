@@ -2,6 +2,8 @@
 // Created by Johan Maurel <johan.maurel@orange.com> on 15/04/19.
 // Copyright (c) Orange Labs all rights reserved.
 //
+#ifndef COMMUNICATION_LAYER_MAPPER_H
+#define COMMUNICATION_LAYER_MAPPER_H
 
 #include "rapidjson/document.h"
 #include "rapidjson/rapidjson.h"
@@ -108,3 +110,5 @@ public:
     std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude);
 
 };
+
+#endif

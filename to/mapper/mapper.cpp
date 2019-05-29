@@ -5,6 +5,8 @@
 
 #include "include/mapper.h"
 
+#include "../logger.h"
+
 Mapper::Mapper() {
     pathToMap = pathToMap.empty() ? MONTLHERY_MAP : pathToMap; // By default
 
@@ -206,7 +208,7 @@ Mapper::Gps_Descriptor Mapper::getPositionDescriptor(double latitude, double lon
             }
         } else {
             nearestDescription.state = Mapper_Result_State::OUT_OF_MAP;
-            std::cout << std::string("[WARN] Coordinates out of map, at least "+std::to_string(OUT_OF_MAP_VALUE)+" m away => ("+std::to_string(latitude)+","+std::to_string(longitude)+")") << std::endl;
+            logger::write("[WARN] Coordinates out of map, at least "+std::to_string(OUT_OF_MAP_VALUE)+" m away => ("+std::to_string(latitude)+","+std::to_string(longitude)+")");
         }
     }
 
