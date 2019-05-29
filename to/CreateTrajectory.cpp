@@ -292,7 +292,7 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     mergingManeuver->addWaypoint(waypoint);
 		mergingVehicle->setProcessingWaypoint(true);
 
-		mergingVehicle->setWaypointTimeStamp(time(NULL));
+		mergingVehicle->setWaypointTimeStamp(time(nullptr));
 
 		database->upsert(mergingVehicle);
     return mergingManeuver;
@@ -306,7 +306,7 @@ auto ManeuverParser(Database *database,std::shared_ptr<torch::jit::script::Modul
 					r->setProcessingWaypoint(false);
 					database->upsert(r);
 				}
-					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
+					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) { 
 	            auto neighbours{mapNeighbours(database, 10000)};
 	            auto input_values{RoadUsertoModelInput(r, neighbours)};
 							if (input_values) {

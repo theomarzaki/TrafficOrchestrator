@@ -204,42 +204,44 @@ int sendDataTCP(int pre_socket, string connectionAdress, int port, string receiv
     jsonString = jsonString + "\n";
 
     /* Create a socket. */
-    if (pre_socket == -999) socket_connect = socket(AF_INET, SOCK_STREAM, 0);
+    if (pre_socket == -999) {
+      socket_connect = socket(AF_INET, SOCK_STREAM, 0);
+      if (socket_connect == -1)
+          printf("Send: Socket was not created.");
+
+      address.sin_addr.s_addr = inet_addr(connectionAdress.c_str());
+      address.sin_family = AF_INET;
+      address.sin_port = htons(port);
+
+      memset(&client_addr, 0, sizeof(client_addr));
+      client_addr.sin_family = AF_INET;
+      client_addr.sin_port = htons(receivePort);
+      client_addr.sin_addr.s_addr = inet_addr(receiveAddress.c_str());
+
+
+      ::bind(socket_connect, (struct sockaddr *) &client_addr, sizeof(client_addr));
+
+      /* Connect to the remote server. */
+
+      validator = connect(socket_connect, (struct sockaddr *) &address, sizeof(address));
+
+      if (validator < 0) {
+          printf("Send: Connection Error.\n");
+    }
+  }
     else socket_connect = pre_socket;
 
 
-    if (socket_connect == -1)
-        printf("Send: Socket was not created.");
-
-    address.sin_addr.s_addr = inet_addr(connectionAdress.c_str());
-    address.sin_family = AF_INET;
-    address.sin_port = htons(port);
-
-    memset(&client_addr, 0, sizeof(client_addr));
-    client_addr.sin_family = AF_INET;
-    client_addr.sin_port = htons(receivePort);
-    client_addr.sin_addr.s_addr = inet_addr(receiveAddress.c_str());
-
-    // SEND ERROR HERE FOR TR (NEW VERSION) --> remove int pre_socket
-
-    ::bind(socket_connect, (struct sockaddr *) &client_addr, sizeof(client_addr));
-
-    /* Connect to the remote server. */
-    validator = connect(socket_connect, (struct sockaddr *) &address, sizeof(address));
+    // Send: Connected!
+    // handle properly the SIGPIPE with MSG_NOSIGNAL
+    validator = send(socket_connect, jsonString.c_str(), jsonString.size(), MSG_NOSIGNAL);
 
     if (validator < 0) {
-        printf("Send: Connection Error.\n");
-    } else {
-        // Send: Connected!
-        // handle properly the SIGPIPE with MSG_NOSIGNAL
-        validator = send(socket_connect, jsonString.c_str(), jsonString.size(), MSG_NOSIGNAL);
-
-        if (validator < 0) {
-            printf("Send failed.\n");
-        }
-
-        char dataReceived[MAXIMUM_TRANSFER];
-        memset(dataReceived, 0, sizeof(dataReceived));
+        printf("Send failed.\n");
     }
+
+    char dataReceived[MAXIMUM_TRANSFER];
+    memset(dataReceived, 0, sizeof(dataReceived));
+
     return socket_connect;
 }

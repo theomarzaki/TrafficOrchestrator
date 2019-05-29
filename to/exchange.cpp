@@ -398,8 +398,7 @@ int main() {
             }
             reconnect_flag = captured_data;
         } while (reconnect_flag != "RECONNECT");
-        listening = false;
-        while (!listening) {
+        while (true) {
             std::this_thread::sleep_for(std::chrono::seconds(10));
 						close(socket_c);
 						lstm_model.reset();
