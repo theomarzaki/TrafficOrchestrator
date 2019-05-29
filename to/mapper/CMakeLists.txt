@@ -7,10 +7,12 @@ project(mapper
 include(GNUInstallDirs)
 
 set(LIB_SRC
-        mapper.cpp)
+        mapper.cpp
+        ../logger.cpp)
 
 set(LIB_H
-        include/mapper.h)
+        include/mapper.h
+        ../logger.h)
 
 
 add_library(${PROJECT_NAME} STATIC ${LIB_SRC} ${LIB_H})
