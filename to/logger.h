@@ -6,6 +6,8 @@
 #define COMMUNICATION_LAYER_LOGGER_H
 
 #include <string>
+#include <fstream>
+
 
 namespace logger {
     auto write(const std::string &text) -> void;

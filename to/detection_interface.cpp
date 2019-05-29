@@ -9,7 +9,6 @@
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
-#include "logger.h"
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -27,6 +26,8 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
+#include "logger.h"
 
 using namespace rapidjson;
 using namespace std;
