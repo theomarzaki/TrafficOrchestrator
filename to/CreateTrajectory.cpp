@@ -258,7 +258,10 @@ std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser
     return mergingCar;
 }
 
-auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergingVehicle, at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> rl_model) {
+auto calculatedTrajectories(const std::shared_ptr<Database> &database,
+                            const std::shared_ptr<RoadUser> &mergingVehicle,
+                            at::Tensor models_input,
+                            const std::shared_ptr<torch::jit::script::Module> &rl_model) {
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
     std::vector<torch::jit::IValue> rl_inputs;
 
@@ -275,7 +278,7 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     mergingManeuver->setMessageID(std::string(mergingManeuver->getOrigin()) + "/" + std::string(mergingManeuver->getUuidManeuver()) + "/" +
                                   std::string(to_string(mergingManeuver->getTimestamp())));
 
-    rl_inputs.push_back(models_input);
+    rl_inputs.emplace_back(models_input);
     at::Tensor calculatedRL = rl_model->forward(rl_inputs).toTensor();
     auto calculated_n_1_states = GetStateFromActions(calculatedRL, models_input);
 
@@ -298,7 +301,7 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     return mergingManeuver;
 }
 
-auto ManeuverParser(Database *database,std::shared_ptr<torch::jit::script::Module> rl_model) {
+auto ManeuverParser(std::shared_ptr<Database> database, std::shared_ptr<torch::jit::script::Module> rl_model) {
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {

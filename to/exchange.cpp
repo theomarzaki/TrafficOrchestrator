@@ -39,7 +39,7 @@
 using namespace rapidjson;
 using namespace experimental;
 
-Database * database;
+auto database{std::make_shared<Database>()};
 std::shared_ptr<SubscriptionResponse> subscriptionResponse;
 
 string sendAddress;
@@ -57,7 +57,7 @@ std::shared_ptr<torch::jit::script::Module> lstm_model;
 std::shared_ptr<torch::jit::script::Module> rl_model;
 
 
-vector<shared_ptr<RoadUser>> detectedToRoadUserList(vector<Detected_Road_User> v) {
+vector<shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Detected_Road_User> &v) {
 
 	logger::write("Detected number of RoadUsers: " + string(to_string(v.size())));
 
@@ -168,7 +168,7 @@ void generateReqID(){
     request_id = std::rand();
 }
 
-void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommendation>>& v,int socket) {
+void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommendation>> &v) {
 	for(const auto &m : v) {
 		m->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
         auto maneuverJson{createManeuverJSON(m)};
@@ -185,7 +185,8 @@ void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommen
             << std::endl;
         std::cout << log.str();
         std::cout.flush();
-        sendDataTCP(socket, sendAddress, sendPort, receiveAddress, receivePort, maneuverJson);
+        // FIXME when we use socket_c, we've go an error
+        sendDataTCP(socket_c, sendAddress, sendPort, receiveAddress, receivePort, maneuverJson);
 	}
 }
 
@@ -204,7 +205,7 @@ void initiateSubscription() {
 	// FIXME do not cast an unsigned int 64 from a long
 	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
-	socket_c = sendDataTCP(-999,sendAddress,sendPort,std::move(receiveAddress),receivePort,createSubscriptionRequestJSON(subscriptionReq));
+    socket_c = sendDataTCP(-999, sendAddress, sendPort, receiveAddress, receivePort, createSubscriptionRequestJSON(subscriptionReq));
 	logger::write("Sent subscription request to " + sendAddress + ":"+ to_string(sendPort));
 }
 
@@ -331,18 +332,14 @@ void inputSouthWest(int longt, int lat){
 	southwest = make_pair(longt,lat);
 }
 
-void initaliseDatabase() {
-	database = new Database();
-}
-
-void computeManeuvers(int socket) {
-  auto recommendations = ManeuverParser(database,rl_model);
-  if(!recommendations.empty()) {
-					logger::write("Sending recommendations.\n");
-					sendTrajectoryRecommendations(recommendations,socket);
-				} else {
-					logger::write("No Trajectories Calculated.\n");
-				}
+void computeManeuvers() {
+    auto recommendations{ManeuverParser(database, rl_model)};
+    if (!recommendations.empty()) {
+        logger::write("Sending recommendations.\n");
+        sendTrajectoryRecommendations(recommendations);
+    } else {
+        logger::write("No Trajectories Calculated.\n");
+    }
 }
 
 // Function Handling the exit of TO
@@ -392,7 +389,6 @@ int main() {
         inputReceiveAddress(document["receiveAddress"].GetString());
 
         initiateSubscription();
-        initaliseDatabase();
         bool listening = false;
         string reconnect_flag;
 
@@ -410,7 +406,7 @@ int main() {
             switch (messageType) {
                 case message_type::notify_add:
                     handleNotifyAdd(document);
-                    computeManeuvers(socket_c);
+                    computeManeuvers();
                     break;
                 case message_type::notify_delete:
                     handleNotifyDelete(document);
@@ -423,7 +419,7 @@ int main() {
                     break;
                 case message_type::trajectory_feedback:
                     if (!handleTrajectoryFeedback(document)) {
-                        computeManeuvers(socket_c);
+                        computeManeuvers();
                     }
                     break;
                 case message_type::heart_beat:
