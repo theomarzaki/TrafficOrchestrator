@@ -30,7 +30,7 @@ using namespace std::chrono;
 
 float TIME_VARIANT = 0.035;
 
-int BIAS = 3;
+int BIAS = 5;
 
 int RoadUserSpeedtoProcessedSpeed(int speed){
 	return speed / 100;
@@ -306,7 +306,7 @@ auto ManeuverParser(Database *database,std::shared_ptr<torch::jit::script::Modul
 					r->setProcessingWaypoint(false);
 					database->upsert(r);
 				}
-					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) { 
+					if (r->getConnected() && r->getLanePosition() == 0) { //&& !(r->getProcessingWaypoint()))
 	            auto neighbours{mapNeighbours(database, 10000)};
 	            auto input_values{RoadUsertoModelInput(r, neighbours)};
 							if (input_values) {
