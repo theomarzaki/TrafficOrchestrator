@@ -28,9 +28,9 @@
 using namespace rapidjson;
 using namespace std::chrono;
 
-float TIME_VARIANT = 0.035;
+const float TIME_VARIANT = 0.035;
 
-int BIAS = 5;
+const float BIAS = 7;
 
 int RoadUserSpeedtoProcessedSpeed(int speed){
 	return speed / 100;
@@ -57,11 +57,11 @@ int32_t toGPSMantissa(double point){
 }
 
 float RoadUserHeadingtoProcessedHeading(float point){
-	return float(int((point / 100) + 270) % 360);
+	return float(int((point / 100) + 265) % 360);
 }
 
 float ProcessedHeadingtoRoadUserHeading(float point){
-	return float(int((point * 100) - 270) % 360);
+	return float(int((point * 100) - 265) % 360);
 }
 
 
@@ -183,7 +183,7 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 	return stateTensor;
 	} else if(left_tensor == actionTensor.item<int>()){
 			float displacement = merging_Speed * TIME_VARIANT + 0.5 * merging_Acc * TIME_VARIANT * TIME_VARIANT;
-			angle = (angle + 1) % 360;
+			angle = (angle - 1) % 360;
 			auto new_x = merging_Long + BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
 			auto new_y = merging_Lat  + BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 			stateTensor[0][0] = new_x;
@@ -192,7 +192,7 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 		return stateTensor;
 	} else if(right_tensor == actionTensor.item<int>()){
 			float displacement = merging_Speed * TIME_VARIANT + 0.5 * merging_Acc * TIME_VARIANT * TIME_VARIANT;
-			angle = (angle - 1) % 360;
+			angle = (angle + 1) % 360;
 			auto new_x = merging_Long + BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
 			auto new_y = merging_Lat  + BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 			stateTensor[0][0] = new_x;
