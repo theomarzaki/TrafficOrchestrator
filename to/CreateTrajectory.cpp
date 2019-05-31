@@ -22,6 +22,7 @@
 #include <math.h>
 #include <memory>
 #include <time.h>
+#include <to/road_actions.cpp>
 
 #include "mapper.cpp"
 
@@ -182,14 +183,7 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 		stateTensor[0][19] = angle;
 	return stateTensor;
 	} else if(left_tensor == actionTensor.item<int>()){
-			float displacement = merging_Speed * TIME_VARIANT + 0.5 * merging_Acc * TIME_VARIANT * TIME_VARIANT;
-			angle = (angle + 1) % 360;
-			auto new_x = merging_Long + BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
-			auto new_y = merging_Lat  + BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
-			stateTensor[0][0] = new_x;
-			stateTensor[0][1] = new_y;
-			stateTensor[0][19] = angle;
-		return stateTensor;
+			return Autonomous_action::left(state);
 	} else if(right_tensor == actionTensor.item<int>()){
 			float displacement = merging_Speed * TIME_VARIANT + 0.5 * merging_Acc * TIME_VARIANT * TIME_VARIANT;
 			angle = (angle - 1) % 360;
@@ -306,7 +300,7 @@ auto ManeuverParser(Database *database,std::shared_ptr<torch::jit::script::Modul
 					r->setProcessingWaypoint(false);
 					database->upsert(r);
 				}
-					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) { 
+					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
 	            auto neighbours{mapNeighbours(database, 10000)};
 	            auto input_values{RoadUsertoModelInput(r, neighbours)};
 							if (input_values) {
