@@ -102,7 +102,7 @@ string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> un
             .AddMember("version", Value().SetString(unsubscriptionReq->getVersion().c_str(), allocator), allocator)
             .AddMember("timestamp", timestamp, allocator)
             .AddMember("source_uuid", Value().SetString(unsubscriptionReq->getSourceUUID().c_str(), allocator), allocator)
-            .AddMember("destination_uuid", Value().SetString(unsubscriptionReq->getDestinationUUID().c_str(), allocator), allocator);;
+            .AddMember("destination_uuid", Value().SetString(unsubscriptionReq->getDestinationUUID().c_str(), allocator), allocator);
 
     Value object(kObjectType);
 
@@ -196,44 +196,42 @@ string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec) {
 
 }
 
-int sendDataTCP(int pre_socket, string connectionAdress, int port, string receiveAddress, int receivePort, string jsonString) {
+int sendDataTCP(int pre_socket, string connectionAddress, int port, string receiveAddress, int receivePort, string jsonString) {
     int socket_connect;
-    int validator;
     struct sockaddr_in address, client_addr;
 
     jsonString = jsonString + "\n";
 
     /* Create a socket. */
-    if (pre_socket == -999) socket_connect = socket(AF_INET, SOCK_STREAM, 0);
-    else socket_connect = pre_socket;
+    if (pre_socket == -999) {
+        socket_connect = socket(AF_INET, SOCK_STREAM, 0);
+        address.sin_addr.s_addr = inet_addr(connectionAddress.c_str());
+        address.sin_family = AF_INET;
+        address.sin_port = htons(port);
 
+        memset(&client_addr, 0, sizeof(client_addr));
+        client_addr.sin_family = AF_INET;
+        client_addr.sin_port = htons(receivePort);
+        client_addr.sin_addr.s_addr = inet_addr(receiveAddress.c_str());
 
-    if (socket_connect == -1)
+        // SEND ERROR HERE FOR TR (NEW VERSION) --> remove int pre_socket
+
+        ::bind(socket_connect, (struct sockaddr *) &client_addr, sizeof(client_addr));
+
+        /* Connect to the remote server. */
+        auto validator{connect(socket_connect, (struct sockaddr *) &address, sizeof(address))};
+        if (validator < 0) {
+            printf("Send: Connection Error.\n");
+        }
+    } else {
+        socket_connect = pre_socket;
+    }
+    if (socket_connect == -1) {
         printf("Send: Socket was not created.");
-
-    address.sin_addr.s_addr = inet_addr(connectionAdress.c_str());
-    address.sin_family = AF_INET;
-    address.sin_port = htons(port);
-
-    memset(&client_addr, 0, sizeof(client_addr));
-    client_addr.sin_family = AF_INET;
-    client_addr.sin_port = htons(receivePort);
-    client_addr.sin_addr.s_addr = inet_addr(receiveAddress.c_str());
-
-    // SEND ERROR HERE FOR TR (NEW VERSION) --> remove int pre_socket
-
-    ::bind(socket_connect, (struct sockaddr *) &client_addr, sizeof(client_addr));
-
-    /* Connect to the remote server. */
-    validator = connect(socket_connect, (struct sockaddr *) &address, sizeof(address));
-
-    if (validator < 0) {
-        printf("Send: Connection Error.\n");
     } else {
         // Send: Connected!
         // handle properly the SIGPIPE with MSG_NOSIGNAL
-        validator = send(socket_connect, jsonString.c_str(), jsonString.size(), MSG_NOSIGNAL);
-
+        auto validator{send(socket_connect, jsonString.c_str(), jsonString.size(), MSG_NOSIGNAL)};
         if (validator < 0) {
             printf("Send failed.\n");
         }
