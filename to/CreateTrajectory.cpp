@@ -29,10 +29,6 @@
 using namespace rapidjson;
 using namespace std::chrono;
 
-const float TIME_VARIANT = 0.035;
-
-const float BIAS = 7;
-
 int RoadUserSpeedtoProcessedSpeed(int speed){
 	return speed / 100;
 }
@@ -142,69 +138,29 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
 
 
 at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state){
-	int accelerate_tensor = 0;
-	int deccelerate_tensor = 1;
-	int left_tensor = 2;
-	int right_tensor = 3;
-	int doNothing_tensor = 4;
+	const int accelerate_tensor = 0;
+	const int deccelerate_tensor = 1;
+	const int left_tensor = 2;
+	const int right_tensor = 3;
+	const int doNothing_tensor = 4;
 
-	auto stateTensor = state;
-
-	auto merging_Long = state[0][0].item<float>();
-	auto merging_Lat = state[0][1].item<float>();
-	auto merging_Speed = max(state[0][4].item<float>(),float(10));
-	auto merging_Acc = max(state[0][5].item<float>(),float(1));
-	auto angle = state[0][19].item<int>();
-
-
-	auto actionTensor = torch::argmax(action_Tensor);
-	if(accelerate_tensor == actionTensor.item<int>()){
-			auto final_velocity = merging_Speed + TIME_VARIANT * (merging_Speed + merging_Acc * TIME_VARIANT);
-			auto final_acceleration = (pow(final_velocity,2) - pow(merging_Speed,2)) / 2 * (0.5 * (merging_Speed + final_velocity) * TIME_VARIANT);
-			auto displacement = final_velocity * TIME_VARIANT + 0.5 * (final_acceleration * TIME_VARIANT * TIME_VARIANT);
-			auto new_x = merging_Long + displacement * cos((angle * M_PI)/ 180);
-			auto new_y = merging_Lat + displacement * sin((angle * M_PI)/ 180);
-			stateTensor[0][0] = new_x;
-			stateTensor[0][1] = new_y;
-			stateTensor[0][4] = final_velocity;
-			stateTensor[0][5] = final_velocity;
-			stateTensor[0][19] = angle;
-		return stateTensor;
-	} else if(deccelerate_tensor == actionTensor.item<int>()){
-		auto final_velocity = merging_Speed - TIME_VARIANT * (merging_Speed + merging_Acc * TIME_VARIANT);
-		auto final_acceleration = (pow(final_velocity,2) - pow(merging_Speed,2)) / 2 * (0.5 * (merging_Speed + final_velocity) * TIME_VARIANT);
-		auto displacement = final_velocity * TIME_VARIANT + 0.5 * (final_acceleration * TIME_VARIANT * TIME_VARIANT);
-		auto new_x = merging_Long + displacement * cos((angle * M_PI)/ 180);
-		auto new_y = merging_Lat + displacement * sin((angle * M_PI)/ 180);
-		stateTensor[0][0] = new_x;
-		stateTensor[0][1] = new_y;
-		stateTensor[0][4] = final_velocity;
-		stateTensor[0][5] = final_velocity;
-		stateTensor[0][19] = angle;
-	return stateTensor;
-	} else if(left_tensor == actionTensor.item<int>()){
+	switch(torch::argmax(action_Tensor).item<int>()){
+		case accelerate_tensor:
+			return Autonomous_action::accelerate(state);
+		case deccelerate_tensor:
+			return Autonomous_action::deccelerate(state);
+		case left_tensor:
 			return Autonomous_action::left(state);
-	} else if(right_tensor == actionTensor.item<int>()){
-			float displacement = merging_Speed * TIME_VARIANT + 0.5 * merging_Acc * TIME_VARIANT * TIME_VARIANT;
-			angle = (angle + 1) % 360;
-			auto new_x = merging_Long + BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
-			auto new_y = merging_Lat  + BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
-			stateTensor[0][0] = new_x;
-			stateTensor[0][1] = new_y;
-			stateTensor[0][19] = angle;
-		return stateTensor;
-	} else if(doNothing_tensor == actionTensor.item<int>()){
-			auto displacement = merging_Speed * TIME_VARIANT + 0.5 * (merging_Acc * TIME_VARIANT * TIME_VARIANT);
-	    auto new_x = merging_Long + displacement * cos((angle * M_PI)/ 180);
-	    auto new_y = merging_Lat + displacement * sin((angle * M_PI)/ 180);
-	    stateTensor[0][0] = new_x;
-	    stateTensor[0][1] = new_y;
-			stateTensor[0][19] = angle;
-    return stateTensor;
-	} else perror("Action cannot be recognized");
-
-	return stateTensor;
+		case right_tensor:
+			return Autonomous_action::right(state);
+		case doNothing_tensor:
+			return Autonomous_action::nothing(state);
+		default:
+			perror("Action cannot be recognized");
+	}
+	return state;
 }
+
 
 std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser> merging_car,
                                    vector<pair<std::shared_ptr<RoadUser>,
