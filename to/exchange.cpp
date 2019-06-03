@@ -35,6 +35,7 @@
 #include "CreateTrajectory.cpp"
 #include "unsubscription_response.cpp"
 #include "logger.h"
+#include "road_safety.cpp"
 
 using namespace rapidjson;
 using namespace experimental;
@@ -81,8 +82,8 @@ vector<shared_ptr<RoadUser>> detectedToRoadUserList(vector<Detected_Road_User> v
 		roadUser->setConnected(d.connected);
 		roadUser->setLatitude(d.latitude);
 		roadUser->setLongitude(d.longitude);
-        roadUser->setPositionType(d.position_type);
-        roadUser->setSourceUUID(d.source_uuid);
+    roadUser->setPositionType(d.position_type);
+    roadUser->setSourceUUID(d.source_uuid);
 		roadUser->setHeading(d.heading);
 		roadUser->setSpeed(d.speed);
 		roadUser->setAcceleration(d.acceleration);
@@ -306,6 +307,14 @@ void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
 				}
 }
 
+void computeSafetyActions(){
+	auto recommendations = stabiliseRoad(database);
+	if(!recommendations.empty()) {
+			logger::write("Sending Safety Action.\n");
+			sendTrajectoryRecommendations(recommendations,socket_c);
+		}
+}
+
 // Function Handling the exit of TO
 void terminate_to(int signum ){
 	logger::write("Sending unsubscription request.\n");
@@ -372,6 +381,7 @@ int main() {
                 case message_type::notify_add:
                     handleNotifyAdd(document);
                     computeManeuvers(lstm_model, rl_model, socket_c);
+										computeSafetyActions();
                     break;
                 case message_type::notify_delete:
                     handleNotifyDelete(document);

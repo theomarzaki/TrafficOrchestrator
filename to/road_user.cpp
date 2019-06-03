@@ -148,6 +148,7 @@ origin = "self";
 version = "1.0.0";
 processing_waypoint = false;
 waypoint_timestamp = 0;
+connected = false;
 }
 
 ~RoadUser(); // Destructor declaration.

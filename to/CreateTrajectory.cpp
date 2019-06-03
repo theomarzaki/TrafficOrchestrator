@@ -16,7 +16,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include <to/nearest_neighbour.cpp>
+#include "to/nearest_neighbour.cpp"
 #include <torch/torch.h>
 #include <torch/script.h>
 #include <math.h>
@@ -28,44 +28,6 @@
 
 using namespace rapidjson;
 using namespace std::chrono;
-
-int RoadUserSpeedtoProcessedSpeed(int speed){
-	return speed / 100;
-}
-
-int ProcessedSpeedtoRoadUserSpeed(int speed){
-	return speed * 100;
-}
-
-double RoadUserGPStoProcessedGPS(float point){
-    //FIXME do not cast from a double to a float
-	return double(point / pow(10,6));
-}
-double ProcessedGPStoRoadUserGPS(float point){
-    //FIXME do not cast from a double to a float
-    return double(point * pow(10,6));
-}
-
-double toRealGPS(int32_t point){
-    return point / pow(10,7);
-}
-int32_t toGPSMantissa(double point){
-    return point * pow(10,7);
-}
-
-float RoadUserHeadingtoProcessedHeading(float point){
-	return float(int((point / 100) + 265) % 360);
-}
-
-float ProcessedHeadingtoRoadUserHeading(float point){
-	return float(int((point * 100) - 265) % 360);
-}
-
-
-bool inRange(int low, int high, int x){
-    return ((x-high)*(x-low) <= 0);
-}
-
 
 
 std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> getClosestFollowingandPreceedingCars(std::shared_ptr<RoadUser> merging_car, std::vector<std::shared_ptr<RoadUser>> close_by) {
@@ -169,15 +131,17 @@ std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser
     std::vector<std::shared_ptr<RoadUser>> no_neighbours;
 
     auto x = getClosestFollowingandPreceedingCars(merging_car,no_neighbours);
-    if (!x) {
-        return std::nullopt;
-    }
+
 
     for (const auto &v : neighbours) {
         if (v.first->getUuid() == merging_car->getUuid()) {
-            x = getClosestFollowingandPreceedingCars(merging_car, v.second);
+          x = getClosestFollowingandPreceedingCars(merging_car, v.second);
         }
     }
+
+		if (!x) {
+				return std::nullopt;
+		}
 
 
     std::vector<float> mergingCar;
@@ -226,17 +190,16 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
                                   std::string(to_string(mergingManeuver->getTimestamp())));
 
     rl_inputs.push_back(models_input);
-    at::Tensor calculatedRL = rl_model->forward(rl_inputs).toTensor();
-    auto calculated_n_1_states = GetStateFromActions(calculatedRL, models_input);
+    auto calculated_action = rl_model->forward(rl_inputs).toTensor();
+    auto calculated_n_1_states = GetStateFromActions(calculated_action, models_input);
 
-		auto merging_Speed = max(calculated_n_1_states[0][4].item<float>(),float(10));
 
     auto waypoint{std::make_shared<Waypoint>()};
     waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
-                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / merging_Speed) * 100); //distance to mergeing point
+                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / max(calculated_n_1_states[0][4].item<float>(),float(10))) * 100); //distance to mergeing point
     waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][0].item<float>()));
     waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][1].item<float>()));
-    waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(merging_Speed));
+    waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(max(calculated_n_1_states[0][4].item<float>(),float(10))));
     waypoint->setLanePosition(mergingVehicle->getLanePosition());
 		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
     mergingManeuver->addWaypoint(waypoint);
