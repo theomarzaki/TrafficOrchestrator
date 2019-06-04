@@ -326,6 +326,44 @@ void terminate_to(int signum ){
 	exit(signum);
 }
 
+void handleMessage(const string &captured_data){
+	Document document = parse(captured_data);
+	message_type messageType = filterInput(document);
+	if (captured_data == "\n" || captured_data == string()) {
+			messageType = message_type::heart_beat;
+	}
+
+	switch (messageType) {
+			case message_type::notify_add:
+					handleNotifyAdd(document);
+					// computeManeuvers(lstm_model, rl_model, socket_c);
+					// computeSafetyActions();
+					break;
+			case message_type::notify_delete:
+					handleNotifyDelete(document);
+					break;
+			case message_type::subscription_response:
+					subscriptionResp = handleSubscriptionResponse(document);
+					break;
+			case message_type::unsubscription_response:
+					unsubscriptionResp = handleUnSubscriptionResponse(document);
+					break;
+			case message_type::trajectory_feedback:
+					if (!handleTrajectoryFeedback(document)) {
+							computeManeuvers(lstm_model, rl_model, socket_c);
+					}
+					break;
+			case message_type::heart_beat:
+					break;
+			case message_type::reconnect:
+					logger::write("Reconnecting");
+					break;
+			default:
+					logger::write("error: couldn't handle message " + captured_data);
+					break;
+	}
+}
+
 
 int main() {
 
@@ -370,51 +408,22 @@ int main() {
 				signal(SIGINT,terminate_to);
 
         do {
-            auto captured_data = listenDataTCP(socket_c);
-            Document document = parse(captured_data);
-            message_type messageType = filterInput(document);
-            if (captured_data == "\n" || captured_data == string()) {
-                messageType = message_type::heart_beat;
-            }
+            auto datapacket = listenDataTCP(socket_c);
+						listening = true;
+						for(const string & captured_data : datapacket){
+							if(captured_data == "RECONNECT") listening = false;
+							handleMessage(captured_data);
+        		}
+					}while (listening != false);
+			}
 
-            switch (messageType) {
-                case message_type::notify_add:
-                    handleNotifyAdd(document);
-                    computeManeuvers(lstm_model, rl_model, socket_c);
-										computeSafetyActions();
-                    break;
-                case message_type::notify_delete:
-                    handleNotifyDelete(document);
-                    break;
-                case message_type::subscription_response:
-                    subscriptionResp = handleSubscriptionResponse(document);
-                    break;
-                case message_type::unsubscription_response:
-                    unsubscriptionResp = handleUnSubscriptionResponse(document);
-                    break;
-                case message_type::trajectory_feedback:
-                    if (!handleTrajectoryFeedback(document)) {
-                        computeManeuvers(lstm_model, rl_model, socket_c);
-                    }
-                    break;
-                case message_type::heart_beat:
-                    break;
-                case message_type::reconnect:
-                    logger::write("Reconnecting");
-                    break;
-                default:
-                    logger::write("error: couldn't handle message " + captured_data);
-                    break;
-            }
-            reconnect_flag = captured_data;
-        } while (reconnect_flag != "RECONNECT");
-        while (true) {
-            std::this_thread::sleep_for(std::chrono::seconds(10));
-						close(socket_c);
-						lstm_model.reset();
-						rl_model.reset();
-            main();
-        }
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+				close(socket_c);
+				lstm_model.reset();
+				rl_model.reset();
+        main();
     }
-    return returnCode;
+
+  return returnCode;
 }
