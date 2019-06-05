@@ -32,14 +32,12 @@
 #include <logger.h>
 #include <optimizer_engine.h>
 #include <database.h>
-#include <subscription_request.h>
+#include <maneuver_feedback.h>
+#include <unsubscription_response.h>
 #include <subscription_response.h>
 #include <optimizer_engine.h>
 #include <detection_interface.h>
-#include <maneuver_feedback.h>
-#include <unsubscription_response.h>
-#include <maneuver_recommendation.h>
-#include <network_interface.h>
+#include "connectors/include/network_interface.h"
 #include <create_trajectory.h>
 
 using namespace rapidjson;

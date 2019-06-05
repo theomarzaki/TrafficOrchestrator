@@ -30,8 +30,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include <logger.h>
-
 #define NOTIFY_ADD "notify_add"
 #define RECONNECT "RECONNECT"
 #define HEART_BEAT "heart_beat"
@@ -52,9 +50,6 @@ typedef uint32_t uint4;
 enum class message_type {
     notify_add, notify_delete, subscription_response, unsubscription_response, trajectory_feedback, unknown, heart_beat, reconnect
 };
-
-string incomplete_message = string();
-list<string> incomplete_messages;
 
 /* struct to represent fields found in JSON string. */
 struct Detected_Road_User {

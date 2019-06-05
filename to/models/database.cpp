@@ -2,6 +2,7 @@
 
 // Created by : KCL
 #include "include/database.h"
+#include "logger.h"
 
 /**
 *   @description Displays all RoadUsers in the database.

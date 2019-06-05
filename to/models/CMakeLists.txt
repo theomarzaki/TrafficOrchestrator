@@ -28,9 +28,11 @@ set(LIB_H
         include/unsubscription_response.h
         include/waypoint.h)
 
-add_library(${PROJECT_NAME} STATIC ${LIB_SRC} ${LIB_H})
+add_library(${PROJECT_NAME} SHARED ${LIB_SRC} ${LIB_H})
 
-target_link_libraries(${PROJECT_NAME} logger)
+target_include_directories(includes INTERFACE include)
+
+target_link_libraries(${PROJECT_NAME} includes)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}

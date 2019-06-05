@@ -7,19 +7,9 @@
 #ifndef TO_MANEUVER_RECOMMENDATION_H
 #define TO_MANEUVER_RECOMMENDATION_H
 
-#include <iostream>
-#include <ostream>
-#include <string>
-#include <vector>
-#include <tuple>
-#include <memory>
-
 #include "waypoint.h"
-
-using std::string;
-using std::vector;
-using std::ostream;
-using std::tuple;
+#include <vector>
+#include <memory>
 
 typedef uint32_t uint4;
 
@@ -62,20 +52,17 @@ public:
                            uint16_t speed_action,
                            uint4 lane_position,
                            string signature) :
-            type(type),
-            context(context),
-            origin(origin),
             timestamp(timestamp),
-            uuid_vehicle(uuid_vehicle),
-            uuid_to(uuid_to),
+            uuid_vehicle(std::move(uuid_vehicle)),
+            uuid_to(std::move(uuid_to)),
             uuid_maneuver(uuid_maneuver),
-            waypoints(waypoints),
+            waypoints(std::move(waypoints)),
             timestamp_action(timestamp_action),
             latitude_action(latitude_action),
             longitude_action(longitude_action),
             speed_action(speed_action),
             lane_position(lane_position),
-            signature(signature) {
+            signature(std::move(signature)) {
         type = "maneuver";
         context = "lane_merge";
         origin = "traffic_orchestrator";
@@ -132,43 +119,24 @@ public:
     string getMessageID();
 
     void setType(string);
-
     void setContext(string);
-
     void setOrigin(string);
-
     void setVersion(string);
-
     void setTimestamp(uint64_t);
-
     void setUuidVehicle(string);
-
     void setUuidTo(string);
-
     void setUuidManeuver(string);
-
     void setWaypoints(vector<std::shared_ptr<Waypoint>> waypoints);
-
     void setTimestampAction(uint64_t);
-
     void setLatitudeAction(uint32_t);
-
     void setLongitudeAction(uint32_t);
-
     void setSpeedAction(uint16_t);
-
     void setLanePositionAction(uint4);
-
     void setSignature(string);
-
     void setSourceUUID(string);
-
     void setUUID(string);
-
     void setMessageID(string);
-
     void addWaypoint(const std::shared_ptr<Waypoint> &waypoint);
-
     void emptyWaypoints();
 };
 

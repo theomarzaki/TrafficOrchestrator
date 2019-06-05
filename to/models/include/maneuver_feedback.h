@@ -1,3 +1,17 @@
+#include <utility>
+
+#include <utility>
+
+#include <utility>
+
+#include <utility>
+
+#include <utility>
+
+#include <utility>
+
+#include <utility>
+
 // This script is a class for the manuever feedback parsing the information from the v2x Gateway
 
 // Created by: KCL
@@ -36,15 +50,15 @@ public:
 	type(type),
 	context(context),
 	origin(origin),
-	version(version),
+	version(std::move(version)),
 	timestamp(timestamp),
-	uuid_vehicle(uuid_vehicle),
-	uuid_to(uuid_to),
-	uuid_maneuver(uuid_maneuver),
+	uuid_vehicle(std::move(uuid_vehicle)),
+	uuid_to(std::move(uuid_to)),
+	uuid_maneuver(std::move(uuid_maneuver)),
 	timestamp_message(timestamp_message),
-	feedback(feedback),
-	reason(reason),
-	signature(signature)
+	feedback(std::move(feedback)),
+	reason(std::move(reason)),
+	signature(std::move(signature))
 	{
 		type = "maneuver_feedback";
 		context = "lane_merge";

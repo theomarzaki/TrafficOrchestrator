@@ -23,12 +23,12 @@
 #include <memory>
 #include <time.h>
 
+#include "road_user.h"
 #include "nearest_neighbour.h"
-
-#include <maneuver_recommendation.h>
-#include <waypoint.h>
-#include <mapper.h>
-#include <database.h>
+#include "maneuver_recommendation.h"
+#include "waypoint.h"
+#include "mapper.h"
+#include "database.h"
 
 using namespace rapidjson;
 using namespace std::chrono;

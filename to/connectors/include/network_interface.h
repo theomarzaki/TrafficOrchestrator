@@ -17,12 +17,14 @@
 #include <iostream>
 #include <libnet.h>
 
-#include <maneuver_recommendation.h>
-#include <subscription_request.h>
-#include <unsubscription_request.h>
-#include <waypoint.h>
+#include <logger.h>
 
-#include "detection_interface.h"
+#include "maneuver_recommendation.h"
+#include "subscription_request.h"
+#include "unsubscription_request.h"
+#include "waypoint.h"
+
+#define MAXIMUM_TRANSFER 100000
 
 using namespace rapidjson;
 

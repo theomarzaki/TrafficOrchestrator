@@ -4,6 +4,12 @@
 // Created by: KCL
 
 // Modified by: Omar Nassef (KCL)
+
+#include <iostream>
+#include <ostream>
+#include <string>
+#include <tuple>
+#include <utility>
 #include "include/maneuver_recommendation.h"
 
 string ManeuverRecommendation::getType() { return type; }

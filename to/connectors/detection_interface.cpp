@@ -6,6 +6,10 @@
 // Modified by: Omar Nassef (KCL)
 
 #include "include/detection_interface.h"
+#include "logger.h"
+
+string incomplete_message = string();
+list<string> incomplete_messages;
 
 Document parse(string readFromServer) {
   Document document;

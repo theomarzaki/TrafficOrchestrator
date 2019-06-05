@@ -13,7 +13,6 @@
 #include <sstream>
 
 #include "road_user.h"
-#include <logger.h>
 
 using namespace std;
 
