@@ -99,7 +99,7 @@ private:
                         nodeStruct.longitude = node.HasMember("long") ? node["long"].GetDouble() : 220.0;
                         laneStruct.nodes.push_back(nodeStruct);
                     }
-                    roadStruct.lanes.insert( std::pair<int,Lane_Descriptor>(laneStruct.id,laneStruct));
+                    roadStruct.lanes.insert(std::pair<int,Lane_Descriptor>(laneStruct.id,laneStruct));
                 }
                 m_roads.push_back(roadStruct);
             }
@@ -190,7 +190,7 @@ public:
         return fabs(- coef*xP + yP - offset) / sqrt( pow(coef,2) + 1 );
     }
 
-    Gps_Descriptor getPositionDescriptor(double latitude, double longitude, int forcedRoadID = -1) {
+    Gps_Descriptor getPositionDescriptor(double latitude, double longitude, int forcedRoadID = -1, int forcedLaneID = -1) {
 
         Gps_Descriptor nearestDescription;
         nearestDescription.roadId = -1;
@@ -203,10 +203,29 @@ public:
         int maxIndex = 0;
 
         auto listRoads = m_roads;
-        if (forcedRoadID > -1) {
-            auto buff = std::vector<Road_Descriptor>();
-            buff.push_back(m_roads.at(forcedRoadID));
-            listRoads = buff;
+        try {
+            if (forcedRoadID > -1) {
+                auto buff{std::vector<Road_Descriptor>()};
+                auto road{m_roads.at(forcedRoadID)};
+                if (forcedLaneID > -1) {
+                    auto lanes{std::map<int,Lane_Descriptor>()};
+                    auto lane = road.lanes.find(forcedLaneID);
+                    if (lane != road.lanes.end()) {
+                        lanes.insert(std::pair<int,Lane_Descriptor>(lane->first,lane->second));
+                        road.lanes = lanes;
+                    } else {
+                        logger::write(std::string("[ERROR] The lane "+std::to_string(forcedLaneID)+" don't exist in the map."));
+                    }
+                }
+                buff.push_back(road);
+                listRoads = buff;
+            }
+        } catch(const std::exception& e) {
+            if (typeid(e) == typeid(std::out_of_range)) {
+                logger::write(std::string("[ERROR] Seems that the road id "+std::to_string(forcedRoadID)+" don't exist"));
+            } else {
+                logger::write("[ERROR] Unknown error in map listing process");
+            }
         }
 
         for (auto& road : listRoads) { // TODO Change basic optimum search
@@ -292,10 +311,11 @@ public:
         return std::move(nearestDescription);
     }
 
-    std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
-        Gps_Descriptor gps{getPositionDescriptor(latitude,longitude,1)}; // 1 = highway
+    std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude, int laneId = -1) {
+        laneId = laneId < 0 ? 1 : laneId;
+        Gps_Descriptor gps{getPositionDescriptor(latitude,longitude,1,laneId)}; // 1 = highway
         if (gps.state != Mapper_Result_State::OUT_OF_MAP) {
-            auto nodes{m_roads.at(gps.roadId).lanes.find(1)->second.nodes}; // 1 = First lane
+            auto nodes{m_roads.at(gps.roadId).lanes.find(laneId)->second.nodes}; // 1 = First lane
             long max = nodes.size()-1;
             long spread = nodes.size()/6; // size factor
 
