@@ -8,6 +8,7 @@
 
 // Modified by : Omar Nassef(KCL)
 
+#include <cstdio>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -44,9 +45,9 @@ using namespace rapidjson;
 using namespace experimental;
 using namespace std::chrono;
 
+OptimizerEngine optimizerEngine;
 auto database{std::make_shared<Database>()};
 std::shared_ptr<SubscriptionResponse> subscriptionResponse;
-std::shared_ptr<OptimizerEngine> optimizerengine;
 
 string sendAddress;
 int sendPort;
@@ -456,7 +457,7 @@ int main() {
 							handleMessage(captured_data);
         		}
         } while (listening);
-			}
+    }
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::seconds(10));

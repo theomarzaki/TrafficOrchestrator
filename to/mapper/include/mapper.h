@@ -19,9 +19,9 @@
 #include <map>
 #include <iomanip>
 
+#include "gpstools.h"
 #include "logger.h"
 
-#define EARTH_RADIUS 6371000
 #define OUT_OF_MAP_VALUE 10000
 
 class Mapper {
@@ -72,11 +72,6 @@ public:
         OUT_OF_MAP,
         OUT_OF_ROAD,
         OK,
-    };
-
-    struct Gps_Point {
-        double latitude;
-        double longitude;
     };
 
     struct Merging_Scenario {

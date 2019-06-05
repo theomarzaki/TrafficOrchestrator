@@ -156,19 +156,12 @@ struct Detected_Unsubscription_Response {
 Document parse(string readFromServer);
 
 Detected_Road_User assignRoadUserVals(Document &document);
-
 std::vector<string> assignNotificationDeleteVals(Document &document);
-
 Detected_To_Notification assignNotificationVals(Document &document);
-
 Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document &document);
-
 Detected_Subscription_Response assignSubResponseVals(Document &document);
-
 Detected_Unsubscription_Response assignUnsubResponseVals(Document &document);
-
 message_type filterInput(Document &document);
-
 std::vector<std::string> listenDataTCP(int socket_c);
 
 #endif

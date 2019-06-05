@@ -4,6 +4,12 @@
 
 #include "include/optimizer_engine.h"
 
-OptimizerEngine::OptimizerEngine() {
+#include <mapper.h>
+
+bool OptimizerEngine::updateSimulationState(std::unique_ptr<std::list<Timebase_Telemetry_Waypoint>>) {
+
+}
+
+std::unique_ptr<std::list<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimulationResult(unsigned int delta_time) {
 
 }

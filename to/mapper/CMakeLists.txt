@@ -10,7 +10,7 @@ set(LIB_SRC
         mapper.cpp)
 
 set(LIB_H
-        include/mapper.h)
+        include/mapper.h include/gpstools.h)
 
 add_library(${PROJECT_NAME} SHARED ${LIB_SRC} ${LIB_H})
 
