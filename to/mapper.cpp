@@ -292,8 +292,8 @@ public:
         return std::move(nearestDescription);
     }
 
-    std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
-        Gps_Descriptor gps{getPositionDescriptor(latitude,longitude,1)}; // 1 = highway
+    std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude, int number_lanes_offset) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.
+        Gps_Descriptor gps{getPositionDescriptor(latitude,longitude, 1)}; // 1 = highway
         if (gps.state != Mapper_Result_State::OUT_OF_MAP) {
             auto nodes{m_roads.at(gps.roadId).lanes.find(1)->second.nodes}; // 1 = First lane
             long max = nodes.size()-1;

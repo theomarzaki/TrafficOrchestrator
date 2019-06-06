@@ -51,7 +51,7 @@ bool inRange(int low, int high, int x){
 namespace RoadUser_action{
 
   const float TIME_VARIANT = 0.035;
-  const int BIAS = 3;
+  const int BIAS = 1;
 
   auto left(RoadUser * vehicle){
     auto timestamp{duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()};
@@ -169,7 +169,7 @@ namespace Autonomous_action{
   at::Tensor left(at::Tensor state){
     at::Tensor stateTensor = state;
     float displacement = max(state[0][4].item<float>(),float(10)) * TIME_VARIANT + 0.5 * max(state[0][5].item<float>(),float(1)) * TIME_VARIANT * TIME_VARIANT;
-    auto angle = (state[0][19].item<int>() + 1) % 360;
+    auto angle = (state[0][19].item<int>() + 2) % 360;
     auto new_x = state[0][0].item<float>() + BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
     auto new_y = state[0][1].item<float>() + BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
     stateTensor[0][0] = new_x;
@@ -181,7 +181,7 @@ namespace Autonomous_action{
   at::Tensor right(at::Tensor state){
     at::Tensor stateTensor = state;
     float displacement = max(state[0][4].item<float>(),float(10)) * TIME_VARIANT + 0.5 * max(state[0][5].item<float>(),float(1)) * TIME_VARIANT * TIME_VARIANT;
-    auto angle = (state[0][19].item<int>() + 1) % 360;
+    auto angle = (state[0][19].item<int>() - 2) % 360;
     auto new_x = state[0][0].item<float>() + BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
     auto new_y = state[0][1].item<float>() + BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
     stateTensor[0][0] = new_x;

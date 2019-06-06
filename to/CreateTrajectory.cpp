@@ -30,7 +30,7 @@ using namespace rapidjson;
 using namespace std::chrono;
 
 
-std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> getClosestFollowingandPreceedingCars(std::shared_ptr<RoadUser> merging_car, std::vector<std::shared_ptr<RoadUser>> close_by) {
+std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> getClosestFollowingandPreceedingCars(std::shared_ptr<RoadUser> merging_car, std::vector<std::shared_ptr<RoadUser>> close_by, int number_lanes_offset) {
     std::shared_ptr<RoadUser> closest_following{nullptr};
     std::shared_ptr<RoadUser> closest_preceeding{nullptr};
     double minFollowing{9999};
@@ -38,7 +38,7 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
 
     for (const auto &close_car : close_by) {
         if (close_car->getLatitude() < merging_car->getLatitude() &&
-            close_car->getLongitude() < merging_car->getLongitude() && close_car->getLanePosition() == merging_car->getLanePosition() + 1) { //closest following
+            close_car->getLongitude() < merging_car->getLongitude() && close_car->getLanePosition() == merging_car->getLanePosition() + number_lanes_offset) { //closest following
             if (distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),
                               RoadUserGPStoProcessedGPS(close_car->getLongitude()),
                               RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
@@ -51,7 +51,7 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
             }
         }
         if (close_car->getLatitude() > merging_car->getLatitude() &&
-            close_car->getLongitude() > merging_car->getLongitude() && close_car->getLanePosition() == merging_car->getLanePosition() + 1) { //closest preceeding
+            close_car->getLongitude() > merging_car->getLongitude() && close_car->getLanePosition() == merging_car->getLanePosition() + number_lanes_offset) { //closest preceeding
             if (distanceEarth(RoadUserGPStoProcessedGPS(close_car->getLatitude()),
                               RoadUserGPStoProcessedGPS(close_car->getLongitude()),
                               RoadUserGPStoProcessedGPS(merging_car->getLatitude()),
@@ -67,7 +67,7 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
 		// closest_following = nullptr;
 		// closest_preceeding = nullptr;
     if (closest_preceeding == nullptr or closest_following == nullptr ) { // Calculate once only
-        auto faker = Mapper::getMapper()->getFakeCarMergingScenario(toRealGPS(merging_car->getLatitude()),toRealGPS(merging_car->getLongitude()));
+        auto faker = Mapper::getMapper()->getFakeCarMergingScenario(toRealGPS(merging_car->getLatitude()),toRealGPS(merging_car->getLongitude()), merging_car->getLanePosition() + number_lanes_offset);
         if (faker) {
             if (closest_preceeding == nullptr) {
                 //we create a default one
@@ -78,7 +78,7 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
                 closest_preceeding->setWidth(merging_car->getWidth());
                 closest_preceeding->setLength(merging_car->getLength());
                 closest_preceeding->setAcceleration(merging_car->getAcceleration());
-                closest_preceeding->setLanePosition(merging_car->getLanePosition() + 1);
+                closest_preceeding->setLanePosition(merging_car->getLanePosition() + number_lanes_offset);
             }
             if (closest_following == nullptr) {
                 //we create a default one
@@ -89,7 +89,7 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
                 closest_following->setWidth(merging_car->getWidth());
                 closest_following->setLength(merging_car->getLength());
                 closest_following->setAcceleration(merging_car->getAcceleration());
-                closest_following->setLanePosition(merging_car->getLanePosition() + 1);
+                closest_following->setLanePosition(merging_car->getLanePosition() + number_lanes_offset);
             }
         } else {
             return std::nullopt;
@@ -130,12 +130,12 @@ std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser
 
     std::vector<std::shared_ptr<RoadUser>> no_neighbours;
 
-    auto x = getClosestFollowingandPreceedingCars(merging_car,no_neighbours);
+    auto x = getClosestFollowingandPreceedingCars(merging_car,no_neighbours, 1); // get closest and following cars in the next lane ("target lane")
 
 
     for (const auto &v : neighbours) {
         if (v.first->getUuid() == merging_car->getUuid()) {
-          x = getClosestFollowingandPreceedingCars(merging_car, v.second);
+          x = getClosestFollowingandPreceedingCars(merging_car, v.second, 1);
         }
     }
 

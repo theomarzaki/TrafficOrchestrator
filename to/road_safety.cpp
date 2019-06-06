@@ -14,10 +14,10 @@
 using namespace std;
 using namespace std::chrono;
 
-const int SAFETY_DISTANCE = 100;
+const int SAFETY_DISTANCE = 10;
 
 double distanceRoadUser(const std::shared_ptr<RoadUser> first,const std::shared_ptr<RoadUser> second){
-  return distanceEarth(first->getLatitude(),first->getLongitude(),second->getLatitude(),second->getLongitude());
+  return distanceEarth(first->getLatitude(),first->getLongitude(),second->getLatitude(),second->getLongitude()) / 100;
 }
 
 
@@ -26,14 +26,14 @@ vector<std::shared_ptr<RoadUser>>>> neighbours){
   auto safetyManeuver{std::vector<std::shared_ptr<ManeuverRecommendation>>()};
 
   for(const auto & neighbour : neighbours){
-    auto scoped_scenario{getClosestFollowingandPreceedingCars(neighbour.first,neighbour.second)};
+    auto scoped_scenario{getClosestFollowingandPreceedingCars(neighbour.first,neighbour.second, 0)}; // calculate preceeding and following cars for the same lane
     if(!scoped_scenario) continue;
     else{
-      if(distanceRoadUser(neighbour.first,scoped_scenario->first) <= SAFETY_DISTANCE){ //preceeding car
-        cout << 1 << endl;
+      if(distanceRoadUser(neighbour.first,scoped_scenario->first) < SAFETY_DISTANCE){ //preceeding car
+        cout << neighbour.first->getUuid() << distanceRoadUser(neighbour.first,scoped_scenario->first) << endl;
       }
-      if(distanceRoadUser(neighbour.first,scoped_scenario->second) <= SAFETY_DISTANCE){ //following car
-        cout << 2 << endl;
+      if(distanceRoadUser(neighbour.first,scoped_scenario->second) < SAFETY_DISTANCE){ //following car
+        cout << neighbour.first->getUuid() << distanceRoadUser(neighbour.first,scoped_scenario->second) << endl;
       }
     }
   }
