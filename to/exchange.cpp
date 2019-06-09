@@ -339,7 +339,7 @@ void handleMessage(const string &captured_data){
 				handleNotifyAdd(document);
 
 				computeManeuvers(lstm_model, rl_model, socket_c);
-				// computeSafetyActions();
+				// computeSafetyActions(); 
 				break;
 			}
 			case message_type::notify_delete:
