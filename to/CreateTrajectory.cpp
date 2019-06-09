@@ -23,7 +23,6 @@
 #include <memory>
 #include <time.h>
 #include <to/road_actions.cpp>
-
 #include "mapper.cpp"
 
 using namespace rapidjson;
@@ -67,7 +66,7 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
 		// closest_following = nullptr;
 		// closest_preceeding = nullptr;
     if (closest_preceeding == nullptr or closest_following == nullptr ) { // Calculate once only
-        auto faker = Mapper::getMapper()->getFakeCarMergingScenario(toRealGPS(merging_car->getLatitude()),toRealGPS(merging_car->getLongitude()), merging_car->getLanePosition() + number_lanes_offset);
+        auto faker = Mapper::getMapper()->getFakeCarMergingScenario(toRealGPS(merging_car->getLatitude()),toRealGPS(merging_car->getLongitude()), 0);
         if (faker) {
             if (closest_preceeding == nullptr) {
                 //we create a default one
@@ -78,7 +77,7 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
                 closest_preceeding->setWidth(merging_car->getWidth());
                 closest_preceeding->setLength(merging_car->getLength());
                 closest_preceeding->setAcceleration(merging_car->getAcceleration());
-                closest_preceeding->setLanePosition(merging_car->getLanePosition() + number_lanes_offset);
+                closest_preceeding->setLanePosition(merging_car->getLanePosition() + 1);
             }
             if (closest_following == nullptr) {
                 //we create a default one
@@ -89,7 +88,7 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
                 closest_following->setWidth(merging_car->getWidth());
                 closest_following->setLength(merging_car->getLength());
                 closest_following->setAcceleration(merging_car->getAcceleration());
-                closest_following->setLanePosition(merging_car->getLanePosition() + number_lanes_offset);
+                closest_following->setLanePosition(merging_car->getLanePosition() + 1);
             }
         } else {
             return std::nullopt;
@@ -172,7 +171,7 @@ std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser
     return mergingCar;
 }
 
-auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergingVehicle, at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> rl_model) {
+std::shared_ptr<ManeuverRecommendation> calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergingVehicle, at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> rl_model) {
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
     std::vector<torch::jit::IValue> rl_inputs;
 
@@ -191,8 +190,10 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
 
     rl_inputs.push_back(models_input);
     auto calculated_action = rl_model->forward(rl_inputs).toTensor();
-    auto calculated_n_1_states = GetStateFromActions(calculated_action, models_input);
+    auto calculated_n_1 = GetStateFromActions(calculated_action, models_input);
 
+    auto valid_action = CheckActionValidity(calculated_n_1);
+    auto calculated_n_1_states = valid_action.first;
 
     auto waypoint{std::make_shared<Waypoint>()};
     waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
@@ -200,7 +201,7 @@ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergin
     waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][0].item<float>()));
     waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][1].item<float>()));
     waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(max(calculated_n_1_states[0][4].item<float>(),float(10))));
-    waypoint->setLanePosition(mergingVehicle->getLanePosition());
+    (!(valid_action.second)) ? waypoint->setLanePosition(mergingVehicle->getLanePosition() + 1) : waypoint->setLanePosition(mergingVehicle->getLanePosition());
 		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
     mergingManeuver->addWaypoint(waypoint);
 		mergingVehicle->setProcessingWaypoint(true);
@@ -224,7 +225,7 @@ auto ManeuverParser(Database *database,std::shared_ptr<torch::jit::script::Modul
 	            auto input_values{RoadUsertoModelInput(r, neighbours)};
 							if (input_values) {
 	                auto models_input{torch::tensor(input_values.value()).unsqueeze(0)};
-	                recommendations.push_back(calculatedTrajectories(database,r, models_input, rl_model));
+                  recommendations.push_back(calculatedTrajectories(database,r, models_input, rl_model));
 	            }
 	        }
     }

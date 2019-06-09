@@ -39,6 +39,7 @@
 
 using namespace rapidjson;
 using namespace experimental;
+using namespace std::chrono;
 
 Database * database;
 std::shared_ptr<SubscriptionResponse> subscriptionResp;
@@ -334,11 +335,13 @@ void handleMessage(const string &captured_data){
 	}
 
 	switch (messageType) {
-			case message_type::notify_add:
-					handleNotifyAdd(document);
-					computeManeuvers(lstm_model, rl_model, socket_c);
-					computeSafetyActions();
-					break;
+			case message_type::notify_add:{
+				handleNotifyAdd(document);
+
+				computeManeuvers(lstm_model, rl_model, socket_c);
+				// computeSafetyActions();
+				break;
+			}
 			case message_type::notify_delete:
 					handleNotifyDelete(document);
 					break;

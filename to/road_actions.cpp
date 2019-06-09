@@ -47,6 +47,30 @@ bool inRange(int low, int high, int x){
     return ((x-high)*(x-low) <= 0);
 }
 
+std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
+	float THRESHOLD = 1400;
+
+	auto x = states[0][0].item<float>();
+	auto y = states[0][1].item<float>();
+
+	auto pre_x = states[0][7].item<float>();
+	auto pre_y = states[0][8].item<float>();
+
+	auto fol_x = states[0][13].item<float>();
+	auto fol_y = states[0][14].item<float>();
+
+	auto slope =  (fol_y - pre_y) / (fol_x - pre_x);
+	auto plus_c = pre_y - (slope * pre_x);
+
+
+	if(y - (x * slope + plus_c) < THRESHOLD){
+		logger::write("DEBUG :: Car Sucessfully Merged");
+		return std::make_pair(states,false);
+	}
+
+	return std::make_pair(states,true);
+}
+
 // Represents the actions that are taken by the non merging vehicle to facilitate an easier merge
 namespace RoadUser_action{
 
@@ -95,7 +119,7 @@ namespace RoadUser_action{
     return waypoint;
   }
 
-  auto accelerate(RoadUser * vehicle){ //CHECK
+  auto accelerate(RoadUser * vehicle){
     auto timestamp{duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
@@ -163,8 +187,8 @@ namespace RoadUser_action{
 // Represents the actions that is taken by the merging car -> used by RL
 namespace Autonomous_action{
 
-  const float TIME_VARIANT = 0.035;
-  const int BIAS = 3;
+  const float TIME_VARIANT = 0.1;
+  const int BIAS = 1;
 
   at::Tensor left(at::Tensor state){
     at::Tensor stateTensor = state;
