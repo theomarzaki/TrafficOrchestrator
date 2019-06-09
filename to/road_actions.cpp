@@ -187,7 +187,7 @@ namespace RoadUser_action{
 // Represents the actions that is taken by the merging car -> used by RL
 namespace Autonomous_action{
 
-  const float TIME_VARIANT = 0.1;
+  const float TIME_VARIANT = 0.05;
   const int BIAS = 1;
 
   at::Tensor left(at::Tensor state){
