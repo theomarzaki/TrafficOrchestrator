@@ -406,60 +406,151 @@ void handleMessage(const string &captured_data){
 
 int main() {
 
-    auto returnCode{0};
+    std::thread mainT([=]() mutable {
+        while(true) {
 
-    FILE *file = fopen("include/TO_config.json", "r");
-    if (file == nullptr) {
-        logger::write("Config File failed to load.");
-        returnCode = 1;
-    } else if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
-        logger::write("Unable to create the logs directory, we stop");
-        returnCode = 2;
-    } else {
-        lstm_model = torch::jit::load("include/lstm_model.pt");
+            FILE *file = fopen("include/TO_config.json", "r");
+            if (file == nullptr) {
+                logger::write("Config File failed to load.");
+                OptimizerEngine::getEngine()->killOptimizer();
+                return 1;
+            } else if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
+                logger::write("Unable to create the logs directory, we stop");
+                OptimizerEngine::getEngine()->killOptimizer();
+                return 2;
+            } else {
+                lstm_model = torch::jit::load("include/lstm_model.pt");
 
-        if (lstm_model != nullptr) logger::write("import of lstm model successful\n");
+                if (lstm_model != nullptr) logger::write("import of lstm model successful\n");
 
-        rl_model = torch::jit::load("include/rl_model_deuling.pt");
+                rl_model = torch::jit::load("include/rl_model_deuling.pt");
 
-        if (rl_model != nullptr) logger::write("import of rl model successful\n");
+                if (rl_model != nullptr) logger::write("import of rl model successful\n");
 
 
-        char readBuffer[65536];
-        FileReadStream is(file, readBuffer, sizeof(readBuffer));
-        Document document;
-        document.ParseStream(is);
-        fclose(file);
+                char readBuffer[65536];
+                FileReadStream is(file, readBuffer, sizeof(readBuffer));
+                Document args;
+                args.ParseStream(is);
+                fclose(file);
 
-        inputSendAddress(document["sendAddress"].GetString());
-        inputSendPort(document["sendPort"].GetInt());
-        inputNorthEast(document["northeast"]["longitude"].GetInt(), document["northeast"]["latitude"].GetInt());
-				inputSouthWest(document["southwest"]["longitude"].GetInt(), document["southwest"]["latitude"].GetInt());
-        inputReceivePort(document["receivePort"].GetInt());
-        inputReceiveAddress(document["receiveAddress"].GetString());
+                inputSendAddress(args["sendAddress"].GetString());
+                inputSendPort(args["sendPort"].GetInt());
+                inputNorthEast(args["northeast"]["longitude"].GetInt(), args["northeast"]["latitude"].GetInt());
+                inputSouthWest(args["southwest"]["longitude"].GetInt(), args["southwest"]["latitude"].GetInt());
+                inputReceivePort(args["receivePort"].GetInt());
+                inputReceiveAddress(args["receiveAddress"].GetString());
 
-        initiateSubscription();
-        bool listening = false;
-        string reconnect_flag;
+                initiateSubscription();
+                bool listening = false;
+                string reconnect_flag;
 
-				// terminate TO on abortion/interruption
-				signal(SIGINT,terminate_to);
+                // terminate TO on abortion/interruption
+                signal(SIGINT, terminate_to);
 
-        do {
-            auto datapacket = listenDataTCP(socket_c);
-						listening = true;
-						for(const string & captured_data : datapacket){
-							if(captured_data == "RECONNECT") listening = false;
-							handleMessage(captured_data);
-        		}
-        } while (listening);
-    }
+//
+//        do {
+//            auto datapacket = listenDataTCP(socket_c);
+//						listening = true;
+//						for(const string & captured_data : datapacket){
+//							if(captured_data == "RECONNECT") listening = false;
+//							handleMessage(captured_data);
+//        		}
+//        } while (listening);
+//    }
+//
+//    while (true) {
+//        std::this_thread::sleep_for(std::chrono::seconds(10));
+//				close(socket_c);
+//				lstm_model.reset();
+//				rl_model.reset();
+//        main();
+//    }
+//
+                std::string captured_data_end;
+                do {
+                    for (const auto& captured_data : listenDataTCP(socket_c)) {
+                        try {
+                            captured_data_end = captured_data;
+                            OptimizerEngine::getEngine()->startManeuverFeedback();
 
-    while (true) {
-        std::this_thread::sleep_for(std::chrono::seconds(10));
-				close(socket_c);
-				lstm_model.reset();
-				rl_model.reset();
-        main();
-    }
+                            auto document{parse(captured_data)};
+                            message_type messageType = filterInput(document);
+                            if (captured_data == "\n" || captured_data.empty()) {
+                                messageType = message_type::heart_beat;
+                            }
+
+                            if (args["computation_with_ai"].GetBool()) {
+                                switch (messageType) {
+                                    case message_type::notify_add:
+                                        handleNotifyAdd(document);
+                                        computeManeuvers();
+                                        break;
+                                    case message_type::notify_delete:
+                                        handleNotifyDelete(document);
+                                        break;
+                                    case message_type::subscription_response:
+                                        subscriptionResponse = handleSubscriptionResponse(document);
+                                        break;
+                                    case message_type::unsubscription_response:
+                                        handleUnSubscriptionResponse(document);
+                                        break;
+                                    case message_type::trajectory_feedback:
+                                        if (!handleTrajectoryFeedback(document)) {
+                                            computeManeuvers();
+                                        }
+                                        break;
+                                    case message_type::heart_beat:
+                                        break;
+                                    case message_type::reconnect:
+                                        logger::write("Reconnecting");
+                                        break;
+                                    default:
+                                        logger::write("error: couldn't handle message " + captured_data);
+                                        break;
+                                }
+                            } else {
+                                switch (messageType) {
+                                    case message_type::notify_add:
+                                        handleNotifyAdd(document);
+                                        OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+                                        break;
+                                    case message_type::notify_delete:
+                                        handleNotifyDelete(document);
+                                        break;
+                                    case message_type::subscription_response:
+                                        subscriptionResponse = handleSubscriptionResponse(document);
+                                        break;
+                                    case message_type::unsubscription_response:
+                                        handleUnSubscriptionResponse(document);
+                                        break;
+                                    case message_type::trajectory_feedback:
+                                        if (!handleTrajectoryFeedback(document)) {
+                                            OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+                                        }
+                                        break;
+                                    case message_type::heart_beat:
+                                        break;
+                                    case message_type::reconnect:
+                                        logger::write("Reconnecting");
+                                        break;
+                                    default:
+                                        logger::write("error: couldn't handle message " + captured_data);
+                                        break;
+                                }
+                            }
+                        } catch (const std::exception &e) {
+                            logger::write("[ERROR] Malformed JSON");
+                        }
+                    }
+                } while (captured_data_end != "RECONNECT");
+                std::cout << "Target seems disconnected -> next attempt in 10 sec." << std::endl;
+                OptimizerEngine::getEngine()->pauseManeuverFeedback();
+                std::this_thread::sleep_for(std::chrono::seconds(10));
+            }
+        }
+    });
+
+    OptimizerEngine::getEngine()->getThread()->join();
+    mainT.join();
 }

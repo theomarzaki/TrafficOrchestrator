@@ -24,18 +24,23 @@ private:
 
     std::map<std::string,Timebase_Telemetry_Waypoint> game;
     std::atomic_bool kill;
+    std::atomic_bool pause;
+    std::shared_ptr<std::thread> optimizerT;
 
     OptimizerEngine();
 
-    void launchBatch(std::atomic_bool& kill, size_t interval);
+    void launchBatch(std::atomic_bool& kill, std::atomic_bool& pause, size_t interval);
 
 public:
 
     static Timebase_Telemetry_Waypoint createTelemetryElementFromRoadUser(const std::shared_ptr<RoadUser>& car);
-    static shared_ptr<ManeuverRecommendation> telemetryStructToManeuverRecommendation(Timebase_Telemetry_Waypoint car);
+    static std::shared_ptr<ManeuverRecommendation> telemetryStructToManeuverRecommendation(Timebase_Telemetry_Waypoint car);
     static std::shared_ptr<OptimizerEngine> getEngine();
 
-    void stopManeuverFeedback(bool stop);
+    std::shared_ptr<std::thread> getThread();
+    void killOptimizer();
+    void startManeuverFeedback();
+    void pauseManeuverFeedback();
     void updateSimulationState(std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> cars);
     std::unique_ptr<std::list<Timebase_Telemetry_Waypoint>> getSimulationResult();
 

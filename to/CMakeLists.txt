@@ -22,13 +22,14 @@ add_executable(${PROJECT_NAME} exchange.cpp
         models/database.cpp
         connectors/network_interface.cpp
         connectors/detection_interface.cpp
+        optimizer/optimizer_engine.cpp
         logger/logger.cpp) #cmake is a stupid shit
 
 target_link_libraries(${PROJECT_NAME}
                         stdc++fs
                         controlers
-                        optimizer
                         models
+                        optimizer
                         mapper
                         logger
                         includes)
