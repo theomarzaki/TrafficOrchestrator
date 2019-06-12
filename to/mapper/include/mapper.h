@@ -92,7 +92,6 @@ public:
     static std::shared_ptr<Mapper> getMapper();
 
     static double toRadian(double value);
-
     static double toDegree(double value);
 
     static double distanceBetween2GPSCoordinates(double latitude, double longitude,
@@ -106,6 +105,7 @@ public:
 
     std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude, int laneId = -1);
 
+    
 };
 
 #endif

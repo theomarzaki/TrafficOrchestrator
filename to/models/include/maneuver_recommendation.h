@@ -83,39 +83,22 @@ public:
     friend std::ostream &operator<<(ostream &os, ManeuverRecommendation *maneuverRec); // Overload << to print a recommendation.
 
     string getType();
-
     string getContext();
-
     string getOrigin();
-
     string getVersion();
-
     uint64_t getTimestamp();
-
     string getUuidVehicle();
-
     string getUuidTo();
-
     string getUuidManeuver();
-
     vector<std::shared_ptr<Waypoint>> getWaypoints();
-
     uint64_t getTimestampAction();
-
     uint32_t getLatitudeAction();
-
     uint32_t getLongitudeAction();
-
     uint16_t getSpeedAction();
-
     uint4 getLanePositionAction();
-
     string getSignature();
-
     string getSourceUUID();
-
     string getUUID();
-
     string getMessageID();
 
     void setType(string);

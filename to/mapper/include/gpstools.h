@@ -15,8 +15,10 @@ struct Gps_Point {
 };
 
 struct Timebase_Telemetry_Waypoint {
-    std::string id;
     Gps_Point coordinates;
+    std::string uuid;
+    bool connected;
+    int laneId;
     long timestamp;
     double heading;
     double speed;

@@ -1,5 +1,3 @@
-#include <utility>
-
 // This is the Main script that brings all the components together
 
 // Obtains TO connection data from configuration file and starts a connection and listens
@@ -8,6 +6,7 @@
 
 // Modified by : Omar Nassef(KCL)
 
+#include <utility>
 #include <cstdio>
 #include <fstream>
 #include <string>
@@ -45,7 +44,6 @@ using namespace rapidjson;
 using namespace experimental;
 using namespace std::chrono;
 
-OptimizerEngine optimizerEngine;
 auto database{std::make_shared<Database>()};
 std::shared_ptr<SubscriptionResponse> subscriptionResponse;
 
@@ -407,8 +405,6 @@ void handleMessage(const string &captured_data){
 
 
 int main() {
-
-    //optimizerengine{std::make_shared<OptimizerEngine>(database)};
 
     auto returnCode{0};
 

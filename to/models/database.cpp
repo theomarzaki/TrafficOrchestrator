@@ -41,10 +41,9 @@ void Database::upsert(shared_ptr<RoadUser> roadUser) {
 *   @param roadUser is a RoadUser pointer.
 */
 void Database::deleteRoadUser(string uuid) {
-  const auto &iterator{database.find(uuid)};
+  const auto &iterator{database.find(uuid)}; // iterator still a pointer tho.
   if (iterator != database.end()) {
-    //FIXME: huge memory leak. Need to find how to delete a pointer in a map
-//    delete iterator->second; // NOT WORKING
+    delete &iterator->second; // So you need to dereference it.
     database.erase(uuid);
   }
 }
@@ -83,9 +82,18 @@ int Database::getSize() {
 }
 
 vector<shared_ptr<RoadUser>> Database::findAll() {
-  auto values = vector<shared_ptr<RoadUser>>();
-  for(auto elem : database) {
+  auto values{vector<shared_ptr<RoadUser>>()};
+  for(auto& elem : database) {
     values.push_back(elem.second);
   }
   return values;
 }
+
+std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> Database::dump() {
+    auto values{std::make_unique<std::list<shared_ptr<RoadUser>>>()};
+    for(auto& elem : database) {
+        values->push_back(elem.second);
+    }
+    return std::move(values);
+}
+

@@ -47,7 +47,7 @@ void Mapper::createMapContainer(std::unique_ptr<rapidjson::Document> json) { // 
                     nodeStruct.longitude = node.HasMember("long") ? node["long"].GetDouble() : 220.0;
                     laneStruct.nodes.push_back(nodeStruct);
                 }
-                roadStruct.lanes.insert( std::pair<int,Lane_Descriptor>(laneStruct.id,laneStruct));
+                roadStruct.lanes.insert({laneStruct.id,laneStruct});
             }
             m_roads.push_back(roadStruct);
         }
@@ -132,7 +132,7 @@ Mapper::Gps_Descriptor Mapper::getPositionDescriptor(double latitude, double lon
                 auto lanes{std::map<int,Lane_Descriptor>()};
                 auto lane = road.lanes.find(forcedLaneID);
                 if (lane != road.lanes.end()) {
-                    lanes.insert(std::pair<int,Lane_Descriptor>(lane->first,lane->second));
+                    lanes.insert({lane->first,lane->second});
                     road.lanes = lanes;
                 } else {
                     logger::write(std::string("[ERROR] The lane "+std::to_string(forcedLaneID)+" don't exist in the map."));

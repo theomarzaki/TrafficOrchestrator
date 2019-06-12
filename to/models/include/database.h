@@ -11,6 +11,7 @@
 #include <memory>
 #include <algorithm>
 #include <sstream>
+#include <list>
 
 #include "road_user.h"
 
@@ -33,6 +34,7 @@ public:
     std::shared_ptr<RoadUser> findRoadUser(string uuid);
     int getSize();
     vector<shared_ptr<RoadUser>> findAll();
+    std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> dump();
 };
 
 #endif //TO_DATABASE_H
