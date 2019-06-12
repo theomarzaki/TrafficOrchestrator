@@ -28,20 +28,18 @@
 
 using namespace rapidjson;
 
-std::string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq);
+namespace SendInterface {
 
-std::string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq);
+    static int pre_socket;
+    static std::string connectionAddress;
+    static int port;
+    static std::string receiveAddress;
+    static int receivePort;
 
-/**
-*
-*	@description Uses a trajectory recommendation to write a JSON string
-*	containing all the fields relating to that recommendation.
-*
-*	@param trajectoryRec is a pointer to a TrajectoryRecommendation.
-*	@return strbuf.GetString() is the trajectory recommendation in JSON string format.
-*/
-std::string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec);
-
-int sendDataTCP(int pre_socket, std::string connectionAdress, int port, std::string receiveAddress, int receivePort, std::string jsonString);
+    static std::string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq);
+    static std::string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq);
+    static std::string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec);
+    static int sendTCP(string jsonString);
+};
 
 #endif

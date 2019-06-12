@@ -5,7 +5,7 @@
 // Modified by: Omar Nassef (KCL)
 #include "include/network_interface.h"
 
-std::string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq) {
+std::string SendInterface::createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq) {
     Document document;
 
     document.SetObject();
@@ -70,7 +70,7 @@ std::string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> s
 
 }
 
-std::string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq) {
+std::string SendInterface::createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq) {
     Document document;
 
     document.SetObject();
@@ -105,15 +105,7 @@ std::string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionReques
 
 }
 
-/**
-*
-*	@description Uses a trajectory recommendation to write a JSON string
-*	containing all the fields relating to that recommendation.
-*
-*	@param trajectoryRec is a pointer to a TrajectoryRecommendation.
-*	@return strbuf.GetString() is the trajectory recommendation in JSON std::string format.
-*/
-std::string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec) {
+std::string SendInterface::createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec) {
 
     Document document; // RapidJSON Document to build JSON message.
     document.SetObject();
@@ -180,7 +172,7 @@ std::string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverR
 
 }
 
-int sendDataTCP(int pre_socket, std::string connectionAddress, int port, std::string receiveAddress, int receivePort, std::string jsonString) {
+int SendInterface::sendTCP(string jsonString) {
     int socket_connect;
     struct sockaddr_in address, client_addr;
 

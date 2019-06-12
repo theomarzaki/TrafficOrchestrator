@@ -12,7 +12,7 @@
 OptimizerEngine::OptimizerEngine() {
     kill.store(false);
     pause.store(true);
-    launchBatch(kill, pause, INTERVAL_TIME);
+    setBatch(INTERVAL_TIME);
 }
 
 void OptimizerEngine::killOptimizer() {
@@ -31,8 +31,8 @@ std::shared_ptr<std::thread> OptimizerEngine::getThread() {
     return optimizerT;
 }
 
-void OptimizerEngine::launchBatch(std::atomic_bool& kill, std::atomic_bool& pause, size_t interval) {
-    optimizerT = std::make_shared<std::thread>([= ,&pause, &kill]() mutable {
+void OptimizerEngine::setBatch(size_t interval) {
+    optimizerT = std::make_shared<std::thread>([=]() mutable {
         while (!kill) {
             while (!pause) {
                 std::cout << "Calculate Maneuver feedback" << std::endl;
@@ -41,7 +41,7 @@ void OptimizerEngine::launchBatch(std::atomic_bool& kill, std::atomic_bool& paus
                 for (auto &car : *cars) {
                     recos.push_back(telemetryStructToManeuverRecommendation(car));
                 }
-    //            sendDataTCP();
+//                sendTCP();
                 std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             }
             logger::write("WAIT");

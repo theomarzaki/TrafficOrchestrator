@@ -29,7 +29,7 @@ private:
 
     OptimizerEngine();
 
-    void launchBatch(std::atomic_bool& kill, std::atomic_bool& pause, size_t interval);
+    void setBatch(size_t interval);
 
 public:
 

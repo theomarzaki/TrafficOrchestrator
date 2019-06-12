@@ -31,13 +31,13 @@
 
 #include <logger.h>
 #include <optimizer_engine.h>
+#include <network_interface.h>
 #include <database.h>
 #include <maneuver_feedback.h>
 #include <unsubscription_response.h>
 #include <subscription_response.h>
 #include <optimizer_engine.h>
 #include <detection_interface.h>
-#include "connectors/include/network_interface.h"
 #include <create_trajectory.h>
 
 using namespace rapidjson;
@@ -46,12 +46,6 @@ using namespace std::chrono;
 
 auto database{std::make_shared<Database>()};
 std::shared_ptr<SubscriptionResponse> subscriptionResponse;
-
-string sendAddress;
-int sendPort;
-string receiveAddress;
-int receivePort;
-
 
 pair<int,int> northeast;
 pair<int,int> southwest;
@@ -176,7 +170,7 @@ void generateReqID(){
 void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommendation>> &v) {
 	for(const auto &m : v) {
 		m->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
-        auto maneuverJson{createManeuverJSON(m)};
+        auto maneuverJson{SendInterface::createManeuverJSON(m)};
         logger::write(maneuverJson);
         // we trace the emission as far as possible
         std::stringstream log;
@@ -190,7 +184,7 @@ void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommen
         std::cout << log.str();
         std::cout.flush();
         // FIXME when we use socket_c, we've go an error
-        sendDataTCP(socket_c, sendAddress, sendPort, receiveAddress, receivePort, maneuverJson);
+        SendInterface::sendTCP(maneuverJson);
 	}
 }
 
@@ -209,8 +203,8 @@ void initiateSubscription() {
 	// FIXME do not cast an unsigned int 64 from a long
 	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
-    socket_c = sendDataTCP(-999, sendAddress, sendPort, receiveAddress, receivePort, createSubscriptionRequestJSON(subscriptionReq));
-	logger::write("Sent subscription request to " + sendAddress + ":"+ to_string(sendPort));
+    socket_c = SendInterface::sendTCP(SendInterface::createSubscriptionRequestJSON(subscriptionReq));
+	logger::write("Sent subscription request to " + SendInterface::connectionAddress + ":"+ to_string(SendInterface::port));
 }
 
 void initiateUnsubscription() {
@@ -221,7 +215,7 @@ void initiateUnsubscription() {
 	unsubscriptionReq->setSubscriptionId(request_id);
 	// FIXME do not cast an unsigned int 64 from a long
 	unsubscriptionReq->setTimestamp(static_cast<uint64_t>(timeUnsub.count()));
-	sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createUnsubscriptionRequestJSON(unsubscriptionReq));
+    SendInterface::sendTCP(SendInterface::createUnsubscriptionRequestJSON(unsubscriptionReq));
 }
 
 void handleSubscriptionResponse(Document &document) {
@@ -312,22 +306,6 @@ void handleNotifyDelete(Document &document) {
 
 }
 
-void inputSendAddress(string address) {
-	sendAddress = std::move(address);
-}
-
-void inputSendPort(int port) {
-	sendPort = port;
-}
-
-void inputReceivePort(int port) {
-	receivePort = port;
-}
-
-void inputReceiveAddress(string address) {
-	receiveAddress = std::move(address);
-}
-
 void inputNorthEast(int longt, int lat){
 	northeast = make_pair(longt,lat);
 }
@@ -406,47 +384,8 @@ void handleMessage(const string &captured_data){
 
 int main() {
 
-    std::thread mainT([=]() mutable {
-        while(true) {
-
-            FILE *file = fopen("include/TO_config.json", "r");
-            if (file == nullptr) {
-                logger::write("Config File failed to load.");
-                OptimizerEngine::getEngine()->killOptimizer();
-                return 1;
-            } else if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
-                logger::write("Unable to create the logs directory, we stop");
-                OptimizerEngine::getEngine()->killOptimizer();
-                return 2;
-            } else {
-                lstm_model = torch::jit::load("include/lstm_model.pt");
-
-                if (lstm_model != nullptr) logger::write("import of lstm model successful\n");
-
-                rl_model = torch::jit::load("include/rl_model_deuling.pt");
-
-                if (rl_model != nullptr) logger::write("import of rl model successful\n");
-
-
-                char readBuffer[65536];
-                FileReadStream is(file, readBuffer, sizeof(readBuffer));
-                Document args;
-                args.ParseStream(is);
-                fclose(file);
-
-                inputSendAddress(args["sendAddress"].GetString());
-                inputSendPort(args["sendPort"].GetInt());
-                inputNorthEast(args["northeast"]["longitude"].GetInt(), args["northeast"]["latitude"].GetInt());
-                inputSouthWest(args["southwest"]["longitude"].GetInt(), args["southwest"]["latitude"].GetInt());
-                inputReceivePort(args["receivePort"].GetInt());
-                inputReceiveAddress(args["receiveAddress"].GetString());
-
-                initiateSubscription();
-                bool listening = false;
-                string reconnect_flag;
-
-                // terminate TO on abortion/interruption
-                signal(SIGINT, terminate_to);
+    char readBuffer[65536];
+    Document args;
 
 //
 //        do {
@@ -467,6 +406,9 @@ int main() {
 //        main();
 //    }
 //
+
+    std::thread mainT([=, &args]() mutable {
+            while(true) {
                 std::string captured_data_end;
                 do {
                     for (const auto& captured_data : listenDataTCP(socket_c)) {
@@ -548,9 +490,52 @@ int main() {
                 OptimizerEngine::getEngine()->pauseManeuverFeedback();
                 std::this_thread::sleep_for(std::chrono::seconds(10));
             }
-        }
     });
 
-    OptimizerEngine::getEngine()->getThread()->join();
-    mainT.join();
+    auto file{fopen("include/TO_config.json", "r")};
+    if (file == nullptr) {
+        logger::write("[ERROR] Config File failed to load -> Abort");
+        return 1;
+    } else if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
+        logger::write("[ERROR] Unable to create the logs directory -> Abort");
+        return 2;
+    } else {
+
+        lstm_model = torch::jit::load("include/lstm_model.pt");
+        if (lstm_model == nullptr) {
+            logger::write("[ERROR] import of lstm model unsuccessful -> Abort\n");
+            return 3;
+        }
+        logger::write("[INFO] import of lstm model successful\n");
+
+        rl_model = torch::jit::load("include/rl_model_deuling.pt");
+        if (rl_model == nullptr) {
+            logger::write("[ERROR] import of rl model unsuccessful -> Abort\n");
+            return 4;
+        }
+        logger::write("[INFO] import of rl model successful\n");
+
+        FileReadStream is(file, readBuffer, sizeof(readBuffer));
+        args.ParseStream(is);
+        fclose(file);
+
+        SendInterface::connectionAddress = args["sendAddress"].GetString();
+        SendInterface::port = args["sendPort"].GetInt();
+        SendInterface::receivePort = args["receivePort"].GetInt();
+        SendInterface::receiveAddress = args["receiveAddress"].GetString();
+
+        inputNorthEast(args["northeast"]["longitude"].GetInt(), args["northeast"]["latitude"].GetInt());
+        inputSouthWest(args["southwest"]["longitude"].GetInt(), args["southwest"]["latitude"].GetInt());
+
+        initiateSubscription();
+        string reconnect_flag;
+
+        // terminate TO on abortion/interruption
+        signal(SIGINT, terminate_to);
+
+        OptimizerEngine::getEngine()->getThread()->join();
+        mainT.join();
+    }
+
+    return 0;
 }
