@@ -5,6 +5,7 @@
 #include "include/optimizer_engine.h"
 
 #include <mapper.h>
+#include <network_interface.h>
 
 #define SPEED_REAJUST_RATIO 100
 #define SIGNIFCAND 7
@@ -35,16 +36,14 @@ void OptimizerEngine::setBatch(size_t interval) {
     optimizerT = std::make_shared<std::thread>([=]() mutable {
         while (!kill) {
             while (!pause) {
-                std::cout << "Calculate Maneuver feedback" << std::endl;
                 auto cars{this->getSimulationResult()}; // TODO Server send
-                auto recos{vector<std::shared_ptr<ManeuverRecommendation>>()};
                 for (auto &car : *cars) {
-                    recos.push_back(telemetryStructToManeuverRecommendation(car));
+                    SendInterface::sendTCP(SendInterface::createManeuverJSON(telemetryStructToManeuverRecommendation(car)));
                 }
-//                sendTCP();
+                logger::write("[INFOS] Maneuver send -> "+std::to_string(cars->size())+" cars reached");
                 std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             }
-            logger::write("WAIT");
+            logger::write("Connassse");
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         }
     });

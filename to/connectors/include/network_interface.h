@@ -30,16 +30,16 @@ using namespace rapidjson;
 
 namespace SendInterface {
 
-    static int pre_socket;
-    static std::string connectionAddress;
-    static int port;
-    static std::string receiveAddress;
-    static int receivePort;
+    extern int m_socket;
+    extern std::string connectionAddress;
+    extern int port;
+    extern std::string receiveAddress;
+    extern int receivePort;
 
-    static std::string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq);
-    static std::string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq);
-    static std::string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec);
-    static int sendTCP(string jsonString);
-};
+    std::string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq);
+    std::string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq);
+    std::string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec);
+    int sendTCP(std::string jsonString);
+}
 
 #endif

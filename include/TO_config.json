@@ -1,6 +1,6 @@
 {
-  "sendAddress": "127.0.0.1",
-  "sendPort": 8124,
+  "sendAddress": "129.192.68.182",
+  "sendPort": 9202,
   "receiveAddress": "0.0.0.0",
   "receivePort": 7000,
   "northeast": {

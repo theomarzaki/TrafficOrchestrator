@@ -30,8 +30,6 @@
 #include "road_safety.cpp"
 
 #include <logger.h>
-#include <optimizer_engine.h>
-#include <network_interface.h>
 #include <database.h>
 #include <maneuver_feedback.h>
 #include <unsubscription_response.h>
@@ -39,6 +37,7 @@
 #include <optimizer_engine.h>
 #include <detection_interface.h>
 #include <create_trajectory.h>
+#include <network_interface.h>
 
 using namespace rapidjson;
 using namespace experimental;
@@ -220,7 +219,7 @@ void initiateUnsubscription() {
 
 void handleSubscriptionResponse(Document &document) {
 	logger::write("Subscription Response Received.");
-	// return detectedToSubscription(assignSubResponseVals(document));
+//	return detectedToSubscription(assignSubResponseVals(document));
 }
 
 void handleUnSubscriptionResponse(Document &document) {
@@ -297,13 +296,10 @@ bool handleTrajectoryFeedback(Document &document) {
 void handleNotifyDelete(Document &document) {
 	logger::write("Notify delete Received.");
 	auto uuidsVector{assignNotificationDeleteVals(document)};
-	for_each(uuidsVector.begin(), uuidsVector.end(),
-					 [](string uuid)
-					 {
-							 database->deleteRoadUser(uuid);
-							 logger::write("Deleted road user " + uuid);
-					 });
-
+	for_each(uuidsVector.begin(), uuidsVector.end(), [](string uuid) {
+         database->deleteRoadUser(uuid);
+         logger::write("Deleted road user " + uuid);
+	});
 }
 
 void inputNorthEast(int longt, int lat){
@@ -407,135 +403,136 @@ int main() {
 //    }
 //
 
-    std::thread mainT([=, &args]() mutable {
-            while(true) {
-                std::string captured_data_end;
-                do {
-                    for (const auto& captured_data : listenDataTCP(socket_c)) {
-                        try {
-                            captured_data_end = captured_data;
-                            OptimizerEngine::getEngine()->startManeuverFeedback();
-
-                            auto document{parse(captured_data)};
-                            message_type messageType = filterInput(document);
-                            if (captured_data == "\n" || captured_data.empty()) {
-                                messageType = message_type::heart_beat;
-                            }
-
-                            if (args["computation_with_ai"].GetBool()) {
-                                switch (messageType) {
-                                    case message_type::notify_add:
-                                        handleNotifyAdd(document);
-                                        computeManeuvers();
-                                        break;
-                                    case message_type::notify_delete:
-                                        handleNotifyDelete(document);
-                                        break;
-                                    case message_type::subscription_response:
-                                        subscriptionResponse = handleSubscriptionResponse(document);
-                                        break;
-                                    case message_type::unsubscription_response:
-                                        handleUnSubscriptionResponse(document);
-                                        break;
-                                    case message_type::trajectory_feedback:
-                                        if (!handleTrajectoryFeedback(document)) {
-                                            computeManeuvers();
-                                        }
-                                        break;
-                                    case message_type::heart_beat:
-                                        break;
-                                    case message_type::reconnect:
-                                        logger::write("Reconnecting");
-                                        break;
-                                    default:
-                                        logger::write("error: couldn't handle message " + captured_data);
-                                        break;
-                                }
-                            } else {
-                                switch (messageType) {
-                                    case message_type::notify_add:
-                                        handleNotifyAdd(document);
-                                        OptimizerEngine::getEngine()->updateSimulationState(database->dump());
-                                        break;
-                                    case message_type::notify_delete:
-                                        handleNotifyDelete(document);
-                                        break;
-                                    case message_type::subscription_response:
-                                        subscriptionResponse = handleSubscriptionResponse(document);
-                                        break;
-                                    case message_type::unsubscription_response:
-                                        handleUnSubscriptionResponse(document);
-                                        break;
-                                    case message_type::trajectory_feedback:
-                                        if (!handleTrajectoryFeedback(document)) {
-                                            OptimizerEngine::getEngine()->updateSimulationState(database->dump());
-                                        }
-                                        break;
-                                    case message_type::heart_beat:
-                                        break;
-                                    case message_type::reconnect:
-                                        logger::write("Reconnecting");
-                                        break;
-                                    default:
-                                        logger::write("error: couldn't handle message " + captured_data);
-                                        break;
-                                }
-                            }
-                        } catch (const std::exception &e) {
-                            logger::write("[ERROR] Malformed JSON");
-                        }
-                    }
-                } while (captured_data_end != "RECONNECT");
-                std::cout << "Target seems disconnected -> next attempt in 10 sec." << std::endl;
-                OptimizerEngine::getEngine()->pauseManeuverFeedback();
-                std::this_thread::sleep_for(std::chrono::seconds(10));
-            }
-    });
-
     auto file{fopen("include/TO_config.json", "r")};
     if (file == nullptr) {
         logger::write("[ERROR] Config File failed to load -> Abort");
         return 1;
-    } else if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
+    }
+    if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
         logger::write("[ERROR] Unable to create the logs directory -> Abort");
         return 2;
-    } else {
-
-        lstm_model = torch::jit::load("include/lstm_model.pt");
-        if (lstm_model == nullptr) {
-            logger::write("[ERROR] import of lstm model unsuccessful -> Abort\n");
-            return 3;
-        }
-        logger::write("[INFO] import of lstm model successful\n");
-
-        rl_model = torch::jit::load("include/rl_model_deuling.pt");
-        if (rl_model == nullptr) {
-            logger::write("[ERROR] import of rl model unsuccessful -> Abort\n");
-            return 4;
-        }
-        logger::write("[INFO] import of rl model successful\n");
-
-        FileReadStream is(file, readBuffer, sizeof(readBuffer));
-        args.ParseStream(is);
-        fclose(file);
-
-        SendInterface::connectionAddress = args["sendAddress"].GetString();
-        SendInterface::port = args["sendPort"].GetInt();
-        SendInterface::receivePort = args["receivePort"].GetInt();
-        SendInterface::receiveAddress = args["receiveAddress"].GetString();
-
-        inputNorthEast(args["northeast"]["longitude"].GetInt(), args["northeast"]["latitude"].GetInt());
-        inputSouthWest(args["southwest"]["longitude"].GetInt(), args["southwest"]["latitude"].GetInt());
-
-        initiateSubscription();
-        string reconnect_flag;
-
-        // terminate TO on abortion/interruption
-        signal(SIGINT, terminate_to);
-
-        OptimizerEngine::getEngine()->getThread()->join();
-        mainT.join();
     }
+
+    lstm_model = torch::jit::load("include/lstm_model.pt");
+    if (lstm_model == nullptr) {
+        logger::write("[ERROR] import of lstm model unsuccessful -> Abort\n");
+        return 3;
+    }
+    logger::write("[INFO] import of lstm model successful\n");
+
+    rl_model = torch::jit::load("include/rl_model_deuling.pt");
+    if (rl_model == nullptr) {
+        logger::write("[ERROR] import of rl model unsuccessful -> Abort\n");
+        return 4;
+    }
+    logger::write("[INFO] import of rl model successful\n");
+
+    FileReadStream is(file, readBuffer, sizeof(readBuffer));
+    args.ParseStream(is);
+    fclose(file);
+
+    SendInterface::connectionAddress = args["sendAddress"].GetString();
+    SendInterface::port = args["sendPort"].GetInt();
+    SendInterface::receivePort = args["receivePort"].GetInt();
+    SendInterface::receiveAddress = args["receiveAddress"].GetString();
+
+    inputNorthEast(args["northeast"]["longitude"].GetInt(), args["northeast"]["latitude"].GetInt());
+    inputSouthWest(args["southwest"]["longitude"].GetInt(), args["southwest"]["latitude"].GetInt());
+
+    initiateSubscription();
+
+    // terminate TO on abortion/interruption
+    signal(SIGINT, terminate_to);
+
+    std::thread mainT([=, &args]() {
+        while(true) {
+            std::string captured_data_end;
+            do {
+                for (const auto& captured_data : listenDataTCP(socket_c)) {
+                    try {
+
+                        OptimizerEngine::getEngine()->startManeuverFeedback();
+
+                        captured_data_end = captured_data;
+
+                        auto document{parse(captured_data)};
+                        message_type messageType = filterInput(document);
+                        if (captured_data == "\n" || captured_data.empty()) {
+                            messageType = message_type::heart_beat;
+                        }
+
+                        if (args["computation_with_ai"].GetBool()) {
+                            switch (messageType) {
+                                case message_type::notify_add:
+                                    handleNotifyAdd(document);
+                                    computeManeuvers();
+                                    break;
+                                case message_type::notify_delete:
+                                    handleNotifyDelete(document);
+                                    break;
+                                case message_type::subscription_response:
+                                    handleSubscriptionResponse(document);
+                                    break;
+                                case message_type::unsubscription_response:
+                                    handleUnSubscriptionResponse(document);
+                                    break;
+                                case message_type::trajectory_feedback:
+                                    if (!handleTrajectoryFeedback(document)) {
+                                        computeManeuvers();
+                                    }
+                                    break;
+                                case message_type::heart_beat:
+                                    break;
+                                case message_type::reconnect:
+                                    logger::write("Reconnecting");
+                                    break;
+                                default:
+                                    logger::write("error: couldn't handle message " + captured_data);
+                                    break;
+                            }
+                        } else {
+                            switch (messageType) {
+                                case message_type::notify_add:
+                                    handleNotifyAdd(document);
+                                    OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+                                    break;
+                                case message_type::notify_delete:
+                                    handleNotifyDelete(document);
+                                    break;
+                                case message_type::subscription_response:
+                                    handleSubscriptionResponse(document);
+                                    break;
+                                case message_type::unsubscription_response:
+                                    handleUnSubscriptionResponse(document);
+                                    break;
+                                case message_type::trajectory_feedback:
+                                    if (!handleTrajectoryFeedback(document)) {
+                                        OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+                                    }
+                                    break;
+                                case message_type::heart_beat:
+                                    break;
+                                case message_type::reconnect:
+                                    logger::write("Reconnecting");
+                                    break;
+                                default:
+                                    logger::write("error: couldn't handle message " + captured_data);
+                                    break;
+                            }
+                        }
+                    } catch (const std::exception &e) {
+                        logger::write("[ERROR] Malformed JSON");
+                    }
+                }
+            } while (captured_data_end != "RECONNECT");
+            std::cout << "Target seems disconnected -> next attempt in 10 sec." << std::endl;
+            OptimizerEngine::getEngine()->pauseManeuverFeedback();
+            std::this_thread::sleep_for(std::chrono::seconds(10));
+        }
+    });
+
+    OptimizerEngine::getEngine()->getThread()->join();
+    mainT.join();
 
     return 0;
 }

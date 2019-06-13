@@ -3,7 +3,14 @@
 // Created by: KCL
 
 // Modified by: Omar Nassef (KCL)
+#include <logger.h>
 #include "include/network_interface.h"
+
+int SendInterface::m_socket = -999;
+std::string SendInterface::connectionAddress;
+int SendInterface::port;
+std::string SendInterface::receiveAddress;
+int SendInterface::receivePort;
 
 std::string SendInterface::createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq) {
     Document document;
@@ -172,53 +179,37 @@ std::string SendInterface::createManeuverJSON(std::shared_ptr<ManeuverRecommenda
 
 }
 
-int SendInterface::sendTCP(string jsonString) {
-    int socket_connect;
+int SendInterface::sendTCP(std::string jsonString) {
     struct sockaddr_in address, client_addr;
 
-    jsonString = jsonString + "\n";
+    jsonString += "\n";
 
-    /* Create a socket. */
-    if (pre_socket == -999) {
-        socket_connect = socket(AF_INET, SOCK_STREAM, 0);
-        address.sin_addr.s_addr = inet_addr(connectionAddress.c_str());
+    if (m_socket == -999) {
+        m_socket = socket(AF_INET, SOCK_STREAM, 0);
+        address.sin_addr.s_addr = inet_addr(SendInterface::connectionAddress.c_str());
         address.sin_family = AF_INET;
-        address.sin_port = htons(port);
+        address.sin_port = htons(SendInterface::port);
 
         memset(&client_addr, 0, sizeof(client_addr));
         client_addr.sin_family = AF_INET;
-        client_addr.sin_port = htons(receivePort);
-        client_addr.sin_addr.s_addr = inet_addr(receiveAddress.c_str());
+        client_addr.sin_port = htons(SendInterface::receivePort);
+        client_addr.sin_addr.s_addr = inet_addr(SendInterface::receiveAddress.c_str());
 
-        // SEND ERROR HERE FOR TR (NEW VERSION) --> remove int pre_socket
-
-        ::bind(socket_connect, (struct sockaddr *) &client_addr, sizeof(client_addr));
+        ::bind(m_socket, (struct sockaddr *) &client_addr, sizeof(client_addr));
 
         /* Connect to the remote server. */
-        auto validator{connect(socket_connect, (struct sockaddr *) &address, sizeof(address))};
-        if (validator < 0) {
-            logger::write("Send: Connection Error.\n");
+        if (connect(m_socket, (struct sockaddr *) &address, sizeof(address)) < 0) {
+            logger::write("[ERROR] Send: Connection Error.\n");
         }
-    } else {
-        socket_connect = pre_socket;
     }
-    if (socket_connect == -1) {
-        logger::write("Send: Socket was not created.");
+    if (m_socket == -1) {
+        logger::write("[ERROR] Send: Socket was not created.");
     } else {
         // Send: Connected!
         // handle properly the SIGPIPE with MSG_NOSIGNAL
-        auto validator{send(socket_connect, jsonString.c_str(), jsonString.size(), MSG_NOSIGNAL)};
-        if (validator < 0) {
-            logger::write("Send failed.\n");
+        if (send(m_socket, jsonString.c_str(), jsonString.size(), MSG_NOSIGNAL) < 0) {
+            logger::write("[ERROR] Send failed.\n");
         }
-
-    if (validator < 0) {
-        logger::write("Send failed.\n");
     }
-
-    char dataReceived[MAXIMUM_TRANSFER];
-    memset(dataReceived, 0, sizeof(dataReceived));
-    
-  }
-  return socket_connect;
+    return m_socket;
 }
