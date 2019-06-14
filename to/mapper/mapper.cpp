@@ -103,12 +103,47 @@ double Mapper::distanceBetween2GPSCoordinates(double latitude, double longitude,
     return EARTH_RADIUS * c;
 }
 
-double Mapper::distanceBetweenAPointAndAStraightLine(double xP, double yP,
-                                                            double xL, double yL,
-                                                            double xH, double yH) {
+double Mapper::getSpeed(  double speed,
+                          double acceleration,
+                          double time ) {
+    return speed + acceleration*time;
+}
+
+double Mapper::getDistance(  double speed,
+                            double acceleration,
+                            double time) {
+    return (speed + 0.5 * acceleration * time) * time;
+}
+
+Gps_Point Mapper::projectGpsPoint(  Gps_Point coord,
+                                    double distance,
+                                    double heading ) {
+    std::cout << distance << std::endl;
+    heading = toRadian(heading);
+    double lat{toRadian(coord.latitude)};
+    double lon{toRadian(coord.longitude)};
+    double gradian{distance / EARTH_RADIUS};
+
+    // Latitude calculus before longitude
+    double la{std::asin(std::sin(lat) * std::cos(gradian) + std::cos(lat) * std::sin(gradian) * std::cos(heading))};
+
+    return {
+            toDegree(la),
+            toDegree( std::fmod( lon + std::atan2( std::sin(heading) * std::sin(gradian) * std::cos(lat), std::cos(gradian) - std::sin(lat) * std::sin(la)) + M_PI, 2 * M_PI) - M_PI),
+    };
+}
+
+double Mapper::getCoeficient(   double xP, double yP,
+                                double xH, double yH ) {
+    return toDegree(std::atan2(yH - yP, xH - xP));
+}
+
+double Mapper::distanceBetweenAPointAndAStraightLine(   double xP, double yP,
+                                                        double xL, double yL,
+                                                        double xH, double yH ) {
     auto coef = (yH - yL) / (xH - xL);
     auto offset = coef*xL - yL;
-    return fabs(- coef*xP + yP - offset) / sqrt( pow(coef,2) + 1 );
+    return std::fabs(- coef*xP + yP - offset) / std::sqrt( std::pow(coef,2) + 1 );
 }
 
 Mapper::Gps_Descriptor Mapper::getPositionDescriptor(double latitude, double longitude, int forcedRoadID, int forcedLaneID) {
@@ -220,9 +255,12 @@ Mapper::Gps_Descriptor Mapper::getPositionDescriptor(double latitude, double lon
             xP = latitude < compareNode->latitude ? -xP : xP;
             yP = longitude < compareNode->longitude ? -yP : yP;
 
-            if (distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) <= lane.size/2) { // TODO implement Square B-Spline distance check
-                nearestDescription.state = Mapper_Result_State::OK;
-            }
+
+//            std::cout << getCoeficient(xP, yP, xH, yH) << std::endl;
+//
+//            if (distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) <= lane.size/2) { // TODO implement Square B-Spline distance check
+//                nearestDescription.state = Mapper_Result_State::OK;
+//            }
         } else {
             nearestDescription.state = Mapper_Result_State::OUT_OF_MAP;
             logger::write("[WARN] Coordinates out of map, at least "+std::to_string(OUT_OF_MAP_VALUE)+" m away => ("+std::to_string(latitude)+","+std::to_string(longitude)+")");

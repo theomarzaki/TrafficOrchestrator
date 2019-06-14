@@ -84,6 +84,7 @@ public:
         int nodeId;
         int laneId;
         int roadId;
+        double heading;
         std::string roadName;
     };
 
@@ -94,12 +95,27 @@ public:
     static double toRadian(double value);
     static double toDegree(double value);
 
+    static double getCoeficient(   double xP, double yP,
+                                    double xH, double yH );
+
     static double distanceBetween2GPSCoordinates(double latitude, double longitude,
                                                  double latitude2, double longitude2);
 
     static double distanceBetweenAPointAndAStraightLine(double xP, double yP,
                                                         double xL, double yL,
                                                         double xH, double yH);
+
+    static double getSpeed(  double speed,
+                              double acceleration,
+                              double time );
+
+    static double getDistance(  double speed,
+                               double accelleration,
+                               double time);
+
+    static Gps_Point projectGpsPoint(  Gps_Point coord,
+                                        double distance,
+                                        double heading);
 
     Gps_Descriptor getPositionDescriptor(double latitude, double longitude, int forcedRoadID = -1, int forcedLaneID = -1);
 

@@ -32,6 +32,7 @@ private:
     void setBatch(size_t interval);
 
 public:
+    std::mutex locker;
 
     static Timebase_Telemetry_Waypoint createTelemetryElementFromRoadUser(const std::shared_ptr<RoadUser>& car);
     static std::shared_ptr<ManeuverRecommendation> telemetryStructToManeuverRecommendation(Timebase_Telemetry_Waypoint car);
@@ -42,6 +43,7 @@ public:
     void startManeuverFeedback();
     void pauseManeuverFeedback();
     void updateSimulationState(std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> cars);
+    void removeFromSimulation(const std::string& uuid);
     std::unique_ptr<std::list<Timebase_Telemetry_Waypoint>> getSimulationResult();
 
 };

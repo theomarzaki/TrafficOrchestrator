@@ -67,8 +67,8 @@ struct Detected_Road_User {
   string position_type;
   uint16_t heading;
   uint16_t speed;
-  uint16_t acceleration;
-  uint16_t yaw_rate;
+  int16_t acceleration;
+  int16_t yaw_rate;
   float length;
   float width;
   float height;

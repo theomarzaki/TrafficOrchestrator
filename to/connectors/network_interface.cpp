@@ -179,12 +179,12 @@ std::string SendInterface::createManeuverJSON(std::shared_ptr<ManeuverRecommenda
 
 }
 
-int SendInterface::sendTCP(std::string jsonString) {
+int SendInterface::sendTCP(std::string jsonString, bool newSocket) {
     struct sockaddr_in address, client_addr;
 
     jsonString += "\n";
 
-    if (m_socket == -999) {
+    if (m_socket == -999 or newSocket) {
         m_socket = socket(AF_INET, SOCK_STREAM, 0);
         address.sin_addr.s_addr = inet_addr(SendInterface::connectionAddress.c_str());
         address.sin_family = AF_INET;

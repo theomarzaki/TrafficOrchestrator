@@ -43,7 +43,7 @@ void Database::upsert(shared_ptr<RoadUser> roadUser) {
 void Database::deleteRoadUser(string uuid) {
   const auto &iterator{database.find(uuid)}; // iterator still a pointer tho.
   if (iterator != database.end()) {
-    delete &iterator->second; // So you need to dereference it.
+//    delete &iterator->second; // So you need to dereference it.
     database.erase(uuid);
   }
 }

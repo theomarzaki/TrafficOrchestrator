@@ -7,8 +7,11 @@
 #include <mapper.h>
 #include <network_interface.h>
 
-#define SPEED_REAJUST_RATIO 100
-#define SIGNIFCAND 7
+#define HUMAN_LATENCY_FACTOR 2000
+#define LATENCY_DROP_FACTOR 800
+#define HEADING_REAJUST_RATIO 10.0
+#define SPEED_REAJUST_RATIO 100.0
+#define GPS_SIGNIFCAND 7
 
 OptimizerEngine::OptimizerEngine() {
     kill.store(false);
@@ -36,14 +39,15 @@ void OptimizerEngine::setBatch(size_t interval) {
     optimizerT = std::make_shared<std::thread>([=]() mutable {
         while (!kill) {
             while (!pause) {
+                locker.lock();
                 auto cars{this->getSimulationResult()}; // TODO Server send
                 for (auto &car : *cars) {
                     SendInterface::sendTCP(SendInterface::createManeuverJSON(telemetryStructToManeuverRecommendation(car)));
                 }
-                logger::write("[INFOS] Maneuver send -> "+std::to_string(cars->size())+" cars reached");
+                if (cars->size() > 0) logger::write("[INFOS] Maneuver send -> "+std::to_string(cars->size())+" cars reached");
+                locker.unlock();
                 std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             }
-            logger::write("Connassse");
             std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         }
     });
@@ -62,17 +66,18 @@ std::shared_ptr<OptimizerEngine> OptimizerEngine::getEngine(){
 }
 
 Timebase_Telemetry_Waypoint OptimizerEngine::createTelemetryElementFromRoadUser(const std::shared_ptr<RoadUser>& car) {
+    std::cout << car->getSpeed() << " " << static_cast<double>(car->getSpeed()/SPEED_REAJUST_RATIO) << std::endl;
     return {
             Gps_Point {
-                    (car->getLatitude() / std::pow(10,SIGNIFCAND)),
-                    (car->getLongitude() / std::pow(10,SIGNIFCAND)),
+                    (car->getLatitude() / std::pow(10,GPS_SIGNIFCAND)),
+                    (car->getLongitude() / std::pow(10,GPS_SIGNIFCAND)),
             },
             car->getUuid(),
             car->getConnected(),
             static_cast<int>(car->getLanePosition()),
-            static_cast<int>(car->getTimestamp()),
-            static_cast<double>(car->getHeading()),
-            static_cast<double>(car->getSpeed()),
+            static_cast<int64_t >(car->getTimestamp()),
+            static_cast<double>(car->getHeading()/HEADING_REAJUST_RATIO),
+            car->getSpeed()/SPEED_REAJUST_RATIO,
             static_cast<double>(car->getAcceleration()),
             static_cast<double>(car->getYawRate()),
     };
@@ -84,35 +89,25 @@ void OptimizerEngine::updateSimulationState(std::unique_ptr<std::list<std::share
             game.insert({car->getUuid(),createTelemetryElementFromRoadUser(car)});
         } else {
             auto buff{createTelemetryElementFromRoadUser(car)};
-            if (buff.timestamp > game[car->getUuid()].timestamp) {
-                game[car->getUuid()] = buff;
-            }
+            game[car->getUuid()] = buff; //TODO Filter removed
         }
     }
 }
 
-std::unique_ptr<std::list<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimulationResult() {
-    auto cars{std::make_unique<std::list<Timebase_Telemetry_Waypoint>>()};
-    for(auto& car: game) {
-        if(car.second.connected) { //TODO MAGIC
-            cars->push_back(car.second);
-        }
-    }
-    return std::move(cars);
+void OptimizerEngine::removeFromSimulation(const std::string& uuid) {
+    game.erase(uuid);
 }
 
 std::shared_ptr<ManeuverRecommendation> OptimizerEngine::telemetryStructToManeuverRecommendation(Timebase_Telemetry_Waypoint car) {
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
-    auto timestamp{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
+    auto speed{static_cast<uint16_t>(car.speed * SPEED_REAJUST_RATIO)};
+    auto latitude{static_cast<int32_t>(car.coordinates.latitude * std::pow(10,GPS_SIGNIFCAND))};
+    auto longitude{static_cast<int32_t>(car.coordinates.longitude * std::pow(10,GPS_SIGNIFCAND))};
 
-    auto speed{static_cast<uint4>(car.speed * SPEED_REAJUST_RATIO)};
-    auto latitude{static_cast<uint32_t>(car.coordinates.latitude * std::pow(10,SIGNIFCAND))};
-    auto longitude{static_cast<uint32_t>(car.coordinates.longitude * std::pow(10,SIGNIFCAND))};
-
-    mergingManeuver->setTimestamp(timestamp);
+    mergingManeuver->setTimestamp(car.timestamp);
     mergingManeuver->setUuidVehicle(car.uuid);
     mergingManeuver->setUuidTo(car.uuid);
-    mergingManeuver->setTimestampAction(timestamp);
+    mergingManeuver->setTimestampAction(car.timestamp);
     mergingManeuver->setLongitudeAction(longitude);
     mergingManeuver->setLatitudeAction(latitude);
     mergingManeuver->setSpeedAction(speed);
@@ -126,8 +121,42 @@ std::shared_ptr<ManeuverRecommendation> OptimizerEngine::telemetryStructToManeuv
     waypoint->setLatitude(latitude);
     waypoint->setSpeed(speed);
     waypoint->setLanePosition(car.laneId);
-    waypoint->setHeading(static_cast<uint16_t>(car.heading));
+    waypoint->setHeading(static_cast<uint16_t>(car.heading*HEADING_REAJUST_RATIO));
     mergingManeuver->addWaypoint(waypoint);
 
     return mergingManeuver;
+}
+
+std::unique_ptr<std::list<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimulationResult() {
+    auto cars{std::make_unique<std::list<Timebase_Telemetry_Waypoint>>()};
+    std::list<std::string> erase;
+    for(auto& car: game) {
+        int64_t time{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
+        if ((time - car.second.timestamp) < LATENCY_DROP_FACTOR) {
+            if(car.second.connected) { //TODO MAGIC
+
+                int64_t deltaTime = time - car.second.timestamp;//time - car.second.timestamp;
+
+                Gps_Point gps {
+                    car.second.coordinates.latitude,
+                    car.second.coordinates.longitude,
+                };
+
+                double distance{Mapper::getDistance(car.second.speed,car.second.accelleration, (deltaTime + HUMAN_LATENCY_FACTOR)/1000.0)};
+                std::cout << "DANK "<< distance << " " << car.second.speed <<  "\n";
+
+                //auto cul = Mapper::getMapper()->getPositionDescriptor(car.second.coordinates.latitude,car.second.coordinates.longitude);
+
+                car.second.timestamp = time + HUMAN_LATENCY_FACTOR;
+
+                car.second.coordinates = Mapper::projectGpsPoint(gps, distance, car.second.heading);
+
+                cars->push_back(car.second);
+            }
+        } else {
+            erase.push_back(car.first);
+        }
+    }
+    for (auto& uuid : erase ) game.erase(uuid);
+    return std::move(cars);
 }

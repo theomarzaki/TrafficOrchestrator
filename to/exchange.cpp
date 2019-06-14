@@ -202,7 +202,7 @@ void initiateSubscription() {
 	// FIXME do not cast an unsigned int 64 from a long
 	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
-    socket_c = SendInterface::sendTCP(SendInterface::createSubscriptionRequestJSON(subscriptionReq));
+    socket_c = SendInterface::sendTCP(SendInterface::createSubscriptionRequestJSON(subscriptionReq),true);
 	logger::write("Sent subscription request to " + SendInterface::connectionAddress + ":"+ to_string(SendInterface::port));
 }
 
@@ -450,13 +450,10 @@ int main() {
             do {
                 for (const auto& captured_data : listenDataTCP(socket_c)) {
                     try {
-
                         OptimizerEngine::getEngine()->startManeuverFeedback();
 
-                        captured_data_end = captured_data;
-
                         auto document{parse(captured_data)};
-                        message_type messageType = filterInput(document);
+                        message_type messageType{filterInput(document)};
                         if (captured_data == "\n" || captured_data.empty()) {
                             messageType = message_type::heart_beat;
                         }
@@ -494,20 +491,34 @@ int main() {
                             switch (messageType) {
                                 case message_type::notify_add:
                                     handleNotifyAdd(document);
+                                    OptimizerEngine::getEngine()->startManeuverFeedback();
+                                    OptimizerEngine::getEngine()->locker.lock();
                                     OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+                                    OptimizerEngine::getEngine()->locker.unlock();
                                     break;
                                 case message_type::notify_delete:
                                     handleNotifyDelete(document);
+                                    OptimizerEngine::getEngine()->locker.lock();
+                                    for (auto &uuid : assignNotificationDeleteVals(document)) {
+                                        std::cout << uuid << std::endl;
+                                        OptimizerEngine::getEngine()->removeFromSimulation(uuid);
+                                    }
+                                    OptimizerEngine::getEngine()->locker.unlock();
                                     break;
                                 case message_type::subscription_response:
+                                    OptimizerEngine::getEngine()->startManeuverFeedback();
                                     handleSubscriptionResponse(document);
                                     break;
                                 case message_type::unsubscription_response:
+                                    OptimizerEngine::getEngine()->pauseManeuverFeedback();
                                     handleUnSubscriptionResponse(document);
                                     break;
                                 case message_type::trajectory_feedback:
                                     if (!handleTrajectoryFeedback(document)) {
+                                        OptimizerEngine::getEngine()->startManeuverFeedback();
+                                        OptimizerEngine::getEngine()->locker.lock();
                                         OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+                                        OptimizerEngine::getEngine()->locker.unlock();
                                     }
                                     break;
                                 case message_type::heart_beat:
@@ -523,6 +534,7 @@ int main() {
                     } catch (const std::exception &e) {
                         logger::write("[ERROR] Malformed JSON");
                     }
+                    captured_data_end = captured_data;
                 }
             } while (captured_data_end != "RECONNECT");
             std::cout << "Target seems disconnected -> next attempt in 10 sec." << std::endl;

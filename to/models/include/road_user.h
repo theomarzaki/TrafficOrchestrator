@@ -47,10 +47,10 @@ private:
     uint16_t speed; // Speed of the RU in direction specified in "heading" field.
 
     /* Acceleration with precision to 0.1 m/(s^2). */
-    uint16_t acceleration; // Acceleration of the RU in the direction specified in "heading" field.
+    int16_t acceleration; // Acceleration of the RU in the direction specified in "heading" field.
 
     /* Yaw rate with precision 0.1 degrees/s. */
-    uint16_t yaw_rate; // Heading change of the RU, where the sign indicates direction. i.e. + or -
+    int16_t yaw_rate; // Heading change of the RU, where the sign indicates direction. i.e. + or -
 
     /* Size with precision to 0.1m. */
     float length; // Length of the RU.
@@ -100,7 +100,7 @@ public:
         uint16_t heading,uint16_t speed,uint16_t acceleration,uint16_t yaw_rate,float length,float width,
         float height,std::string color,uint4 lane_position,uint8_t existence_probability,uint16_t position_semi_major_confidence,
         uint16_t position_semi_minor_confidence,uint16_t position_semi_major_orientation,uint16_t heading_c,
-        uint16_t speed_c,uint16_t acceleration_c,uint16_t yaw_rate_c,float length_c,float width_c,float height_c,
+        uint16_t speed_c,int16_t acceleration_c,int16_t yaw_rate_c,float length_c,float width_c,float height_c,
         std::string signature, std::string source_uuid) :
     type(std::move(type)),
     context(std::move(context)),
@@ -159,8 +159,8 @@ public:
     int32_t getLongitude();
     uint16_t getHeading();
     uint16_t getSpeed();
-    uint16_t getAcceleration();
-    uint16_t getYawRate();
+    int16_t getAcceleration();
+    int16_t getYawRate();
     float getLength();
     float getWidth();
     float getHeight();
@@ -172,8 +172,8 @@ public:
     uint16_t getPositionSemiMajorOrientation();
     uint16_t getHeadingConfidence();
     uint16_t getSpeedConfidence();
-    uint16_t getAccelerationConfidence();
-    uint16_t getYawRateConfidence();
+    int16_t getAccelerationConfidence();
+    int16_t getYawRateConfidence();
     float getLengthConfidence();
     float getWidthConfidence();
     float getHeightConfidence();
@@ -195,8 +195,8 @@ public:
     void setLongitude(int32_t);
     void setHeading(uint16_t);
     void setSpeed(uint16_t);
-    void setAcceleration(uint16_t);
-    void setYawRate(uint16_t);
+    void setAcceleration(int16_t);
+    void setYawRate(int16_t);
     void setLength(float);
     void setWidth(float);
     void setHeight(float);
@@ -208,8 +208,8 @@ public:
     void setPositionSemiMajorOrientation(uint16_t);
     void setHeadingConfidence(uint16_t);
     void setSpeedConfidence(uint16_t);
-    void setAccelerationConfidence(uint16_t);
-    void setYawRateConfidence(uint16_t);
+    void setAccelerationConfidence(int16_t);
+    void setYawRateConfidence(int16_t);
     void setLengthConfidence(float);
     void setWidthConfidence(float);
     void setHeightConfidence(float);

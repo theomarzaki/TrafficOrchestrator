@@ -19,7 +19,7 @@ struct Timebase_Telemetry_Waypoint {
     std::string uuid;
     bool connected;
     int laneId;
-    long timestamp;
+    int64_t timestamp;
     double heading;
     double speed;
     double accelleration;
