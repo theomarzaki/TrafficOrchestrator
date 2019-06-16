@@ -118,7 +118,6 @@ double Mapper::getDistance(  double speed,
 Gps_Point Mapper::projectGpsPoint(  Gps_Point coord,
                                     double distance,
                                     double heading ) {
-    std::cout << distance << std::endl;
     heading = toRadian(heading);
     double lat{toRadian(coord.latitude)};
     double lon{toRadian(coord.longitude)};
@@ -133,9 +132,22 @@ Gps_Point Mapper::projectGpsPoint(  Gps_Point coord,
     };
 }
 
-double Mapper::getCoeficient(   double xP, double yP,
+double Mapper::getHeading(   double xP, double yP,
                                 double xH, double yH ) {
-    return toDegree(std::atan2(yH - yP, xH - xP));
+    auto degree{toDegree(std::atan2(yH - yP, xH - xP))};
+    degree = degree < 0 ? 270 + degree : degree -90;
+    return degree < 0 ? -degree : 360 - degree;
+}
+
+Point_2D Mapper::transformCoordinatesFromGPSTo2DGrid(double latitudeBase, double longitudeBase, double latitude, double longitude) {
+    auto x{distanceBetween2GPSCoordinates(latitudeBase, longitudeBase, latitudeBase, longitude)};
+    auto y{distanceBetween2GPSCoordinates(latitudeBase, longitudeBase, latitude, longitudeBase)};
+    x = longitude < longitudeBase ? -x : x;
+    y = latitude < latitudeBase ? -y : y;
+    return {
+        x,
+        y
+    };
 }
 
 double Mapper::distanceBetweenAPointAndAStraightLine(   double xP, double yP,
@@ -206,68 +218,65 @@ Mapper::Gps_Descriptor Mapper::getPositionDescriptor(double latitude, double lon
             auto lane{m_roads.at(nearestDescription.roadId).lanes.find(nearestDescription.laneId)->second};
             auto node{lane.nodes.at(nearestDescription.nodeId)};
 
-            Lane_Node* compareNode;
+            Lane_Node compareNode{};
 
-            if ( this->m_roads.at(nearestDescription.roadId).type == Road_Type::LOOP ) {
+            Lane_Node previousNode{};
+            Lane_Node nextNode{};
 
-                Lane_Node* previousNode ;
-                Lane_Node* nextNode ;
+            Lane_Node roadDirectionFirstNode{};
+            Lane_Node roadDirectionSecondNode{};
 
-                if (nearestDescription.nodeId == 0) {
-                    previousNode = &lane.nodes.at(maxIndex);
-                    nextNode = &lane.nodes.at(nearestDescription.nodeId +1);
-                } else if (nearestDescription.nodeId == maxIndex) {
-                    previousNode = &lane.nodes.at(nearestDescription.nodeId -1);
-                    nextNode = &lane.nodes.at(0);
-                } else {
-                    previousNode = &lane.nodes.at(nearestDescription.nodeId -1);
-                    nextNode = &lane.nodes.at(nearestDescription.nodeId +1);
-                }
-
-                auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode->latitude, previousNode->longitude, latitude, longitude);
-                auto distanceToNext = distanceBetween2GPSCoordinates(nextNode->latitude, nextNode->longitude, latitude, longitude);
-
-                compareNode = distanceToPrevious < distanceToNext ? previousNode : nextNode;
+            if (nearestDescription.nodeId == 0) {
+                previousNode = lane.nodes.at(maxIndex);
+                nextNode = lane.nodes.at(nearestDescription.nodeId +1);
+            } else if (nearestDescription.nodeId == maxIndex) {
+                previousNode = lane.nodes.at(nearestDescription.nodeId -1);
+                nextNode = lane.nodes.at(0);
             } else {
-                if (nearestDescription.nodeId == 0) {
-                    compareNode = &lane.nodes.at(nearestDescription.nodeId +1);
-                } else if (nearestDescription.nodeId < maxIndex) {
-                    auto previousNode = lane.nodes.at(nearestDescription.nodeId -1);
-                    auto nextNode = lane.nodes.at(nearestDescription.nodeId +1);
-
-                    auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode.latitude, previousNode.longitude, latitude, longitude);
-                    auto distanceToNext = distanceBetween2GPSCoordinates(nextNode.latitude, nextNode.longitude, latitude, longitude);
-
-                    compareNode = distanceToPrevious < distanceToNext ? &previousNode : &nextNode;
-                } else {
-                    compareNode = &lane.nodes.at(nearestDescription.nodeId -1);
-                }
+                previousNode = lane.nodes.at(nearestDescription.nodeId -1);
+                nextNode = lane.nodes.at(nearestDescription.nodeId +1);
             }
 
-            auto xH{distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, compareNode->latitude, node.longitude)};
-            auto yH{distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, node.latitude, compareNode->longitude)};
-            auto xP{distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, compareNode->latitude, longitude)};
-            auto yP{distanceBetween2GPSCoordinates(compareNode->latitude, compareNode->longitude, latitude, compareNode->longitude)};
+            auto distanceToPrevious = distanceBetween2GPSCoordinates(previousNode.latitude, previousNode.longitude, latitude, longitude);
+            auto distanceToNext = distanceBetween2GPSCoordinates(nextNode.latitude, nextNode.longitude, latitude, longitude);
 
-            xH = node.latitude < compareNode->latitude ? -xH : xH;
-            yH = node.longitude < compareNode->longitude ? -yH : yH;
+            if (distanceToPrevious < distanceToNext) {
+                compareNode = previousNode;
+                roadDirectionFirstNode = previousNode;
+                roadDirectionSecondNode = node;
+            } else {
+                compareNode = nextNode;
+                roadDirectionFirstNode = node;
+                roadDirectionSecondNode = nextNode;
+            }
 
-            xP = latitude < compareNode->latitude ? -xP : xP;
-            yP = longitude < compareNode->longitude ? -yP : yP;
+            auto xH{distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, compareNode.latitude, node.longitude)};
+            auto yH{distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, node.latitude, compareNode.longitude)};
+            auto xP{distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, compareNode.latitude, longitude)};
+            auto yP{distanceBetween2GPSCoordinates(compareNode.latitude, compareNode.longitude, latitude, compareNode.longitude)};
 
+            xH = node.latitude < compareNode.latitude ? -xH : xH;
+            yH = node.longitude < compareNode.longitude ? -yH : yH;
 
-//            std::cout << getCoeficient(xP, yP, xH, yH) << std::endl;
-//
-//            if (distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) <= lane.size/2) { // TODO implement Square B-Spline distance check
-//                nearestDescription.state = Mapper_Result_State::OK;
-//            }
+            xP = latitude < compareNode.latitude ? -xP : xP;
+            yP = longitude < compareNode.longitude ? -yP : yP;
+
+            auto nextNodeTransform{transformCoordinatesFromGPSTo2DGrid(roadDirectionFirstNode.latitude,roadDirectionFirstNode.longitude,roadDirectionSecondNode.latitude,roadDirectionSecondNode.longitude)};
+
+            std::cout << std::to_string(node.latitude) << " " << std::to_string(node.longitude) << " " << std::to_string(compareNode.latitude) << " " << std::to_string(compareNode.longitude) << std::endl;
+
+            nearestDescription.heading = getHeading(0, 0, nextNodeTransform.x, nextNodeTransform.y);
+
+            if (distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) <= lane.size/2) { // TODO implement Square B-Spline distance check
+                nearestDescription.state = Mapper_Result_State::OK;
+            }
         } else {
             nearestDescription.state = Mapper_Result_State::OUT_OF_MAP;
             logger::write("[WARN] Coordinates out of map, at least "+std::to_string(OUT_OF_MAP_VALUE)+" m away => ("+std::to_string(latitude)+","+std::to_string(longitude)+")");
         }
     }
 
-    return std::move(nearestDescription);
+    return nearestDescription;
 }
 
 std::optional<Mapper::Merging_Scenario> Mapper::getFakeCarMergingScenario(double latitude, double longitude, int laneId) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.

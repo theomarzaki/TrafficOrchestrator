@@ -35,8 +35,9 @@ public:
     std::mutex locker;
 
     static Timebase_Telemetry_Waypoint createTelemetryElementFromRoadUser(const std::shared_ptr<RoadUser>& car);
-    static std::shared_ptr<ManeuverRecommendation> telemetryStructToManeuverRecommendation(Timebase_Telemetry_Waypoint car);
+    static std::shared_ptr<ManeuverRecommendation> telemetryStructToManeuverRecommendation(const Timebase_Telemetry_Waypoint& car);
     static std::shared_ptr<OptimizerEngine> getEngine();
+    static double mergeHeading(double h0, double h1);
 
     std::shared_ptr<std::thread> getThread();
     void killOptimizer();

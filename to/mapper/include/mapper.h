@@ -88,6 +88,8 @@ public:
         std::string roadName;
     };
 
+    static Point_2D transformCoordinatesFromGPSTo2DGrid(double latitudeBase, double longitudeBase, double latitude, double longitude);
+
     static bool setMap(const std::string& mapPath);
 
     static std::shared_ptr<Mapper> getMapper();
@@ -95,7 +97,7 @@ public:
     static double toRadian(double value);
     static double toDegree(double value);
 
-    static double getCoeficient(   double xP, double yP,
+    static double getHeading(   double xP, double yP,
                                     double xH, double yH );
 
     static double distanceBetween2GPSCoordinates(double latitude, double longitude,

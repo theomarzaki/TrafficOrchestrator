@@ -14,6 +14,11 @@ struct Gps_Point {
     double longitude;
 };
 
+struct Point_2D {
+    double x;
+    double y;
+};
+
 struct Timebase_Telemetry_Waypoint {
     Gps_Point coordinates;
     std::string uuid;
