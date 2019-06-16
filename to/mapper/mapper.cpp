@@ -263,8 +263,6 @@ Mapper::Gps_Descriptor Mapper::getPositionDescriptor(double latitude, double lon
 
             auto nextNodeTransform{transformCoordinatesFromGPSTo2DGrid(roadDirectionFirstNode.latitude,roadDirectionFirstNode.longitude,roadDirectionSecondNode.latitude,roadDirectionSecondNode.longitude)};
 
-            std::cout << std::to_string(node.latitude) << " " << std::to_string(node.longitude) << " " << std::to_string(compareNode.latitude) << " " << std::to_string(compareNode.longitude) << std::endl;
-
             nearestDescription.heading = getHeading(0, 0, nextNodeTransform.x, nextNodeTransform.y);
 
             if (distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH) <= lane.size/2) { // TODO implement Square B-Spline distance check

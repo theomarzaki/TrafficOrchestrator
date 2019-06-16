@@ -7,6 +7,7 @@
 #include <mapper.h>
 #include <network_interface.h>
 
+#define HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE 0.6
 #define HUMAN_LATENCY_FACTOR 2000
 #define LATENCY_DROP_FACTOR 800
 #define HEADING_REAJUST_RATIO 10.0
@@ -83,6 +84,8 @@ Timebase_Telemetry_Waypoint OptimizerEngine::createTelemetryElementFromRoadUser(
 }
 
 double OptimizerEngine::mergeHeading(double h0, double h1) {
+    h0 *= HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE;
+    h1 += h1*(1-HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE);
     if ( std::fabs(h0-h1) > 180 ) {
         return std::fabs(h0-h1)/2;
     } else if (h0 > h1 ) {
