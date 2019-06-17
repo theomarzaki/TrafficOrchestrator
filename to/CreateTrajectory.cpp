@@ -22,7 +22,7 @@
 #include <math.h>
 #include <memory>
 #include <time.h>
-#include <to/road_actions.cpp>
+#include "to/road_actions.cpp"
 #include "mapper.cpp"
 
 using namespace rapidjson;
@@ -117,9 +117,9 @@ at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,at::Tensor state)
 		case doNothing_tensor:
 			return Autonomous_action::nothing(state);
 		default:
-			perror("Action cannot be recognized");
+			logger::write("Action cannot be recognized");
+      return state;
 	}
-	return state;
 }
 
 
@@ -171,7 +171,7 @@ std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser
     return mergingCar;
 }
 
-std::shared_ptr<ManeuverRecommendation> calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergingVehicle, at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> rl_model) {
+ auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergingVehicle, at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> rl_model) -> std::shared_ptr<ManeuverRecommendation> {
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
     std::vector<torch::jit::IValue> rl_inputs;
 

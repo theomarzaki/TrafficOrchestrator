@@ -207,7 +207,7 @@ int sendDataTCP(int pre_socket, string connectionAdress, int port, string receiv
     if (pre_socket == -999) {
       socket_connect = socket(AF_INET, SOCK_STREAM, 0);
       if (socket_connect == -1)
-          printf("Send: Socket was not created.");
+          logger::write("Send: Socket was not created.");
 
       address.sin_addr.s_addr = inet_addr(connectionAdress.c_str());
       address.sin_family = AF_INET;
@@ -226,7 +226,7 @@ int sendDataTCP(int pre_socket, string connectionAdress, int port, string receiv
       validator = connect(socket_connect, (struct sockaddr *) &address, sizeof(address));
 
       if (validator < 0) {
-          printf("Send: Connection Error.\n");
+          logger::write("Send: Connection Error.\n");
     }
   }
     else socket_connect = pre_socket;
@@ -237,7 +237,7 @@ int sendDataTCP(int pre_socket, string connectionAdress, int port, string receiv
     validator = send(socket_connect, jsonString.c_str(), jsonString.size(), MSG_NOSIGNAL);
 
     if (validator < 0) {
-        printf("Send failed.\n");
+        logger::write("Send failed.\n");
     }
 
     char dataReceived[MAXIMUM_TRANSFER];

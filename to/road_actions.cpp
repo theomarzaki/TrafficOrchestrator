@@ -77,7 +77,7 @@ namespace RoadUser_action{
   const float TIME_VARIANT = 0.035;
   const int BIAS = 1;
 
-  auto left(RoadUser * vehicle){
+  auto left(std::shared_ptr<RoadUser> vehicle){
     auto timestamp{duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
@@ -98,7 +98,7 @@ namespace RoadUser_action{
     return waypoint;
   }
 
-  auto right(RoadUser * vehicle){
+  auto right(std::shared_ptr<RoadUser> vehicle){
     auto timestamp{duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
@@ -119,7 +119,7 @@ namespace RoadUser_action{
     return waypoint;
   }
 
-  auto accelerate(RoadUser * vehicle){
+  auto accelerate(std::shared_ptr<RoadUser> vehicle){
     auto timestamp{duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
@@ -140,7 +140,7 @@ namespace RoadUser_action{
     return waypoint;
   }
 
-  auto deccelerate(RoadUser * vehicle){ //CHECK
+  auto deccelerate(std::shared_ptr<RoadUser> vehicle){
     auto timestamp{duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
@@ -161,7 +161,7 @@ namespace RoadUser_action{
     return waypoint;
   }
 
-  auto nothing(RoadUser * vehicle){ //CHECK
+  auto nothing(std::shared_ptr<RoadUser> vehicle){
     auto timestamp{duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 

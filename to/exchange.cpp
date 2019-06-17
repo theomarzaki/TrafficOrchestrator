@@ -335,13 +335,11 @@ void handleMessage(const string &captured_data){
 	}
 
 	switch (messageType) {
-			case message_type::notify_add:{
+			case message_type::notify_add:
 				handleNotifyAdd(document);
-
 				computeManeuvers(lstm_model, rl_model, socket_c);
-				// computeSafetyActions(); 
+				// computeSafetyActions();
 				break;
-			}
 			case message_type::notify_delete:
 					handleNotifyDelete(document);
 					break;
