@@ -36,12 +36,13 @@ class SubscriptionRequest {
 		type(type),
 		context(context),
 		origin(origin),
+        version(version),
 		timestamp(timestamp),
 		filter(filter),
 		shape(shape),
 		signature(signature),
-		request_id(request_id),
-		source_uuid(source_uuid)
+		source_uuid(source_uuid),
+        request_id(request_id)
 		{
 			type = "subscription_request";
 			context = "subscriptions";

@@ -45,9 +45,6 @@ public:
 	CollisionAlert(tuple<uint8_t, uint8_t, uint8_t> version, uint64_t timestamp, string uuid_vehicle, string uuid_to,
 	uint32_t latitude_collision, uint32_t longitude_collision,string station_type_ru,
   uint32_t latitude_ru,uint32_t longitude_ru,uint32_t speed_ru,string signature) :
-	type(type),
-	context(context),
-	origin(origin),
 	version(version),
 	timestamp(timestamp),
 	uuid_vehicle(uuid_vehicle),

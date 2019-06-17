@@ -40,8 +40,7 @@ private:
 
 public:
 
-    ManeuverRecommendation(tuple<uint8_t, uint8_t, uint8_t> version,
-                           uint64_t timestamp,
+    ManeuverRecommendation(uint64_t timestamp,
                            string uuid_vehicle,
                            string uuid_to,
                            string uuid_maneuver,

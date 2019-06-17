@@ -460,75 +460,73 @@ int main() {
 
                         if (args["computation_with_ai"].GetBool()) {
                             switch (messageType) {
-                                case message_type::notify_add:
-                                    handleNotifyAdd(document);
+                            case message_type::notify_add:
+                                handleNotifyAdd(document);
+                                computeManeuvers();
+                                break;
+                            case message_type::notify_delete:
+                                handleNotifyDelete(document);
+                                break;
+                            case message_type::subscription_response:
+                                handleSubscriptionResponse(document);
+                                break;
+                            case message_type::unsubscription_response:
+                                handleUnSubscriptionResponse(document);
+                                break;
+                            case message_type::trajectory_feedback:
+                                if (!handleTrajectoryFeedback(document)) {
                                     computeManeuvers();
-                                    break;
-                                case message_type::notify_delete:
-                                    handleNotifyDelete(document);
-                                    break;
-                                case message_type::subscription_response:
-                                    handleSubscriptionResponse(document);
-                                    break;
-                                case message_type::unsubscription_response:
-                                    handleUnSubscriptionResponse(document);
-                                    break;
-                                case message_type::trajectory_feedback:
-                                    if (!handleTrajectoryFeedback(document)) {
-                                        computeManeuvers();
-                                    }
-                                    break;
-                                case message_type::heart_beat:
-                                    break;
-                                case message_type::reconnect:
-                                    logger::write("Reconnecting");
-                                    break;
-                                default:
-                                    logger::write("error: couldn't handle message " + captured_data);
-                                    break;
+                                }
+                            break;
+                            case message_type::heart_beat:
+                                break;
+                            case message_type::reconnect:
+                                logger::write("Reconnecting");
+                                break;
+                            default:
+                                logger::write("error: couldn't handle message " + captured_data);
+                                break;
                             }
                         } else {
+                            OptimizerEngine::getEngine()->startManeuverFeedback();
                             switch (messageType) {
-                                case message_type::notify_add:
-                                    handleNotifyAdd(document);
-                                    OptimizerEngine::getEngine()->startManeuverFeedback();
+                            case message_type::notify_add:
+                                handleNotifyAdd(document);
+                                OptimizerEngine::getEngine()->locker.lock();
+                                OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+                                OptimizerEngine::getEngine()->locker.unlock();
+                                break;
+                            case message_type::notify_delete:
+                                handleNotifyDelete(document);
+                                OptimizerEngine::getEngine()->locker.lock();
+                                for (auto& uuid : assignNotificationDeleteVals(document)) {
+                                    std::cout << uuid << std::endl;
+                                    OptimizerEngine::getEngine()->removeFromSimulation(uuid);
+                                }
+                                OptimizerEngine::getEngine()->locker.unlock();
+                                break;
+                            case message_type::subscription_response:
+                                handleSubscriptionResponse(document);
+                                break;
+                            case message_type::unsubscription_response:
+                                OptimizerEngine::getEngine()->pauseManeuverFeedback();
+                                handleUnSubscriptionResponse(document);
+                                break;
+                            case message_type::trajectory_feedback:
+                                if (!handleTrajectoryFeedback(document)) {
                                     OptimizerEngine::getEngine()->locker.lock();
                                     OptimizerEngine::getEngine()->updateSimulationState(database->dump());
                                     OptimizerEngine::getEngine()->locker.unlock();
-                                    break;
-                                case message_type::notify_delete:
-                                    handleNotifyDelete(document);
-                                    OptimizerEngine::getEngine()->locker.lock();
-                                    for (auto &uuid : assignNotificationDeleteVals(document)) {
-                                        std::cout << uuid << std::endl;
-                                        OptimizerEngine::getEngine()->removeFromSimulation(uuid);
-                                    }
-                                    OptimizerEngine::getEngine()->locker.unlock();
-                                    break;
-                                case message_type::subscription_response:
-                                    OptimizerEngine::getEngine()->startManeuverFeedback();
-                                    handleSubscriptionResponse(document);
-                                    break;
-                                case message_type::unsubscription_response:
-                                    OptimizerEngine::getEngine()->pauseManeuverFeedback();
-                                    handleUnSubscriptionResponse(document);
-                                    break;
-                                case message_type::trajectory_feedback:
-                                    if (!handleTrajectoryFeedback(document)) {
-                                        OptimizerEngine::getEngine()->startManeuverFeedback();
-                                        OptimizerEngine::getEngine()->locker.lock();
-                                        OptimizerEngine::getEngine()->updateSimulationState(database->dump());
-                                        OptimizerEngine::getEngine()->locker.unlock();
-                                    }
-                                    break;
-                                case message_type::heart_beat:
-                                    break;
-                                case message_type::reconnect:
-                                    logger::write("Reconnecting");
-                                    break;
-                                default:
-                                    logger::write("error: couldn't handle message " + captured_data);
-                                    break;
+                                }
+                                break;
+                            case message_type::heart_beat:
+                                break;
+                            case message_type::reconnect:
+                                logger::write("Reconnecting");
+                                break;
+                            default:
+                                logger::write("error: couldn't handle message " + captured_data);
+                                break;
                             }
                         }
                     } catch (const std::exception &e) {

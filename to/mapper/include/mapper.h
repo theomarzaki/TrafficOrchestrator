@@ -44,7 +44,7 @@ private:
     struct Lane_Descriptor {
         int id;
         float size;
-        std::vector<Lane_Node> nodes{std::vector<Lane_Node>()};
+        std::vector<std::shared_ptr<Lane_Node>> nodes{std::vector<std::shared_ptr<Lane_Node>>()};
     };
 
     struct Road_Descriptor {

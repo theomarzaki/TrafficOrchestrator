@@ -20,7 +20,7 @@ double deg2rad(double deg);
 
 double distanceEarth(double lat1d, double lon1d, double lat2d, double lon2d);
 
-auto mapNeighbours(const std::shared_ptr<Database>& database, double distanceRadius) -> vector<pair<std::shared_ptr<RoadUser>, vector<std::shared_ptr<RoadUser>>>>;
+auto mapNeighbours(const std::shared_ptr<Database>& database) -> vector<pair<std::shared_ptr<RoadUser>, vector<std::shared_ptr<RoadUser>>>>;
 
 double calculateHeading(double lat1, double long1, double lat2, double long2);
 

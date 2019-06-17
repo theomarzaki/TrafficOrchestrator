@@ -221,18 +221,18 @@ auto ManeuverParser(const std::shared_ptr<Database>& database,const std::shared_
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {
-				if(difftime(time(nullptr),r->getWaypointTimestamp()) < 0){
-					r->setProcessingWaypoint(false);
-					database->upsert(r);
-				}
-					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) { 
-	            auto neighbours{mapNeighbours(database, 10000)};
-	            auto input_values{RoadUsertoModelInput(r, neighbours)};
-							if (input_values) {
-	                auto models_input{torch::tensor(input_values.value()).unsqueeze(0)};
-                  recommendations.push_back(calculatedTrajectories(database,r, models_input, rl_model));
-	            }
-	        }
+        if(difftime(time(nullptr),r->getWaypointTimestamp()) < 0){
+            r->setProcessingWaypoint(false);
+            database->upsert(r);
+        }
+        if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
+            auto neighbours{mapNeighbours(database, 10000)};
+            auto input_values{RoadUsertoModelInput(r, neighbours)};
+            if (input_values) {
+                auto models_input{torch::tensor(input_values.value()).unsqueeze(0)};
+                recommendations.push_back(calculatedTrajectories(database,r, models_input, rl_model));
+            }
+        }
     }
     return recommendations;
 }

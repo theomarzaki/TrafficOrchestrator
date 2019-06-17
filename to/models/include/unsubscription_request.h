@@ -34,9 +34,9 @@ public:
 	origin(origin),
 	version(version),
 	timestamp(timestamp),
-	subscriptionId(subscriptionId),
-	signature(signature),
 	request_id(request_id),
+    subscriptionId(subscriptionId),
+    signature(signature),
 	source_uuid(source_uuid)
 	{
 		type = "unsubscription_request";
