@@ -32,7 +32,7 @@ double distanceEarth(double lat1d, double lon1d, double lat2d, double lon2d) {
   return 2.0 * EARTH_RADIUS_KM * asin(sqrt(u * u + cos(lat1r) * cos(lat2r) * v * v));
 }
 
-auto mapNeighbours(Database *database, double distanceRadius) {
+auto mapNeighbours(std::shared_ptr<Database> database, double distanceRadius) {
 	vector<pair<std::shared_ptr<RoadUser>, vector<std::shared_ptr<RoadUser>>>> neighbours;
 	vector<std::shared_ptr<RoadUser>> closeBy;
 	if (database->getSize() != 1) {

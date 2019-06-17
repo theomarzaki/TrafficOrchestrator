@@ -21,7 +21,7 @@ double distanceRoadUser(const std::shared_ptr<RoadUser> first,const std::shared_
 }
 
 
-std::vector<std::shared_ptr<ManeuverRecommendation>> calculateSafetyAction(Database * database,vector<pair<std::shared_ptr<RoadUser>,
+std::vector<std::shared_ptr<ManeuverRecommendation>> calculateSafetyAction(std::shared_ptr<Database> database,vector<pair<std::shared_ptr<RoadUser>,
 vector<std::shared_ptr<RoadUser>>>> neighbours){
   auto safetyManeuver{std::vector<std::shared_ptr<ManeuverRecommendation>>()};
 
@@ -42,7 +42,7 @@ return safetyManeuver;
 }
 
 
-std::vector<std::shared_ptr<ManeuverRecommendation>> stabiliseRoad(Database *database) {
+std::vector<std::shared_ptr<ManeuverRecommendation>> stabiliseRoad(std::shared_ptr<Database> database) {
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {

@@ -299,7 +299,7 @@ void initaliseDatabase() {
 
 void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
                       const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
-  auto recommendations = ManeuverParser(database,rl_model);
+  auto recommendations = ManeuverParser(std::shared_ptr<Database>(database),rl_model);
   if(!recommendations.empty()) {
 					logger::write("Sending recommendations.\n");
 					sendTrajectoryRecommendations(recommendations,socket);
@@ -309,7 +309,7 @@ void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
 }
 
 void computeSafetyActions(){
-	auto recommendations = stabiliseRoad(database);
+	auto recommendations = stabiliseRoad(std::shared_ptr<Database>(database));
 	if(!recommendations.empty()) {
 			logger::write("Sending Safety Action.\n");
 			sendTrajectoryRecommendations(recommendations,socket_c);

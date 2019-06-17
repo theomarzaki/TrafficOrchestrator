@@ -171,7 +171,7 @@ std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser
     return mergingCar;
 }
 
- auto calculatedTrajectories(Database * database,std::shared_ptr<RoadUser> mergingVehicle, at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> rl_model) -> std::shared_ptr<ManeuverRecommendation> {
+ auto calculatedTrajectories(std::shared_ptr<Database> database,std::shared_ptr<RoadUser> mergingVehicle, at::Tensor models_input,std::shared_ptr<torch::jit::script::Module> rl_model) -> std::shared_ptr<ManeuverRecommendation> {
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
     std::vector<torch::jit::IValue> rl_inputs;
 
@@ -212,7 +212,7 @@ std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser
     return mergingManeuver;
 }
 
-auto ManeuverParser(Database *database,std::shared_ptr<torch::jit::script::Module> rl_model) {
+auto ManeuverParser(std::shared_ptr<Database> database,std::shared_ptr<torch::jit::script::Module> rl_model) {
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {
