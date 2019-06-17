@@ -222,14 +222,14 @@ void initiateUnsubscription() {
 	sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createUnsubscriptionRequestJSON(unsubscriptionReq));
 }
 
-auto handleSubscriptionResponse(Document &document) {
+void handleSubscriptionResponse(Document &document) {
 	logger::write("Subscription Response Received.");
-	return detectedToSubscription(assignSubResponseVals(document));
+	// return detectedToSubscription(assignSubResponseVals(document));
 }
 
-auto handleUnSubscriptionResponse(Document &document) {
+void handleUnSubscriptionResponse(Document &document) {
 	logger::write("unsubscription response Received.");
-	return detectedToUnsubscription(assignUnsubResponseVals(document));
+	// return detectedToUnsubscription(assignUnsubResponseVals(document));
 }
 
 void handleNotifyAdd(Document &document) {
@@ -348,7 +348,7 @@ void computeSafetyActions(){
 	auto recommendations = stabiliseRoad(std::shared_ptr<Database>(database));
 	if(!recommendations.empty()) {
 			logger::write("Sending Safety Action.\n");
-			sendTrajectoryRecommendations(recommendations,socket_c);
+			sendTrajectoryRecommendations(recommendations);
 		}
 }
 
@@ -373,21 +373,21 @@ void handleMessage(const string &captured_data){
 	switch (messageType) {
 			case message_type::notify_add:
 				handleNotifyAdd(document);
-				computeManeuvers(lstm_model, rl_model, socket_c);
+				computeManeuvers();
 				// computeSafetyActions();
 				break;
 			case message_type::notify_delete:
 					handleNotifyDelete(document);
 					break;
 			case message_type::subscription_response:
-					subscriptionResp = handleSubscriptionResponse(document);
+					handleSubscriptionResponse(document);
 					break;
 			case message_type::unsubscription_response:
-					unsubscriptionResp = handleUnSubscriptionResponse(document);
+					handleUnSubscriptionResponse(document);
 					break;
 			case message_type::trajectory_feedback:
 					if (!handleTrajectoryFeedback(document)) {
-							computeManeuvers(lstm_model, rl_model, socket_c);
+							computeManeuvers();
 					}
 					break;
 			case message_type::heart_beat:
