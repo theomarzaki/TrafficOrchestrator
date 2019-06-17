@@ -66,7 +66,7 @@ std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> ge
 		// closest_following = nullptr;
 		// closest_preceeding = nullptr;
     if (closest_preceeding == nullptr or closest_following == nullptr ) { // Calculate once only
-        auto faker = Mapper::getMapper()->getFakeCarMergingScenario(toRealGPS(merging_car->getLatitude()),toRealGPS(merging_car->getLongitude()), 0);
+        auto faker = Mapper::getMapper()->getFakeCarMergingScenario(toRealGPS(merging_car->getLatitude()),toRealGPS(merging_car->getLongitude()), 1);
         if (faker) {
             if (closest_preceeding == nullptr) {
                 //we create a default one
