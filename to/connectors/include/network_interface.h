@@ -15,7 +15,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <iostream>
-#include <libnet.h>
+#include <arpa/inet.h>
 
 #include <logger.h>
 
