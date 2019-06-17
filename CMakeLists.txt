@@ -13,7 +13,7 @@ include_directories(${CMAKE_SOURCE_DIR}/rapidjson
         ${communication_layer}
         ..)
 
-set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/libtorch)
 find_package(Torch REQUIRED)
 
 add_subdirectory(to)

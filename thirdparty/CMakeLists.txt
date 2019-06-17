@@ -6,7 +6,7 @@ set(LIBTORCH_URL_MD5 9a653df4acf3c82aa31e69e818cfaffb)
 FetchContent_Declare(libtorch
         URL ${LIBTORCH_URL}
         URL_MD5 ${LIBTORCH_URL_MD5}
-        SOURCE_DIR ${CMAKE_BINARY_DIR}/lib)
+        SOURCE_DIR ${CMAKE_BINARY_DIR}/libtorch)
 
 # TODO use FetchContent_MakeAvailable instead of FetchContent_Populate with cmmake 3.14
 FetchContent_GetProperties(libtorch)
