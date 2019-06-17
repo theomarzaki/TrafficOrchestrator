@@ -41,10 +41,8 @@ using namespace rapidjson;
 using namespace experimental;
 using namespace std::chrono;
 
-Database * database;
-std::shared_ptr<SubscriptionResponse> subscriptionResp;
-std::shared_ptr<UnsubscriptionResponse> unsubscriptionResp;
-std::shared_ptr<ManeuverFeedback> maneuverFeed;
+auto database{std::make_shared<Database>()};
+std::shared_ptr<SubscriptionResponse> subscriptionResponse;
 
 string sendAddress;
 int sendPort;
@@ -54,7 +52,6 @@ int receivePort;
 
 pair<int,int> northeast;
 pair<int,int> southwest;
-string uuidTo;
 int request_id;
 int socket_c;
 bool filter = true;
@@ -62,17 +59,15 @@ std::shared_ptr<torch::jit::script::Module> lstm_model;
 std::shared_ptr<torch::jit::script::Module> rl_model;
 
 
-vector<shared_ptr<RoadUser>> detectedToRoadUserList(vector<Detected_Road_User> v) {
+vector<shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Detected_Road_User> &v) {
 
 	logger::write("Detected number of RoadUsers: " + string(to_string(v.size())));
 
 	vector<shared_ptr<RoadUser>> road_users;
 
-	for(int i = 0; i < v.size(); i++) {
+	for(const auto& d : v) {
 
-		Detected_Road_User d = v[i];
-
-		auto roadUser{std::make_shared<RoadUser>()}; // Declares and initalises a RoadUser pointer.
+	    auto roadUser{std::make_shared<RoadUser>()}; // Declares and initalises a RoadUser pointer.
 		roadUser->setType(d.type);
 		roadUser->setContext(d.context);
 		roadUser->setOrigin(d.origin);
@@ -115,7 +110,7 @@ vector<shared_ptr<RoadUser>> detectedToRoadUserList(vector<Detected_Road_User> v
 
 }
 
-auto detectedToFeedback(Detected_Trajectory_Feedback d) {
+auto detectedToFeedback(const Detected_Trajectory_Feedback& d) {
 
 	auto maneuverFeed{std::make_shared<ManeuverFeedback>()};
 	maneuverFeed->setType(d.type);
@@ -135,7 +130,7 @@ auto detectedToFeedback(Detected_Trajectory_Feedback d) {
 
 }
 
-auto detectedToSubscription(Detected_Subscription_Response d) {
+auto detectedToSubscription(const Detected_Subscription_Response& d) {
 	auto subscriptionResp{std::make_shared<SubscriptionResponse>()};
 	subscriptionResp->setType(d.type);
 	subscriptionResp->setContext(d.context);
@@ -153,7 +148,7 @@ auto detectedToSubscription(Detected_Subscription_Response d) {
 }
 
 
-auto detectedToUnsubscription(Detected_Unsubscription_Response d) {
+auto detectedToUnsubscription(const Detected_Unsubscription_Response& d) {
 	auto unsubscriptionResp{std::make_shared<UnsubscriptionResponse>()};
 	unsubscriptionResp->setType(d.type);
 	unsubscriptionResp->setContext(d.context);
@@ -169,25 +164,35 @@ auto detectedToUnsubscription(Detected_Unsubscription_Response d) {
 	return unsubscriptionResp;
 }
 
-void generateUuidTo() {
-	// FIXME limited generation : use std random library instead
-	uuidTo = std::to_string(std::experimental::randint(10000000,99999999));
-}
-
 void generateReqID(){
-	srand(time(NULL));
-	request_id = std::rand();
+	srand(time(nullptr));
+    // FIXME limited generation : use std random library instead
+    request_id = std::rand();
 }
 
-void sendTrajectoryRecommendations(vector<std::shared_ptr<ManeuverRecommendation>> v,int socket) {
+void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommendation>> &v) {
 	for(const auto &m : v) {
 		m->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
-		logger::write(createManeuverJSON(m));
-		sendDataTCP(socket, sendAddress, sendPort, receiveAddress, receivePort, createManeuverJSON(m));
+        auto maneuverJson{createManeuverJSON(m)};
+        logger::write(maneuverJson);
+        // we trace the emission as far as possible
+        std::stringstream log;
+        // we may have v2x_gateway into the source_uuid, bu we receive the original one
+        log << "traffic_orchestrator maneuver sent_to v2x_gateway "
+            // TODO use std:optional instead of use a "placeholder" default value
+            << ("placeholder" != m->getUuidManeuver() ? m->getUuidManeuver() : "")
+            << " at "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch()).count()
+            << std::endl;
+        std::cout << log.str();
+        std::cout.flush();
+        // FIXME when we use socket_c, we've go an error
+        sendDataTCP(socket_c, sendAddress, sendPort, receiveAddress, receivePort, maneuverJson);
 	}
 }
 
-void initiateSubscription(const string &sendAddress, int sendPort,string receiveAddress,int receivePort, bool filter) {
+void initiateSubscription() {
 	milliseconds timeSub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	auto subscriptionReq{std::make_shared<SubscriptionRequest>()};
 	generateReqID();
@@ -202,11 +207,11 @@ void initiateSubscription(const string &sendAddress, int sendPort,string receive
 	// FIXME do not cast an unsigned int 64 from a long
 	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
-	socket_c = sendDataTCP(-999,sendAddress,sendPort,std::move(receiveAddress),receivePort,createSubscriptionRequestJSON(subscriptionReq));
+    socket_c = sendDataTCP(-999, sendAddress, sendPort, receiveAddress, receivePort, createSubscriptionRequestJSON(subscriptionReq));
 	logger::write("Sent subscription request to " + sendAddress + ":"+ to_string(sendPort));
 }
 
-void initiateUnsubscription(const string &sendAddress, int sendPort, std::shared_ptr<SubscriptionResponse> subscriptionResp) {
+void initiateUnsubscription() {
 
 	milliseconds timeUnsub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	auto unsubscriptionReq{std::make_shared<UnsubscriptionRequest>()};
@@ -230,14 +235,50 @@ auto handleUnSubscriptionResponse(Document &document) {
 void handleNotifyAdd(Document &document) {
 	logger::write("Notify Add Received.");
 	const vector<Detected_Road_User> &roadUsers = assignNotificationVals(document).ru_description_list;
-	auto road_users{detectedToRoadUserList(roadUsers)};
-	for(const auto &road_user : road_users) {
-		database->upsert(road_user);
+    // we trace the reception as soon as possible and when the message_id stays available
+    std::for_each(roadUsers.begin(),
+                  roadUsers.end(),
+                  [](const auto &roadUser) {
+                      // TODO use std:optional instead of use a "placeholder" default value
+                      if ("placeholder" != roadUser.message_id) {
+                          std::stringstream log;
+                          // we may have v2x_gateway into the source_uuid, bu we receive the original one
+                          log << "traffic_orchestrator ru_description received_from v2x_gateway "
+                              << roadUser.message_id
+                              << " at "
+                              << std::chrono::duration_cast<std::chrono::milliseconds>(
+                                      std::chrono::system_clock::now().time_since_epoch()).count()
+                              << std::endl;
+                          std::cout << log.str();
+                          std::cout.flush();
+                      }
+                  });
+    auto road_users{detectedToRoadUserList(roadUsers)};
+    for (const auto &road_user : road_users) {
+        database->upsert(road_user);
 	}
 }
 
 bool handleTrajectoryFeedback(Document &document) {
-	maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
+    auto maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
+    // we trace the reception as soon as possible
+    std::stringstream log;
+    // we may have v2x_gateway into the source_uuid, bu we receive the original one
+    log << "traffic_orchestrator maneuver_feedback received_from v2x_gateway "
+        // TODO use std:optional instead of use a "placeholder" default value
+        << ("placeholder" != maneuverFeed->getUuidManeuver() ? maneuverFeed->getUuidManeuver() : "")
+        << "/"
+        // TODO use std:optional instead of use a "placeholder" default value
+        << ("placeholder" != maneuverFeed->getFeedback() ? maneuverFeed->getFeedback() : "")
+        << "/"
+        // TODO use std:optional instead of use a "placeholder" default value
+        << ("placeholder" != maneuverFeed->getReason() ? maneuverFeed->getReason() : "")
+        << " at "
+        << std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count()
+        << std::endl;
+    std::cout << log.str();
+    std::cout.flush();
 	auto roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
 	logger::write("Maneuver Feedback: " + maneuverFeed->getFeedback());
 	if(maneuverFeed->getFeedback() == "refuse" || maneuverFeed->getFeedback() == "abort") {
@@ -270,7 +311,7 @@ void handleNotifyDelete(Document &document) {
 }
 
 void inputSendAddress(string address) {
-	sendAddress = address;
+	sendAddress = std::move(address);
 }
 
 void inputSendPort(int port) {
@@ -282,7 +323,7 @@ void inputReceivePort(int port) {
 }
 
 void inputReceiveAddress(string address) {
-	receiveAddress = address;
+	receiveAddress = std::move(address);
 }
 
 void inputNorthEast(int longt, int lat){
@@ -293,19 +334,14 @@ void inputSouthWest(int longt, int lat){
 	southwest = make_pair(longt,lat);
 }
 
-void initaliseDatabase() {
-	database = new Database();
-}
-
-void computeManeuvers(const shared_ptr<torch::jit::script::Module> &lstm_model,
-                      const shared_ptr<torch::jit::script::Module> &rl_model, int socket) {
-  auto recommendations = ManeuverParser(std::shared_ptr<Database>(database),rl_model);
-  if(!recommendations.empty()) {
-					logger::write("Sending recommendations.\n");
-					sendTrajectoryRecommendations(recommendations,socket);
-				} else {
-					logger::write("No Trajectories Calculated.\n");
-				}
+void computeManeuvers() {
+    auto recommendations{ManeuverParser(database, rl_model)};
+    if (!recommendations.empty()) {
+        logger::write("Sending recommendations.\n");
+        sendTrajectoryRecommendations(recommendations);
+    } else {
+        logger::write("No Trajectories Calculated.\n");
+    }
 }
 
 void computeSafetyActions(){
@@ -319,7 +355,7 @@ void computeSafetyActions(){
 // Function Handling the exit of TO
 void terminate_to(int signum ){
 	logger::write("Sending unsubscription request.\n");
-	initiateUnsubscription(sendAddress,sendPort,subscriptionResp);
+    initiateUnsubscription();
 	std::this_thread::sleep_for(std::chrono::milliseconds(15000));
 	close(socket_c);
 	lstm_model.reset();
@@ -371,7 +407,7 @@ int main() {
     auto returnCode{0};
 
     FILE *file = fopen("include/TO_config.json", "r");
-    if (file == 0) {
+    if (file == nullptr) {
         logger::write("Config File failed to load.");
         returnCode = 1;
     } else if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
@@ -400,8 +436,7 @@ int main() {
         inputReceivePort(document["receivePort"].GetInt());
         inputReceiveAddress(document["receiveAddress"].GetString());
 
-        initiateSubscription(sendAddress, sendPort, receiveAddress, receivePort, filter);
-        initaliseDatabase();
+        initiateSubscription();
         bool listening = false;
         string reconnect_flag;
 
