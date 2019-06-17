@@ -363,11 +363,12 @@ message_type filterInput(Document &document) {
 
 }
 
-string listenDataTCP(int socket_c) {
+std::vector<std::string> listenDataTCP(int socket_c) {
 
   char dataReceived[MAXIMUM_TRANSFER];
   memset(dataReceived, 0, sizeof(dataReceived));
-  string to_return,returning;
+  string to_return;
+  std::vector<string> returning;
 
   while (returning.empty()) {
     int i = read(socket_c, dataReceived, sizeof(dataReceived));
@@ -375,11 +376,13 @@ string listenDataTCP(int socket_c) {
     if(i < 0) {
       logger::write("Error: Failed to receive transmitted data.\n");
       logger::write("trying to reconnect.\n");
-      return "RECONNECT";
+      returning.push_back("RECONNECT");
+      return returning;
     }
     else if(i == 0) {
       logger::write("Socket closed from the remote server.\n");
-      return "RECONNECT";
+      returning.push_back("RECONNECT");
+      return returning;
     }
     else if(i > 0){
       for(int index = 0; index < i; index++){
@@ -394,9 +397,10 @@ string listenDataTCP(int socket_c) {
       }
     }
 
-    if (!incomplete_messages.empty()) {
-      returning = incomplete_messages.front();
-      if(returning != "\n" && returning != string()) logger::write(returning + "\n");
+    while(!incomplete_messages.empty()) {
+      auto message_packet = incomplete_messages.front();
+      if(message_packet != "\n" && message_packet != string()) logger::write(message_packet + "\n");
+      returning.emplace_back(incomplete_messages.front());
       incomplete_messages.pop_front();
     }
   }

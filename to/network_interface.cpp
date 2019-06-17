@@ -221,23 +221,28 @@ int sendDataTCP(int pre_socket, string connectionAddress, int port, string recei
         /* Connect to the remote server. */
         auto validator{connect(socket_connect, (struct sockaddr *) &address, sizeof(address))};
         if (validator < 0) {
-            printf("Send: Connection Error.\n");
+            logger::write("Send: Connection Error.\n");
         }
     } else {
         socket_connect = pre_socket;
     }
     if (socket_connect == -1) {
-        printf("Send: Socket was not created.");
+        logger::write("Send: Socket was not created.");
     } else {
         // Send: Connected!
         // handle properly the SIGPIPE with MSG_NOSIGNAL
         auto validator{send(socket_connect, jsonString.c_str(), jsonString.size(), MSG_NOSIGNAL)};
         if (validator < 0) {
-            printf("Send failed.\n");
+            logger::write("Send failed.\n");
         }
 
-        char dataReceived[MAXIMUM_TRANSFER];
-        memset(dataReceived, 0, sizeof(dataReceived));
+    if (validator < 0) {
+        logger::write("Send failed.\n");
     }
-    return socket_connect;
+
+    char dataReceived[MAXIMUM_TRANSFER];
+    memset(dataReceived, 0, sizeof(dataReceived));
+    
+  }
+  return socket_connect;
 }
