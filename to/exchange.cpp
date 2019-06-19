@@ -78,8 +78,8 @@ vector<shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Detected_Road_U
 		roadUser->setConnected(d.connected);
 		roadUser->setLatitude(d.latitude);
 		roadUser->setLongitude(d.longitude);
-    roadUser->setPositionType(d.position_type);
-    roadUser->setSourceUUID(d.source_uuid);
+        roadUser->setPositionType(d.position_type);
+        roadUser->setSourceUUID(d.source_uuid);
 		roadUser->setHeading(d.heading);
 		roadUser->setSpeed(d.speed);
 		roadUser->setAcceleration(d.acceleration);
@@ -179,8 +179,7 @@ void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommen
         std::stringstream log;
         // we may have v2x_gateway into the source_uuid, bu we receive the original one
         log << "traffic_orchestrator maneuver sent_to v2x_gateway "
-            // TODO use std:optional instead of use a "placeholder" default value
-            << ("placeholder" != m->getUuidManeuver() ? m->getUuidManeuver() : "")
+            << m->getMessageID()
             << " at "
             << std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::system_clock::now().time_since_epoch()).count()
@@ -450,7 +449,7 @@ int main() {
 							if(captured_data == "RECONNECT") listening = false;
 							handleMessage(captured_data);
         		}
-					}while (listening != false);
+        } while (listening);
 			}
 
     while (true) {
@@ -460,6 +459,4 @@ int main() {
 				rl_model.reset();
         main();
     }
-
-  return returnCode;
 }
