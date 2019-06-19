@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options("-Wall")
 add_compile_options("-Werror")
 add_compile_options("-Wextra")
-add_compile_options("-O2")
+add_compile_options("-O0")
 
 add_subdirectory(thirdparty)
 

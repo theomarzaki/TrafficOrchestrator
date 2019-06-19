@@ -16,6 +16,7 @@
 #include <maneuver_recommendation.h>
 #include <road_user.h>
 #include <mapper.h>
+#include <gpstools.h>
 
 
 class OptimizerEngine {
@@ -31,9 +32,25 @@ private:
 
     void setBatch(size_t interval);
 
+    struct Stashed_Telemetry {
+        double theta;
+        int laneId;
+        double heading;
+        double distante_to_parent;
+        double speed;
+    };
+
+    struct Graph_Element {
+        std::shared_ptr<Timebase_Telemetry_Waypoint> telemetry;
+        std::list<Stashed_Telemetry> in_front_neighbours;
+        std::list<Stashed_Telemetry> behind_neighbours;
+    };
+
 public:
+
     std::mutex locker;
 
+    static Timebase_Telemetry_Waypoint forceCarMerging(Timebase_Telemetry_Waypoint car, int64_t interval, int64_t timenow);
     static Timebase_Telemetry_Waypoint getPositionOnRoadInInterval(Timebase_Telemetry_Waypoint car, int64_t interval, int64_t timenow);
     static Timebase_Telemetry_Waypoint createTelemetryElementFromRoadUser(const std::shared_ptr<RoadUser>& car);
     static std::shared_ptr<ManeuverRecommendation> telemetryStructToManeuverRecommendation(const Timebase_Telemetry_Waypoint& car);

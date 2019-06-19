@@ -7,6 +7,9 @@
 #include <mapper.h>
 #include <network_interface.h>
 
+#define ROAD_DEFAULT_SPEED 80
+#define MAX_ACCELERATION 2.0
+
 #define HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE 0.6
 #define HUMAN_LATENCY_FACTOR 2500
 #define LATENCY_DROP_FACTOR 800
@@ -80,18 +83,21 @@ Timebase_Telemetry_Waypoint OptimizerEngine::createTelemetryElementFromRoadUser(
             car->getSpeed()/SPEED_REAJUST_RATIO,
             static_cast<double>(car->getAcceleration()),
             static_cast<double>(car->getYawRate()),
+            ROAD_DEFAULT_SPEED,
     };
 }
 
 double OptimizerEngine::mergeHeading(double h0, double h1) {
-    h0 *= HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE;
-    h1 += h1*(1-HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE);
-    if ( std::fabs(h0-h1) > 180 ) {
-        return std::fabs(h0-h1)/2;
-    } else if (h0 > h1 ) {
-        return std::fmod(h0+(-(h0-360)+h1)/2,360);
-    } else {
-        return std::fmod(h1+(-(h1-360)+h0)/2,360);
+    if ( std::fabs(h0-h1) < 180 ) {
+        h0 *= HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE;
+        h1 += h1*(1-HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE);
+        return (h0+h1)/2;
+    } else { // TODO Opah need serious refacto
+        if (h0 > h1 ) {
+            return std::fmod(h0+(-(h0-360)+h1)/2,360);
+        } else {
+            return std::fmod(h1 + (-(h1 - 360) + h0) / 2, 360);
+        }
     }
 }
 
@@ -149,10 +155,60 @@ Timebase_Telemetry_Waypoint OptimizerEngine::getPositionOnRoadInInterval(Timebas
     double distance{Mapper::getDistance(car.speed,car.accelleration, (deltaTime + interval)/1000.0)};
     std::cout << "DANK "<< distance << " " << car.speed <<  "\n";
 
-    Mapper::Gps_Descriptor descriptor = Mapper::getMapper()->getPositionDescriptor(car.coordinates.latitude,car.coordinates.longitude);
+    auto descriptor = Mapper::getMapper()->getPositionDescriptor(car.coordinates.latitude,car.coordinates.longitude);
+
+    car.laneId = descriptor->laneId;
+
+    auto angle{descriptor->heading};
+    auto nextAngle{descriptor->next_heading};
+
+    angle -= (angle - nextAngle);
+    auto heading{mergeHeading(car.heading,angle)};
+    car.heading = heading;
+
+    std::cout << descriptor->heading << " " << car.heading << " " << nextAngle << " " << angle << " " << heading << std::endl;
 
     car.timestamp = timenow + HUMAN_LATENCY_FACTOR;
-    car.coordinates = Mapper::projectGpsPoint(gps, distance, car.heading);
+    car.coordinates = Mapper::projectGpsPoint(gps, distance,heading);
+
+    return car;
+}
+
+Timebase_Telemetry_Waypoint OptimizerEngine::forceCarMerging(Timebase_Telemetry_Waypoint car, int64_t interval, int64_t timenow) {
+    int64_t deltaTime = timenow - car.timestamp;
+
+    double distance;
+    double deltaT{(deltaTime + interval)/1000.0};
+
+    double deltaV{car.max_speed - car.speed};
+    double needTime{(deltaV / MAX_ACCELERATION)};
+    if (car.speed < car.max_speed) {
+        if (needTime < deltaT) {
+            distance = (deltaT-needTime)*car.max_speed+(deltaT-(deltaT-needTime))*car.speed+0.5*MAX_ACCELERATION*needTime*needTime;
+            car.speed = car.max_speed;
+        } else {
+            auto speed{MAX_ACCELERATION*deltaT+car.speed};
+            distance = (speed + 0.5*MAX_ACCELERATION*deltaT)*deltaT;
+            car.speed = speed;
+        }
+    } else {
+        needTime *= -1;
+        if (needTime < deltaT) {
+            distance = deltaT*car.max_speed+0.5*MAX_ACCELERATION*needTime*needTime;
+            car.speed = car.max_speed;
+        } else {
+            auto speed{car.speed-MAX_ACCELERATION*deltaT};
+            distance = (speed + 0.5*MAX_ACCELERATION*deltaT)*deltaT;
+            car.speed = speed;
+        }
+    }
+
+    car.accelleration = 0;
+
+    std::shared_ptr<Gps_View> gps{Mapper::getMapper()->getCoordinatesBydistanceAndRoadPath(car.coordinates.latitude,car.coordinates.longitude,distance,car.heading,15.0)};
+    car.coordinates.latitude = gps->latitude;
+    car.coordinates.longitude = gps->longitude;
+    car.heading = gps->heading;
 
     return car;
 }
@@ -161,11 +217,16 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
     auto cars{std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>>()};
     auto recos{std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>>()};
     std::list<std::string> erase;
-    for(auto& car: game) {
+
+    for (auto& car: game) {
         int64_t time{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
         if ((time - car.second.timestamp) < LATENCY_DROP_FACTOR) {
-            car.second = getPositionOnRoadInInterval(car.second,HUMAN_LATENCY_FACTOR,time);
-            if(car.second.connected) {
+            if (car.second.laneId == 0) {
+                car.second = forceCarMerging(car.second,HUMAN_LATENCY_FACTOR,time);
+            } else {
+                car.second = getPositionOnRoadInInterval(car.second,HUMAN_LATENCY_FACTOR,time);
+            }
+            if (car.second.connected) {
                 cars.push_back(std::make_shared<Timebase_Telemetry_Waypoint>(car.second));
             }
         } else {
@@ -173,7 +234,9 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
         }
     }
 
-    //TODO MAGIC
+    //TODO Create Graph
+    //TODO Optimise graph only with connected
+    //TODO Dump graph
 
     for(auto& car: cars) {
         if(car->connected) {

@@ -51,6 +51,7 @@ private:
         int id;
         std::string name;
         Road_Type type;
+        int speed;
         int forkFrom;
         int mergeInto;
         int numberOfLanes;
@@ -85,6 +86,9 @@ public:
         int laneId;
         int roadId;
         double heading;
+        double next_heading;
+        double distance_to_middle;
+        int speed;
         std::string roadName;
     };
 
@@ -119,7 +123,11 @@ public:
                                         double distance,
                                         double heading);
 
-    Gps_Descriptor getPositionDescriptor(double latitude, double longitude, int forcedRoadID = -1, int forcedLaneID = -1);
+    std::shared_ptr<Gps_View> getCoordinatesBydistanceAndRoadPath(double latitude, double longitude, double distance, double heading, double maxHeading);
+
+    std::shared_ptr<Gps_View> findCrossingPointBetweenLaneAndGpsVector(int roadId, int laneId, Gps_Point car, double heading, double maxDistance, double maxAngle);
+
+    std::shared_ptr<Gps_Descriptor> getPositionDescriptor(double latitude, double longitude, int forcedRoadID = -1, int forcedLaneID = -1);
 
     std::optional<Merging_Scenario> getFakeCarMergingScenario(double latitude, double longitude, int laneId = -1);
 

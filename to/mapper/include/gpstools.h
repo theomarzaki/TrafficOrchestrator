@@ -29,6 +29,13 @@ struct Timebase_Telemetry_Waypoint {
     double speed;
     double accelleration;
     double yaw_rate;
+    double max_speed;
+};
+
+struct Gps_View {
+    double latitude;
+    double longitude;
+    double heading;
 };
 
 #endif //TO_GPSTOOLS_H

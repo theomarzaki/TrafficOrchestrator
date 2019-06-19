@@ -158,6 +158,7 @@
       "name" : "Autoroute principale",
       "type" : "loop",
       "numberOfLanes" : 2,
+      "speed": 80,
       "lanes" : [
         {
           "_id" : 1,
@@ -1090,6 +1091,7 @@
       "name": "Entree Sud Autoroute principale",
       "type": "stripe",
       "numberOfLanes": 1,
+      "speed": 60,
       "lanes": [
         {
           "_id": 0,
