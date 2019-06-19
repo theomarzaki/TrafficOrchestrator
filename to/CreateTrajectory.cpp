@@ -200,10 +200,10 @@ auto calculatedTrajectories(const std::shared_ptr<Database> &database,
 
     auto waypoint{std::make_shared<Waypoint>()};
     waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
-                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / max(calculated_n_1_states[0][4].item<float>(),float(10))) * 100); //distance to mergeing point
+                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / max(calculated_n_1_states[0][4].item<float>(),float(70))) * 100); //distance to mergeing point
     waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][0].item<float>()));
     waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][1].item<float>()));
-    waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(max(calculated_n_1_states[0][4].item<float>(),float(40))));
+    waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(max(calculated_n_1_states[0][4].item<float>(),float(70))));
     (!(valid_action.second)) ? waypoint->setLanePosition(mergingVehicle->getLanePosition() + 1) : waypoint->setLanePosition(mergingVehicle->getLanePosition());
 		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
     mergingManeuver->addWaypoint(waypoint);

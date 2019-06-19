@@ -225,7 +225,7 @@ namespace Autonomous_action{
     stateTensor[0][0] = new_x;
     stateTensor[0][1] = new_y;
     stateTensor[0][4] = final_velocity;
-    stateTensor[0][5] = final_velocity;
+    stateTensor[0][5] = final_acceleration;
     stateTensor[0][19] = angle;
     return stateTensor;
   }
@@ -241,7 +241,7 @@ namespace Autonomous_action{
 		stateTensor[0][0] = new_x;
 		stateTensor[0][1] = new_y;
 		stateTensor[0][4] = final_velocity;
-		stateTensor[0][5] = final_velocity;
+		stateTensor[0][5] = final_acceleration;
 		stateTensor[0][19] = angle;
 	  return stateTensor;
   }
