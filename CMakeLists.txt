@@ -18,6 +18,7 @@ find_package(Torch REQUIRED)
 
 add_executable(exchange
         to/exchange.cpp
+        to/gpsUtils.cpp
         to/logger.cpp)
 
 target_link_libraries(exchange "${TORCH_LIBRARIES}" stdc++fs)

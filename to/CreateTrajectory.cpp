@@ -24,6 +24,7 @@
 #include <time.h>
 #include "to/road_actions.cpp"
 #include "mapper.cpp"
+#include "gpsUtils.h"
 
 using namespace rapidjson;
 using namespace std::chrono;
@@ -174,7 +175,7 @@ std::optional<vector<float>> RoadUsertoModelInput(const std::shared_ptr<RoadUser
 auto calculatedTrajectories(const std::shared_ptr<Database> &database,
                             const std::shared_ptr<RoadUser> &mergingVehicle,
                             at::Tensor models_input,
-                            const std::shared_ptr<torch::jit::script::Module> &rl_model) {
+                            const std::shared_ptr<torch::jit::script::Module> &rl_model) -> std::optional<std::shared_ptr<ManeuverRecommendation>> {
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
     std::vector<torch::jit::IValue> rl_inputs;
 
@@ -206,6 +207,19 @@ auto calculatedTrajectories(const std::shared_ptr<Database> &database,
     waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(max(calculated_n_1_states[0][4].item<float>(),float(70)) / 3.6));
     (!(valid_action.second)) ? waypoint->setLanePosition(mergingVehicle->getLanePosition() + 1) : waypoint->setLanePosition(mergingVehicle->getLanePosition());
 		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
+
+		// Do not ask for a merge if maneuver is north of a given point
+		if (waypoint->getLanePosition() != mergingVehicle->getLanePosition()) {
+      //TODO: move this to config file
+      GpsUtils::GpsCoordinates minMergeGeodetic{48.624547, 2.243632};
+      GpsUtils::GpsCoordinates maneuverGeodetic{(double) waypoint->getLatitude()/(std::pow(10, 7)), (double) waypoint->getLongitude()/(std::pow(10, 7))};
+      auto enuManeuver{GpsUtils::geodeticToEnu(maneuverGeodetic, minMergeGeodetic)};
+      if (enuManeuver.yNorth < 0) {
+        logger::write("Maneuver not sent because it asks the car to change lane too soon");
+        return std::nullopt;
+      }
+    }
+
     mergingManeuver->addWaypoint(waypoint);
 		mergingVehicle->setProcessingWaypoint(true);
 
@@ -228,7 +242,10 @@ auto ManeuverParser(std::shared_ptr<Database> database, std::shared_ptr<torch::j
 	            auto input_values{RoadUsertoModelInput(r, neighbours)};
 							if (input_values) {
 	                auto models_input{torch::tensor(input_values.value()).unsqueeze(0)};
-                  recommendations.push_back(calculatedTrajectories(database,r, models_input, rl_model));
+	                auto maneuver{calculatedTrajectories(database,r, models_input, rl_model)};
+	                if (maneuver.has_value()) {
+                    recommendations.push_back(maneuver.value());
+	                }
 	            }
 	        }
     }
