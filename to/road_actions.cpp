@@ -188,7 +188,7 @@ namespace RoadUser_action{
 namespace Autonomous_action{
 
   const float TIME_VARIANT = 0.035;
-  const int BIAS = 1;
+  const int BIAS = 3;
 
   at::Tensor left(at::Tensor state){
     at::Tensor stateTensor = state;
