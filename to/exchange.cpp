@@ -373,7 +373,7 @@ void handleMessage(const string &captured_data){
 			case message_type::notify_add:
 				handleNotifyAdd(document);
 				computeManeuvers();
-				// computeSafetyActions();
+				computeSafetyActions();
 				break;
 			case message_type::notify_delete:
 					handleNotifyDelete(document);
