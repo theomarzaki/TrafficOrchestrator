@@ -7,6 +7,7 @@
 #include <time.h>
 
 
+
 using namespace std;
 using namespace std::chrono;
 
@@ -65,6 +66,11 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
 
 	if(y - (x * slope + plus_c) < THRESHOLD){
 		logger::write("DEBUG :: Car Sucessfully Merged");
+		return std::make_pair(states,false);
+	}
+
+	if(Mapper::getMapper()->getPositionDescriptor(toRealGPS(ProcessedGPStoRoadUserGPS(states[0][0].item<float>())),toRealGPS(ProcessedGPStoRoadUserGPS(states[0][1].item<float>()))).laneId > 0){
+		logger::write("DEBUG :: Car Not in Lane 0");
 		return std::make_pair(states,false);
 	}
 
