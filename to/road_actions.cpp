@@ -75,7 +75,7 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
 namespace RoadUser_action{
 
   const float TIME_VARIANT = 0.035;
-  const int BIAS = 1;
+  const int BIAS = 3;
 
   auto left(std::shared_ptr<RoadUser> vehicle){
     auto timestamp{duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()};
@@ -123,17 +123,17 @@ namespace RoadUser_action{
     auto timestamp{duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
-
-    float displacement = RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed()) * TIME_VARIANT + 0.5 * vehicle->getAcceleration() * TIME_VARIANT * TIME_VARIANT;
-    auto angle = int(RoadUserHeadingtoProcessedHeading(vehicle->getHeading())) % 360;
+		auto final_velocity = vehicle->getSpeed() + TIME_VARIANT * (vehicle->getSpeed() + vehicle->getAcceleration() * TIME_VARIANT);
+    float displacement = RoadUserSpeedtoProcessedSpeed(final_velocity) * TIME_VARIANT + 0.5 * vehicle->getAcceleration() * TIME_VARIANT * TIME_VARIANT;
+    auto angle = int(RoadUserHeadingtoProcessedHeading(vehicle->getHeading()));
     auto new_x = RoadUserGPStoProcessedGPS(vehicle->getLongitude()) + BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
     auto new_y = RoadUserGPStoProcessedGPS(vehicle->getLatitude())  + BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 
     waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
-                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100);
+                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(final_velocity)) * 100);
     waypoint->setLongitude(ProcessedGPStoRoadUserGPS(new_x));
     waypoint->setLatitude(ProcessedGPStoRoadUserGPS(new_y));
-    waypoint->setSpeed(vehicle->getSpeed());
+    waypoint->setSpeed(final_velocity);
     waypoint->setLanePosition(vehicle->getLanePosition());
     waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(angle));
 
@@ -144,17 +144,17 @@ namespace RoadUser_action{
     auto timestamp{duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
-
-    float displacement = RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed()) * TIME_VARIANT + 0.5 * vehicle->getAcceleration() * TIME_VARIANT * TIME_VARIANT;
-    auto angle = int(RoadUserHeadingtoProcessedHeading(vehicle->getHeading())) % 360;
+		auto final_velocity = vehicle->getSpeed() - TIME_VARIANT * (vehicle->getSpeed() + vehicle->getAcceleration() * TIME_VARIANT);
+    float displacement = RoadUserSpeedtoProcessedSpeed(final_velocity) * TIME_VARIANT + 0.5 * vehicle->getAcceleration() * TIME_VARIANT * TIME_VARIANT;
+    auto angle = int(RoadUserHeadingtoProcessedHeading(vehicle->getHeading()));
     auto new_x = RoadUserGPStoProcessedGPS(vehicle->getLongitude()) + BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
     auto new_y = RoadUserGPStoProcessedGPS(vehicle->getLatitude())  + BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 
     waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
-                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100);
+                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(final_velocity)) * 100);
     waypoint->setLongitude(ProcessedGPStoRoadUserGPS(new_x));
     waypoint->setLatitude(ProcessedGPStoRoadUserGPS(new_y));
-    waypoint->setSpeed(vehicle->getSpeed());
+    waypoint->setSpeed(final_velocity);
     waypoint->setLanePosition(vehicle->getLanePosition());
     waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(angle));
 

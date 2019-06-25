@@ -223,7 +223,7 @@ auto ManeuverParser(std::shared_ptr<Database> database, std::shared_ptr<torch::j
 					r->setProcessingWaypoint(false);
 					database->upsert(r);
 				}
-					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) { 
+					if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
 	            auto neighbours{mapNeighbours(database, 10000)};
 	            auto input_values{RoadUsertoModelInput(r, neighbours)};
 							if (input_values) {
