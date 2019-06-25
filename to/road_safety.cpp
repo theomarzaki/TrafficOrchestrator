@@ -31,7 +31,7 @@ vector<std::shared_ptr<RoadUser>>>> neighbours){
     auto scoped_scenario{getClosestFollowingandPreceedingCars(neighbour.first,neighbour.second, 0)}; // calculate preceeding and following cars for the same lane
     if(!scoped_scenario) continue;
     else{
-      if(distanceRoadUser(neighbour.first,scoped_scenario->first) < SAFETY_DISTANCE && scoped_scenario->first->getConnected() && !(scoped_scenario->first->getProcessingWaypoint())){ //
+      if(distanceRoadUser(neighbour.first,scoped_scenario->first) < SAFETY_DISTANCE && scoped_scenario->first->getConnected() && !(scoped_scenario->first->getProcessingWaypoint())){
 
         auto safetyManeuver{std::make_shared<ManeuverRecommendation>()};
 
@@ -50,8 +50,8 @@ vector<std::shared_ptr<RoadUser>>>> neighbours){
         safetyManeuvers.emplace_back(safetyManeuver);
 
       }
-      if(distanceRoadUser(neighbour.first,scoped_scenario->second) < SAFETY_DISTANCE && scoped_scenario->second->getConnected()){ //&& !(scoped_scenario->second->getProcessingWaypoint()) //following car
-        cout << "ACCELERATE" << neighbour.first->getUuid() << distanceRoadUser(neighbour.first,scoped_scenario->second) << endl;
+      if(distanceRoadUser(neighbour.first,scoped_scenario->second) < SAFETY_DISTANCE && scoped_scenario->second->getConnected() && !(scoped_scenario->second->getProcessingWaypoint())){
+
 
         auto safetyManeuver{std::make_shared<ManeuverRecommendation>()};
 
