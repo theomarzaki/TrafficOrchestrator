@@ -366,7 +366,7 @@ void purgeDatabase(){
 	const auto road_users{database->findAll()};
 	for (const auto &r : road_users) {
 			auto now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-			if(std::chrono::duration_cast<std::chrono::milliseconds>(now - std::chrono::milliseconds(r->getTimestamp()) + std::chrono::milliseconds(30000)).count() <= 0){
+			if(std::chrono::duration_cast<std::chrono::milliseconds>(now - std::chrono::milliseconds(r->getTimestamp()) + std::chrono::milliseconds(30000)).count() >= 0){
 				logger::write("Purging Road User: " + r->getUuid());
 				database->deleteRoadUser(r->getUuid());
 			}
