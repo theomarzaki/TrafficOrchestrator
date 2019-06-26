@@ -14,7 +14,7 @@
 using namespace std;
 using namespace std::chrono;
 
-const int SAFETY_DISTANCE = 10;
+const int SAFETY_DISTANCE = 40;
 
 double distanceRoadUser(const std::shared_ptr<RoadUser> first,const std::shared_ptr<RoadUser> second){
   return distanceEarth(first->getLatitude(),first->getLongitude(),second->getLatitude(),second->getLongitude()) / 100;
