@@ -211,7 +211,7 @@ auto calculatedTrajectories(const std::shared_ptr<Database> &database,
 		// Do not ask for a merge if maneuver is north of a given point
 		if (waypoint->getLanePosition() != mergingVehicle->getLanePosition()) {
       //TODO: move this to config file
-      GpsUtils::GpsCoordinates minMergeGeodetic{48.624547, 2.243632};
+      GpsUtils::GpsCoordinates minMergeGeodetic{48.624723,2.243650};
       GpsUtils::GpsCoordinates maneuverGeodetic{(double) waypoint->getLatitude()/(std::pow(10, 7)), (double) waypoint->getLongitude()/(std::pow(10, 7))};
       auto enuManeuver{GpsUtils::geodeticToEnu(maneuverGeodetic, minMergeGeodetic)};
       if (enuManeuver.yNorth < 0) {

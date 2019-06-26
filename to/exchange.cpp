@@ -432,6 +432,7 @@ int main() {
 
         if (rl_model != nullptr) logger::write("import of rl model successful\n");
 
+	logger::write("Version 2019-06-26T13:59");
 
         char readBuffer[65536];
         FileReadStream is(file, readBuffer, sizeof(readBuffer));
