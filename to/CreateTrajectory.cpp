@@ -209,14 +209,18 @@ auto calculatedTrajectories(const std::shared_ptr<Database> &database,
 		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
 
 		// Do not ask for a merge if maneuver is north of a given point
-		if (waypoint->getLanePosition() != mergingVehicle->getLanePosition()) {
-      //TODO: move this to config file
-      GpsUtils::GpsCoordinates minMergeGeodetic{48.624723,2.243650};
-      GpsUtils::GpsCoordinates maneuverGeodetic{(double) waypoint->getLatitude()/(std::pow(10, 7)), (double) waypoint->getLongitude()/(std::pow(10, 7))};
-      auto enuManeuver{GpsUtils::geodeticToEnu(maneuverGeodetic, minMergeGeodetic)};
-      if (enuManeuver.yNorth < 0) {
-        logger::write("Maneuver not sent because it asks the car to change lane too soon");
-        return std::nullopt;
+		if (mergingVehicle->getUuid() == "OBU6") {
+      if (waypoint->getLanePosition() != mergingVehicle->getLanePosition()) {
+        //TODO: move this to config file
+        GpsUtils::GpsCoordinates minMergeGeodetic{48.624723,2.243650};
+        GpsUtils::GpsCoordinates maneuverGeodetic{(double) waypoint->getLatitude() / (std::pow(10, 7)),
+                                                  (double) waypoint->getLongitude() / (std::pow(10, 7))};
+        auto enuManeuver{GpsUtils::geodeticToEnu(maneuverGeodetic, minMergeGeodetic)};
+        if (enuManeuver.yNorth < 0) {
+          logger::write("Maneuver not sent because it asks the car to change lane too soon");
+          logger::write("Rejected maneuver: "+std::to_string(waypoint->getLatitude())+", "+std::to_string(waypoint->getLongitude())+" ");
+          return std::nullopt;
+        }
       }
     }
 
