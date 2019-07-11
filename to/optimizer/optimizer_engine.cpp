@@ -225,6 +225,7 @@ Timebase_Telemetry_Waypoint OptimizerEngine::forceCarMerging(Timebase_Telemetry_
 
 std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimulationResult() {
     std::map<std::string,std::shared_ptr<Timebase_Telemetry_Waypoint>> carStack;
+    std::vector<std::shared_ptr<Graph_Element>> graphList;
     auto recos{std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>>()};
     std::list<std::string> erase;
 
@@ -244,85 +245,86 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
         }
     }
 
-//    std::vector<std::shared_ptr<Timebase_Telemetry_Waypoint>> sortedCars;
+    std::vector<std::shared_ptr<Timebase_Telemetry_Waypoint>> sortedCars;
+
+    while (!carStack.empty()) {
+        auto sickSheep{carStack.begin()->second};
+        for (auto& element: carStack) {
+            if (Mapper::getMapper()->isItBehindAGpsOnSameRoadPath(element.second->coordinates,sickSheep->coordinates)) {
+                sickSheep = element.second;
+            }
+        }
+        carStack.erase(sickSheep->uuid);
+        sortedCars.push_back(sickSheep);
+    }
+
+    if (!sortedCars.empty()) {
+        auto numberOfLanes{HIGHWAY_LANE_NUMBER+INSERTION_LANE_NUMBER};
+
+        std::vector<int> lastLanesElement(numberOfLanes);
+        for (long i=0; i<numberOfLanes; i++) { // Find first element of each lanes
+            for (long x=sortedCars.size()-1; x >= 0; x--) {
+                if (sortedCars.at(x)->laneId == i) {
+                    lastLanesElement.push_back(x);
+                }
+            }
+        }
+
+        for (long i=sortedCars.size()-1; i >= 0; i--) {
+            graphList.push_back(std::make_shared<Graph_Element>());
+        }
+
+        std::shared_ptr<Graph_Element> graphHead;
+        auto head{graphList.at(0)};
+
+        for (long i=sortedCars.size()-1; i >= 0; i--) {
+            auto car {sortedCars.at(i)};
+
+            const auto& buff = head;
+
+            if (car->laneId == 0) {
+                graphHead = buff;
+            }
+            buff->telemetry = std::make_shared<Timebase_Telemetry_Waypoint>(*car);
+
+            if (i == static_cast<long>(sortedCars.size()-1)) {
+                for (const auto& elem: lastLanesElement) {
+                    buff->in_front_neighbours.push_back(graphList.at(elem));
+                }
+            } else if (i == 0) {
+                for (const auto& elem: lastLanesElement) {
+                    buff->behind_neighbours.push_back(graphList.at(elem));
+                }
+            } else {
+                for (const auto& elem: lastLanesElement) {
+                    buff->behind_neighbours.push_back(graphList.at(elem));
+                }
+                for (int z=0; z<numberOfLanes; z++) {
+                    for (unsigned long x=i; x > 0; x--) {
+                        if (sortedCars.at(x)->laneId == z) {
+                            buff->in_front_neighbours.push_back(graphList.at(x));
+                        }
+                    }
+                }
+            }
+            lastLanesElement.at(car->laneId) = i;
+        }
+    }
+
+//    head = graphHead;
+//    std::vector<std::shared_ptr<Graph_Element>> mutableGraphList(graphList);
+//    while(!mutableGraphList.empty()) { // Where the magic happen, not so Magic tho'.
+//        if (head->telemetry->connected) {
+//            if (head->telemetry->laneId == 0) {
 //
-//    while (!carStack.empty()) {
-//        auto sickSheep{carStack.begin()};
-//        for (auto& element: carStack) {
-//            if (Mapper::getMapper()->isItBehindAGpsOnSameRoadPath(element.second->coordinates,sickSheep->second->coordinates)) {
-//                sickSheep->second = element.second;
+//            } else {
+//
 //            }
 //        }
-//        carStack.erase(sickSheep->second->uuid);
-//        sortedCars.push_back(sickSheep->second);
 //    }
-//
-//    auto numberOfLanes{HIGHWAY_LANE_NUMBER+INSERTION_LANE_NUMBER};
-//
-//    std::vector<int> lastLanesElement;
-//    for (int i=0; i<numberOfLanes; i++) { // Find first element of each lanes
-//        for (unsigned long x=sortedCars.size()-1; x > 0; x--) {
-//            if (sortedCars.at(x)->laneId == i) {
-//                lastLanesElement.push_back(x);
-//            }
-//        }
-//    }
-//
-//    std::vector<std::shared_ptr<Graph_Element>> graphList;
-//    for (unsigned long i=sortedCars.size()-1; i > 0; i--) {
-//        graphList.push_back(std::make_shared<Graph_Element>());
-//    }
-//
-//    std::shared_ptr<Graph_Element> graphHead;
-//    auto head{*graphList.begin()};
-//
-//    for (unsigned long i=sortedCars.size()-1; i > 0; i--) {
-//        auto car {sortedCars.at(i)};
-//
-//        const auto& buff = head;
-//
-//        if (car->laneId == 0) {
-//            graphHead = buff;
-//        }
-//        buff->telemetry = std::make_shared<Timebase_Telemetry_Waypoint>(*car);
-//
-//        if (i == sortedCars.size()-1) {
-//            for (const auto& elem: lastLanesElement) {
-//                buff->in_front_neighbours.push_back(graphList.at(elem));
-//            }
-//        } else if (i == 0) {
-//            for (const auto& elem: lastLanesElement) {
-//                buff->behind_neighbours.push_back(graphList.at(elem));
-//            }
-//        } else {
-//            for (const auto& elem: lastLanesElement) {
-//                buff->behind_neighbours.push_back(graphList.at(elem));
-//            }
-//            for (int z=0; z<numberOfLanes; z++) {
-//                for (unsigned long x=i; x > 0; x--) {
-//                    if (sortedCars.at(x)->laneId == z) {
-//                        buff->in_front_neighbours.push_back(graphList.at(x));
-//                    }
-//                }
-//            }
-//        }
-//        lastLanesElement.at(car->laneId) = i;
-//    }
-//
-////    head = graphHead;
-////    std::vector<std::shared_ptr<Graph_Element>> mutableGraphList(graphList);
-////    while(!mutableGraphList.empty()) { // Where the magic happen, not so Magic tho'.
-////        if (head->telemetry->connected) {
-////            if (head->telemetry->laneId == 0) {
-////
-////            } else {
-////
-////            }
-////        }
-////    }
-//
-//    //TODO Optimise graph only with connected
-//
+
+    //TODO Optimise graph only with connected
+
 //    for(auto& car: graphList) {
 //        if(car->telemetry->connected) {
 //            recos.push_back(car->telemetry);

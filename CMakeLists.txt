@@ -9,6 +9,7 @@ add_compile_options("-Wall")
 add_compile_options("-Werror")
 add_compile_options("-Wextra")
 add_compile_options("-O0")
+add_compile_options("-g")
 
 add_subdirectory(thirdparty)
 
