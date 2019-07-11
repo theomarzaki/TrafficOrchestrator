@@ -14,8 +14,8 @@
 #define MAX_ACCELERATION 2.0
 
 #define HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE 0.6
-#define HUMAN_LATENCY_FACTOR 2500
-#define LATENCY_DROP_FACTOR 800
+#define HUMAN_LATENCY_FACTOR 2000
+#define LATENCY_DROP_FACTOR 1200
 #define HEADING_REAJUST_UNIT 10.0
 #define SPEED_REAJUST_UNIT 100.0
 #define GPS_SIGNIFCAND 7
@@ -35,10 +35,12 @@ void OptimizerEngine::killOptimizer() {
 
 void OptimizerEngine::startManeuverFeedback() {
     pause.unlock();
+    cv.notify_all();
 }
 
 void OptimizerEngine::pauseManeuverFeedback() {
     pause.lock();
+    cv.notify_all();
 }
 
 std::shared_ptr<std::thread> OptimizerEngine::getThread() {
@@ -48,8 +50,8 @@ std::shared_ptr<std::thread> OptimizerEngine::getThread() {
 void OptimizerEngine::setBatch(size_t interval) {
     optimizerT = std::make_shared<std::thread>([=]() mutable {
         while (!kill) {
-            std::unique_lock lock(pause);
-//            cv.wait(lock);
+            std::unique_lock<std::mutex> lock(pause);
+            cv.wait(lock);
             locker.lock();
             auto cars{this->getSimulationResult()}; // TODO Server send
             for (auto &car : cars) {
@@ -159,7 +161,7 @@ Timebase_Telemetry_Waypoint OptimizerEngine::getPositionOnRoadInInterval(Timebas
     };
 
     double distance{Mapper::getDistance(car.speed,car.accelleration, (deltaTime + interval)/1000.0)};
-    std::cout << "DANK "<< distance << " " << car.speed <<  "\n";
+    std::cout << "DANK "<< distance << " " << car.speed << " " << car.timestamp << " " << deltaTime << "\n";
 
     auto descriptor = Mapper::getMapper()->getPositionDescriptor(car.coordinates.latitude,car.coordinates.longitude);
 
@@ -212,6 +214,8 @@ Timebase_Telemetry_Waypoint OptimizerEngine::forceCarMerging(Timebase_Telemetry_
     car.accelleration = 0;
 
     std::shared_ptr<Gps_View> gps{Mapper::getMapper()->getCoordinatesBydistanceAndRoadPath(car.coordinates.latitude,car.coordinates.longitude,distance,car.heading,15.0)};
+
+    car.timestamp = timenow + HUMAN_LATENCY_FACTOR;
     car.coordinates.latitude = gps->latitude;
     car.coordinates.longitude = gps->longitude;
     car.heading = gps->heading;
@@ -230,7 +234,9 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
             if (car.second.laneId == 0) {
                 car.second = forceCarMerging(car.second,HUMAN_LATENCY_FACTOR,time);
             } else {
+                std::cout << "Linear car got -> " << car.second.coordinates.latitude << "," << car.second.coordinates.longitude << std::endl;
                 car.second = getPositionOnRoadInInterval(car.second,HUMAN_LATENCY_FACTOR,time);
+                std::cout << "Linear car got -> " << car.second.coordinates.latitude << "," << car.second.coordinates.longitude << std::endl;
             }
             carStack.insert({car.second.uuid,std::make_shared<Timebase_Telemetry_Waypoint>(car.second)});
         } else {
