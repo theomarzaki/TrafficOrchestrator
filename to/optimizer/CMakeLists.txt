@@ -7,10 +7,10 @@ project(optimizer
 include(GNUInstallDirs)
 
 set(LIB_SRC
-        optimizer_engine.cpp)
+        optimizer_engine.cpp physx.cpp)
 
 set(LIB_H
-        include/optimizer_engine.h)
+        include/optimizer_engine.h include/physx.h)
 
 
 add_library(${PROJECT_NAME} SHARED ${LIB_SRC} ${LIB_H})

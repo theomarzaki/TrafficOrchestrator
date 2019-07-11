@@ -298,7 +298,7 @@ std::shared_ptr<Gps_View> Mapper::getCoordinatesBydistanceAndRoadPath(double lat
     auto node{lane.nodes.at(gps->nodeId)};
     auto nextNode{lane.nodes.at(gps->nodeId+1)};
 
-    if (gps->distance_to_middle > 6) {
+    if (gps->distance_to_middle > distance/3) {
         for (int i = 2; distance > 0; i++) {
             auto nextDistance{distanceBetween2GPSCoordinates(latitude, longitude, nextNode->latitude, nextNode->longitude)};
             if (nextDistance < distance) {
@@ -328,27 +328,95 @@ std::shared_ptr<Gps_View> Mapper::getCoordinatesBydistanceAndRoadPath(double lat
     return std::make_shared<Gps_View>();
 }
 
+Gps_Point Mapper::getGpsPointWith2DPointAndBaseGpsPoint(Gps_Point baseGps, double x, double y) {
+    auto heading{getHeading(0,0,x,y)};
+    auto distance{distanceBetweenAPointAndAStraightLine(0, 0, 0, 0, x, y)};
+    return projectGpsPoint(baseGps,distance,heading);
+}
+
+std::optional<bool> Mapper::isItBehindAGpsOnSameRoadPath(Gps_Point carBase, Gps_Point carCompared) {
+    auto gpsBase{getPositionDescriptor(carBase.latitude,carBase.longitude)};
+    auto gpsCompared{getPositionDescriptor(carCompared.latitude,carCompared.longitude)};
+
+    if (gpsBase->roadId == gpsCompared->roadId ) {
+        if (gpsBase->nodeId < gpsCompared->nodeId) {
+            return true;
+        } else if (gpsBase->nodeId == gpsCompared->nodeId) {
+            auto lanes{m_roads.at(gpsBase->roadId).lanes};
+            auto laneBase{lanes.find(gpsBase->laneId)};
+            auto laneCompared{lanes.find(gpsCompared->laneId)};
+
+            int max = laneBase->second.nodes.size() - 1;
+            int nextIndex{gpsBase->nodeId};
+
+            if (gpsBase->nodeId == max) {
+                nextIndex=0;
+            } else if (gpsBase->nodeId == 0) {
+                nextIndex=1;
+            } else {
+                nextIndex+=1;
+            }
+
+            auto nextNodeBase{laneBase->second.nodes.at(nextIndex)};
+            auto nextNodeCompared{laneCompared->second.nodes.at(nextIndex)};
+
+            return distanceBetween2GPSCoordinates(carBase.latitude, carBase.longitude, nextNodeBase->latitude, nextNodeBase->longitude) >
+                   distanceBetween2GPSCoordinates(carCompared.latitude, carCompared.longitude, nextNodeCompared->latitude, nextNodeCompared->longitude);
+
+        } else {
+            return false;
+        }
+    } else {
+        return std::nullopt;
+    }
+}
+
 std::shared_ptr<Gps_View> Mapper::findCrossingPointBetweenLaneAndGpsVector(int roadId, int laneId, Gps_Point car, double heading, double maxDistance, double maxAngle) {
     auto gps{getPositionDescriptor(car.latitude,car.longitude,roadId,laneId)};
     auto lane{m_roads.at(gps->roadId).lanes.find(gps->laneId)->second};
     auto node{lane.nodes.at(gps->nodeId)};
     auto nextNode{lane.nodes.at(gps->nodeId+1)};
+    auto pathFound{false};
+    Gps_View gpsSolution;
 
+    for (double angle=heading-maxAngle; angle < heading+maxAngle; angle+=1.0) { // Non need to be precise
+        auto mergingCarGps{projectGpsPoint({car.latitude,car.longitude},maxDistance,angle)};
+        auto distantMergingPoints{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.latitude, mergingCarGps.latitude, mergingCarGps.longitude)};
 
+        auto baseRoad{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.latitude, node->latitude, node->longitude)};
+        auto distantRoad{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.latitude, nextNode->latitude, nextNode->longitude)};
 
-    auto mergingCarGps{projectGpsPoint({car.latitude,car.longitude},maxDistance,heading)};
-    auto distantMergingPoints{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.latitude, mergingCarGps.latitude, mergingCarGps.longitude)};
+        double Ua{((distantRoad.x-baseRoad.x)*(-baseRoad.y)-(distantRoad.y-baseRoad.y)*(-baseRoad.x))/((distantRoad.y-baseRoad.y)*(distantMergingPoints.x)-(distantRoad.x-baseRoad.x)*(distantMergingPoints.y))};
 
-    auto baseRoad{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.latitude, node->latitude, node->longitude)};
-    auto distantRoad{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.latitude, nextNode->latitude, nextNode->longitude)};
+        double Ub{((distantMergingPoints.x)*(-baseRoad.y)-(distantMergingPoints.y)*(-baseRoad.x))/((distantRoad.y-baseRoad.y)*(distantMergingPoints.x)-(distantRoad.x-baseRoad.x)*(distantMergingPoints.y))};
 
-    double Ua{((distantRoad.x-baseRoad.x)*(-baseRoad.y)-(distantRoad.y-baseRoad.y)*(-baseRoad.x))/((distantRoad.y-baseRoad.y)*(distantMergingPoints.x)-(distantRoad.x-baseRoad.x)*(distantMergingPoints.y))};
-
-    double Ub{((distantMergingPoints.x)*(-baseRoad.y)-(distantMergingPoints.y)*(-baseRoad.x))/((distantRoad.y-baseRoad.y)*(distantMergingPoints.x)-(distantRoad.x-baseRoad.x)*(distantMergingPoints.y))};
-
-    if ((Ua > 0.0 or Ua < 1.0) and (Ub > 0.0 or Ub < 1.)) {
-        //TODO Find point coordinates
+        if (Ua > 0.0 and Ua < 1.0 and Ub > 0.0 and Ub < 1.) {
+            pathFound=true;
+            auto Sx{Ua*distantMergingPoints.x};
+            auto Sy{Ua*distantMergingPoints.y};
+            auto coord{getGpsPointWith2DPointAndBaseGpsPoint(car,Sx,Sy)};
+            gpsSolution = {
+                getHeading(baseRoad.x,baseRoad.y,distantRoad.x,distantRoad.y),
+                coord.latitude,
+                coord.longitude
+            };
+        }
     }
+    if (pathFound) {
+        return std::make_shared<Gps_View>(gpsSolution);
+    } else {
+        auto coord{projectGpsPoint({car.latitude, car.longitude}, maxDistance, gps->heading)};
+        Gps_View buff {
+            gps->heading,
+            coord.latitude,
+            coord.longitude
+        };
+        return std::make_shared<Gps_View>(buff); // Continue on the road
+    }
+}
+
+int Mapper::numberOfLaneInCurrentGpsPoint(Gps_Point car) {
+    return m_roads.at(getPositionDescriptor(car.latitude,car.longitude)->roadId).numberOfLanes;
 }
 
 std::optional<Mapper::Merging_Scenario> Mapper::getFakeCarMergingScenario(double latitude, double longitude, int laneId) {  // Beware that method is tweaked for our use case. Such as the the road = 1 and lane = 1.

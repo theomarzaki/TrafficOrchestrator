@@ -27,7 +27,6 @@
 class Mapper {
 private:
     inline static const std::string MONTLHERY_MAP = "handcraft_montlhery_road_path";
-
     inline static std::shared_ptr<Mapper> mapper;
     inline static std::string pathToMap;
 
@@ -59,7 +58,6 @@ private:
     };
 
     std::vector<Road_Descriptor> m_roads;
-
     int numberOfRoad = 0;
 
     Mapper();
@@ -122,6 +120,12 @@ public:
     static Gps_Point projectGpsPoint(  Gps_Point coord,
                                         double distance,
                                         double heading);
+
+    static Gps_Point getGpsPointWith2DPointAndBaseGpsPoint(Gps_Point baseGps, double x, double y);
+
+    int numberOfLaneInCurrentGpsPoint(Gps_Point car);
+
+    std::optional<bool> isItBehindAGpsOnSameRoadPath(Gps_Point carBase, Gps_Point carCompared);
 
     std::shared_ptr<Gps_View> getCoordinatesBydistanceAndRoadPath(double latitude, double longitude, double distance, double heading, double maxHeading);
 

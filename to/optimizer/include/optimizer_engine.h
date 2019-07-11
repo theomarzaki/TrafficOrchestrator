@@ -11,6 +11,7 @@
 #include <map>
 #include <memory>
 #include <future>
+#include <condition_variable>
 
 #include <network_interface.h>
 #include <maneuver_recommendation.h>
@@ -25,14 +26,17 @@ private:
 
     std::map<std::string,Timebase_Telemetry_Waypoint> game;
     std::atomic_bool kill;
-    std::atomic_bool pause;
     std::shared_ptr<std::thread> optimizerT;
+    std::condition_variable cv;
+
+    std::mutex pause;
 
     OptimizerEngine();
 
     void setBatch(size_t interval);
 
     struct Stashed_Telemetry {
+        bool connected;
         double theta;
         int laneId;
         double heading;
@@ -42,8 +46,8 @@ private:
 
     struct Graph_Element {
         std::shared_ptr<Timebase_Telemetry_Waypoint> telemetry;
-        std::list<Stashed_Telemetry> in_front_neighbours;
-        std::list<Stashed_Telemetry> behind_neighbours;
+        std::list<std::shared_ptr<Graph_Element>> in_front_neighbours;
+        std::list<std::shared_ptr<Graph_Element>> behind_neighbours;
     };
 
 public:

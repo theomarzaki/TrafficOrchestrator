@@ -6,20 +6,26 @@
 
 #include <mapper.h>
 #include <network_interface.h>
+#include <physx.h>
+#include <stack>
+#include <algorithm>
 
-#define ROAD_DEFAULT_SPEED 80
+#define ROAD_DEFAULT_SPEED 20
 #define MAX_ACCELERATION 2.0
 
 #define HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE 0.6
 #define HUMAN_LATENCY_FACTOR 2500
 #define LATENCY_DROP_FACTOR 800
-#define HEADING_REAJUST_RATIO 10.0
-#define SPEED_REAJUST_RATIO 100.0
+#define HEADING_REAJUST_UNIT 10.0
+#define SPEED_REAJUST_UNIT 100.0
 #define GPS_SIGNIFCAND 7
+#define CAR_SIZE_REDUCTION_UNIT 10 // decimeter to meter
+
+#define HIGHWAY_LANE_NUMBER 2
+#define INSERTION_LANE_NUMBER 2
 
 OptimizerEngine::OptimizerEngine() {
     kill.store(false);
-    pause.store(true);
     setBatch(INTERVAL_TIME);
 }
 
@@ -28,11 +34,11 @@ void OptimizerEngine::killOptimizer() {
 }
 
 void OptimizerEngine::startManeuverFeedback() {
-    pause.store(false);
+    pause.unlock();
 }
 
 void OptimizerEngine::pauseManeuverFeedback() {
-    pause.store(true);
+    pause.lock();
 }
 
 std::shared_ptr<std::thread> OptimizerEngine::getThread() {
@@ -42,17 +48,16 @@ std::shared_ptr<std::thread> OptimizerEngine::getThread() {
 void OptimizerEngine::setBatch(size_t interval) {
     optimizerT = std::make_shared<std::thread>([=]() mutable {
         while (!kill) {
-            while (!pause) {
-                locker.lock();
-                auto cars{this->getSimulationResult()}; // TODO Server send
-                for (auto &car : cars) {
-                    SendInterface::sendTCP(SendInterface::createManeuverJSON(telemetryStructToManeuverRecommendation(*car)));
-                }
-                if (!cars.empty()) logger::write("[INFOS] Maneuver send -> "+std::to_string(cars.size())+" cars reached");
-                locker.unlock();
-                std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+            std::unique_lock lock(pause);
+//            cv.wait(lock);
+            locker.lock();
+            auto cars{this->getSimulationResult()}; // TODO Server send
+            for (auto &car : cars) {
+                SendInterface::sendTCP(SendInterface::createManeuverJSON(telemetryStructToManeuverRecommendation(*car)));
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+            std::cout << "[INFOS] Maneuver send -> "+std::to_string(cars.size())+" cars reached\n";
+            locker.unlock();
+            std::this_thread::sleep_for(std::chrono::milliseconds(interval));
         }
     });
 }
@@ -79,11 +84,12 @@ Timebase_Telemetry_Waypoint OptimizerEngine::createTelemetryElementFromRoadUser(
             car->getConnected(),
             static_cast<int>(car->getLanePosition()),
             static_cast<int64_t >(car->getTimestamp()),
-            static_cast<double>(car->getHeading()/HEADING_REAJUST_RATIO),
-            car->getSpeed()/SPEED_REAJUST_RATIO,
+            static_cast<double>(car->getHeading()/HEADING_REAJUST_UNIT),
+            car->getSpeed()/SPEED_REAJUST_UNIT,
             static_cast<double>(car->getAcceleration()),
             static_cast<double>(car->getYawRate()),
             ROAD_DEFAULT_SPEED,
+            Physx::getCarMass(car->getHeight()/CAR_SIZE_REDUCTION_UNIT,car->getLength()/CAR_SIZE_REDUCTION_UNIT,car->getWidth()/CAR_SIZE_REDUCTION_UNIT)
     };
 }
 
@@ -118,7 +124,7 @@ void OptimizerEngine::removeFromSimulation(const std::string& uuid) {
 
 std::shared_ptr<ManeuverRecommendation> OptimizerEngine::telemetryStructToManeuverRecommendation(const Timebase_Telemetry_Waypoint& car) {
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
-    auto speed{static_cast<uint16_t>(car.speed * SPEED_REAJUST_RATIO)};
+    auto speed{static_cast<uint16_t>(car.speed * SPEED_REAJUST_UNIT)};
     auto latitude{static_cast<int32_t>(car.coordinates.latitude * std::pow(10,GPS_SIGNIFCAND))};
     auto longitude{static_cast<int32_t>(car.coordinates.longitude * std::pow(10,GPS_SIGNIFCAND))};
 
@@ -139,7 +145,7 @@ std::shared_ptr<ManeuverRecommendation> OptimizerEngine::telemetryStructToManeuv
     waypoint->setLatitude(latitude);
     waypoint->setSpeed(speed);
     waypoint->setLanePosition(car.laneId);
-    waypoint->setHeading(static_cast<uint16_t>(car.heading*HEADING_REAJUST_RATIO));
+    waypoint->setHeading(static_cast<uint16_t>(car.heading*HEADING_REAJUST_UNIT));
     mergingManeuver->addWaypoint(waypoint);
 
     return mergingManeuver;
@@ -214,7 +220,7 @@ Timebase_Telemetry_Waypoint OptimizerEngine::forceCarMerging(Timebase_Telemetry_
 }
 
 std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimulationResult() {
-    auto cars{std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>>()};
+    std::map<std::string,std::shared_ptr<Timebase_Telemetry_Waypoint>> carStack;
     auto recos{std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>>()};
     std::list<std::string> erase;
 
@@ -226,23 +232,102 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
             } else {
                 car.second = getPositionOnRoadInInterval(car.second,HUMAN_LATENCY_FACTOR,time);
             }
-            if (car.second.connected) {
-                cars.push_back(std::make_shared<Timebase_Telemetry_Waypoint>(car.second));
-            }
+            carStack.insert({car.second.uuid,std::make_shared<Timebase_Telemetry_Waypoint>(car.second)});
         } else {
             erase.push_back(car.first);
         }
     }
 
-    //TODO Create Graph
-    //TODO Optimise graph only with connected
-    //TODO Dump graph
+//    std::vector<std::shared_ptr<Timebase_Telemetry_Waypoint>> sortedCars;
+//
+//    while (!carStack.empty()) {
+//        auto sickSheep{carStack.begin()};
+//        for (auto& element: carStack) {
+//            if (Mapper::getMapper()->isItBehindAGpsOnSameRoadPath(element.second->coordinates,sickSheep->second->coordinates)) {
+//                sickSheep->second = element.second;
+//            }
+//        }
+//        carStack.erase(sickSheep->second->uuid);
+//        sortedCars.push_back(sickSheep->second);
+//    }
+//
+//    auto numberOfLanes{HIGHWAY_LANE_NUMBER+INSERTION_LANE_NUMBER};
+//
+//    std::vector<int> lastLanesElement;
+//    for (int i=0; i<numberOfLanes; i++) { // Find first element of each lanes
+//        for (unsigned long x=sortedCars.size()-1; x > 0; x--) {
+//            if (sortedCars.at(x)->laneId == i) {
+//                lastLanesElement.push_back(x);
+//            }
+//        }
+//    }
+//
+//    std::vector<std::shared_ptr<Graph_Element>> graphList;
+//    for (unsigned long i=sortedCars.size()-1; i > 0; i--) {
+//        graphList.push_back(std::make_shared<Graph_Element>());
+//    }
+//
+//    std::shared_ptr<Graph_Element> graphHead;
+//    auto head{*graphList.begin()};
+//
+//    for (unsigned long i=sortedCars.size()-1; i > 0; i--) {
+//        auto car {sortedCars.at(i)};
+//
+//        const auto& buff = head;
+//
+//        if (car->laneId == 0) {
+//            graphHead = buff;
+//        }
+//        buff->telemetry = std::make_shared<Timebase_Telemetry_Waypoint>(*car);
+//
+//        if (i == sortedCars.size()-1) {
+//            for (const auto& elem: lastLanesElement) {
+//                buff->in_front_neighbours.push_back(graphList.at(elem));
+//            }
+//        } else if (i == 0) {
+//            for (const auto& elem: lastLanesElement) {
+//                buff->behind_neighbours.push_back(graphList.at(elem));
+//            }
+//        } else {
+//            for (const auto& elem: lastLanesElement) {
+//                buff->behind_neighbours.push_back(graphList.at(elem));
+//            }
+//            for (int z=0; z<numberOfLanes; z++) {
+//                for (unsigned long x=i; x > 0; x--) {
+//                    if (sortedCars.at(x)->laneId == z) {
+//                        buff->in_front_neighbours.push_back(graphList.at(x));
+//                    }
+//                }
+//            }
+//        }
+//        lastLanesElement.at(car->laneId) = i;
+//    }
+//
+////    head = graphHead;
+////    std::vector<std::shared_ptr<Graph_Element>> mutableGraphList(graphList);
+////    while(!mutableGraphList.empty()) { // Where the magic happen, not so Magic tho'.
+////        if (head->telemetry->connected) {
+////            if (head->telemetry->laneId == 0) {
+////
+////            } else {
+////
+////            }
+////        }
+////    }
+//
+//    //TODO Optimise graph only with connected
+//
+//    for(auto& car: graphList) {
+//        if(car->telemetry->connected) {
+//            recos.push_back(car->telemetry);
+//        }
+//    }
 
-    for(auto& car: cars) {
-        if(car->connected) {
-            recos.push_back(car);
+    for(auto& car: carStack) {
+        if(car.second->connected) {
+            recos.push_back(car.second);
         }
     }
-    for (auto& uuid : erase ) game.erase(uuid);
+    for (auto& uuid : erase) game.erase(uuid);
     return recos;
 }
