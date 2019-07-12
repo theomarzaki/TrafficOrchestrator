@@ -6,7 +6,7 @@
 #include "include/physx.h"
 
 #define AVERAGE_CAR_MASS 1200 // kg
-#define AVERAGE_CAR_DENSITY 100 // Average mass per square meter in kg
+#define AVERAGE_CAR_DENSITY 110 // Average mass per square meter in kg
 #define BRAKE_PERFORMANCE_COEF 0.6
 
 #define BRAKE_AVERAGE_DISSIPATION_CONSTENT 12000 // Average number of Joules dissipated per meter.

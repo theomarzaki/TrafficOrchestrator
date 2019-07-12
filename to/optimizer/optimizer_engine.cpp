@@ -15,7 +15,7 @@
 
 #define HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE 0.6
 #define HUMAN_LATENCY_FACTOR 2000
-#define LATENCY_DROP_FACTOR 1200
+#define LATENCY_DROP_FACTOR 2000
 #define HEADING_REAJUST_UNIT 10.0
 #define SPEED_REAJUST_UNIT 100.0
 #define GPS_SIGNIFCAND 7
@@ -53,11 +53,12 @@ void OptimizerEngine::setBatch(size_t interval) {
             std::unique_lock<std::mutex> lock(pause);
             cv.wait(lock);
             locker.lock();
-            auto cars{this->getSimulationResult()}; // TODO Server send
+            auto cars{this->getSimulationResult()};
             for (auto &car : cars) {
+                logger::dumpToFile(SendInterface::createRUDDescription(telemetryStructToManeuverRecommendation(*car)));
                 SendInterface::sendTCP(SendInterface::createManeuverJSON(telemetryStructToManeuverRecommendation(*car)));
             }
-            std::cout << "[INFOS] Maneuver send -> "+std::to_string(cars.size())+" cars reached\n";
+            logger::write("[INFOS] Maneuver send -> "+std::to_string(cars.size())+" cars reached\n");
             locker.unlock();
             std::this_thread::sleep_for(std::chrono::milliseconds(interval));
         }
@@ -111,12 +112,11 @@ double OptimizerEngine::mergeHeading(double h0, double h1) {
 
 void OptimizerEngine::updateSimulationState(std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> cars) {
     for (auto& car : *cars ) {
-        if (game.find(car->getUuid()) == game.end()) {
-            game.insert({car->getUuid(),createTelemetryElementFromRoadUser(car)});
-        } else {
-            auto buff{createTelemetryElementFromRoadUser(car)};
-            game[car->getUuid()] = buff; //TODO Filter removed
+        auto buff{createTelemetryElementFromRoadUser(car)};
+        if (game.find(car->getUuid()) != game.end()) {
+            game.erase(car->getUuid());
         }
+        game.insert({car->getUuid(),buff});
     }
 }
 
@@ -154,14 +154,14 @@ std::shared_ptr<ManeuverRecommendation> OptimizerEngine::telemetryStructToManeuv
 }
 
 Timebase_Telemetry_Waypoint OptimizerEngine::getPositionOnRoadInInterval(Timebase_Telemetry_Waypoint car, int64_t interval, int64_t timenow) {
-    int64_t deltaTime = timenow - car.timestamp;//time - car.second.timestamp;4
+    int64_t deltaTime = timenow - car.timestamp;//time - car.second.timestamp
     Gps_Point gps {
             car.coordinates.latitude,
             car.coordinates.longitude,
     };
 
     double distance{Mapper::getDistance(car.speed,car.accelleration, (deltaTime + interval)/1000.0)};
-    std::cout << "DANK "<< distance << " " << car.speed << " " << car.timestamp << " " << deltaTime << "\n";
+//    std::cout << deltaTime << "\n";
 
     auto descriptor = Mapper::getMapper()->getPositionDescriptor(car.coordinates.latitude,car.coordinates.longitude);
 
@@ -174,7 +174,7 @@ Timebase_Telemetry_Waypoint OptimizerEngine::getPositionOnRoadInInterval(Timebas
     auto heading{mergeHeading(car.heading,angle)};
     car.heading = heading;
 
-    std::cout << descriptor->heading << " " << car.heading << " " << nextAngle << " " << angle << " " << heading << std::endl;
+//    std::cout << descriptor->heading << " " << car.heading << " " << nextAngle << " " << angle << " " << heading << std::endl;
 
     car.timestamp = timenow + HUMAN_LATENCY_FACTOR;
     car.coordinates = Mapper::projectGpsPoint(gps, distance,heading);
@@ -229,15 +229,17 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
     auto recos{std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>>()};
     std::list<std::string> erase;
 
+    std::string merginCarUuid;
+
     for (auto& car: game) {
         int64_t time{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
         if ((time - car.second.timestamp) < LATENCY_DROP_FACTOR) {
             if (car.second.laneId == 0) {
+                std::cout << std::setprecision(GPS_SIGNIFCAND) << std::fixed << car.second.uuid << " " << car.second.laneId << " " << car.second.coordinates.latitude << "," << car.second.coordinates.longitude << std::endl; // TODO lane_position fix
                 car.second = forceCarMerging(car.second,HUMAN_LATENCY_FACTOR,time);
+                merginCarUuid = car.second.uuid;
             } else {
-                std::cout << "Linear car got -> " << car.second.coordinates.latitude << "," << car.second.coordinates.longitude << std::endl;
                 car.second = getPositionOnRoadInInterval(car.second,HUMAN_LATENCY_FACTOR,time);
-                std::cout << "Linear car got -> " << car.second.coordinates.latitude << "," << car.second.coordinates.longitude << std::endl;
             }
             carStack.insert({car.second.uuid,std::make_shared<Timebase_Telemetry_Waypoint>(car.second)});
         } else {
@@ -277,32 +279,31 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
         std::shared_ptr<Graph_Element> graphHead;
         auto head{graphList.at(0)};
 
-        for (long i=sortedCars.size()-1; i >= 0; i--) {
+        for (long i=sortedCars.size()-1, x=0; i >= 0; i--,x++) {
             auto car {sortedCars.at(i)};
 
-            const auto& buff = head;
-
-            if (car->laneId == 0) {
-                graphHead = buff;
+            head = graphList.at(x);
+            if (car->uuid == merginCarUuid) {
+                graphHead = head;
             }
-            buff->telemetry = std::make_shared<Timebase_Telemetry_Waypoint>(*car);
+            head->telemetry = car;
 
             if (i == static_cast<long>(sortedCars.size()-1)) {
                 for (const auto& elem: lastLanesElement) {
-                    buff->in_front_neighbours.push_back(graphList.at(elem));
+                    head->in_front_neighbours.push_back(graphList.at(elem));
                 }
             } else if (i == 0) {
                 for (const auto& elem: lastLanesElement) {
-                    buff->behind_neighbours.push_back(graphList.at(elem));
+                    head->behind_neighbours.push_back(graphList.at(elem));
                 }
             } else {
                 for (const auto& elem: lastLanesElement) {
-                    buff->behind_neighbours.push_back(graphList.at(elem));
+                    head->behind_neighbours.push_back(graphList.at(elem));
                 }
                 for (int z=0; z<numberOfLanes; z++) {
-                    for (unsigned long x=i; x > 0; x--) {
-                        if (sortedCars.at(x)->laneId == z) {
-                            buff->in_front_neighbours.push_back(graphList.at(x));
+                    for (unsigned long y=i; y > 0; y--) {
+                        if (sortedCars.at(y)->laneId == z) {
+                            head->in_front_neighbours.push_back(graphList.at(y));
                         }
                     }
                 }
@@ -325,17 +326,21 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
 
     //TODO Optimise graph only with connected
 
-//    for(auto& car: graphList) {
-//        if(car->telemetry->connected) {
-//            recos.push_back(car->telemetry);
-//        }
-//    }
-
-    for(auto& car: carStack) {
-        if(car.second->connected) {
-            recos.push_back(car.second);
+    for(auto& car: graphList) {
+        if(car->telemetry->connected) {
+            std::cout << std::setprecision(GPS_SIGNIFCAND) << std::fixed << car->telemetry->uuid << " " << car->telemetry->laneId << " " << car->telemetry->coordinates.latitude << "," << car->telemetry->coordinates.longitude << "\n";
+            recos.push_back(car->telemetry);
         }
     }
+
+    std::cout << std::endl;
+
+//    for(auto& car: carStack) {
+//        if(car.second->connected) {
+//            recos.push_back(car.second);
+//        }
+//    }
+// TODO Game updater Soon
     for (auto& uuid : erase) game.erase(uuid);
     return recos;
 }

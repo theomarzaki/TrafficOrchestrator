@@ -239,8 +239,12 @@ std::shared_ptr<Mapper::Gps_Descriptor> Mapper::getPositionDescriptor(double lat
                 buffIndex = 1;
                 previousNode = *lane.nodes.at(nearestDescription.nodeId - 1);
                 nextNode = *lane.nodes.at(0);
+            } else if (nearestDescription.nodeId == maxIndex-1) {
+                buffIndex = 0;
+                previousNode = *lane.nodes.at(nearestDescription.nodeId -1);
+                nextNode = *lane.nodes.at(nearestDescription.nodeId +1);
             } else {
-                buffIndex = nearestDescription.nodeId +2;
+                buffIndex = nearestDescription.nodeId+2;
                 previousNode = *lane.nodes.at(nearestDescription.nodeId -1);
                 nextNode = *lane.nodes.at(nearestDescription.nodeId +1);
             }
@@ -396,9 +400,9 @@ std::shared_ptr<Gps_View> Mapper::findCrossingPointBetweenLaneAndGpsVector(int r
             auto Sy{Ua*distantMergingPoints.y};
             auto coord{getGpsPointWith2DPointAndBaseGpsPoint(car,Sx,Sy)};
             gpsSolution = {
-                getHeading(baseRoad.x,baseRoad.y,distantRoad.x,distantRoad.y),
                 coord.latitude,
-                coord.longitude
+                coord.longitude,
+                getHeading(baseRoad.x,baseRoad.y,distantRoad.x,distantRoad.y)
             };
         }
     }
@@ -407,9 +411,9 @@ std::shared_ptr<Gps_View> Mapper::findCrossingPointBetweenLaneAndGpsVector(int r
     } else {
         auto coord{projectGpsPoint({car.latitude, car.longitude}, maxDistance, gps->heading)};
         Gps_View buff {
-            gps->heading,
             coord.latitude,
-            coord.longitude
+            coord.longitude,
+            gps->heading
         };
         return std::make_shared<Gps_View>(buff); // Continue on the road
     }

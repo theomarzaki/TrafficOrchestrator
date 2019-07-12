@@ -176,7 +176,78 @@ std::string SendInterface::createManeuverJSON(std::shared_ptr<ManeuverRecommenda
     document.Accept(writer);
 
     return strbuf.GetString();
+}
 
+// STUBY BUGZY YOU WILL CHANGE THE MESSAGE TO HELP ME
+std::string SendInterface::createRUDDescription(std::shared_ptr<ManeuverRecommendation> maneuverRec) {
+
+    Document document; // RapidJSON Document to build JSON message.
+    document.SetObject();
+    Document::AllocatorType &allocator = document.GetAllocator();
+
+    /* Adds trajectory recommendation fields to the JSON document. */
+    document.AddMember("type", Value().SetString("ru_description", allocator), allocator)
+            .AddMember("context", Value().SetString("general", allocator), allocator)
+            .AddMember("origin", Value().SetString("self", allocator), allocator)
+            .AddMember("version", Value().SetString(maneuverRec->getVersion().c_str(), allocator), allocator)
+            .AddMember("source_uuid", Value().SetString(std::string(maneuverRec->getUuidTo()+"_rec").c_str(), allocator), allocator)
+            .AddMember("timestamp", Value().SetUint64(maneuverRec->getTimestamp()), allocator)
+            .AddMember("message_id", Value().SetString(maneuverRec->getMessageID().c_str(), allocator), allocator);
+
+    Value message(kObjectType);
+    message.AddMember("uuid", Value().SetString(std::string(maneuverRec->getUuidTo()+"_rec").c_str(), allocator), allocator)
+            .AddMember("its_station_type", Value().SetString("passengerCar", allocator), allocator)
+            .AddMember("connected", Value().SetBool(true), allocator)
+            .AddMember("position_type", Value().SetString("gnss_raw_rtk", allocator), allocator)
+            .AddMember("heading", Value().SetInt(maneuverRec->getWaypoints().at(0)->getHeading()), allocator)
+            .AddMember("speed", Value().SetInt(maneuverRec->getWaypoints().at(0)->getSpeed()), allocator)
+            .AddMember("lane_position", Value().SetUint(maneuverRec->getWaypoints().at(0)->getLanePosition()), allocator)
+            .AddMember("acceleration", Value().SetUint(0), allocator)
+            .AddMember("yaw_rate", Value().SetUint(0), allocator)
+            .AddMember("raw_data", Value().SetBool(true), allocator)
+            .AddMember("color", Value().SetString("0xFFFFFF", allocator), allocator)
+            .AddMember("existence_probability", Value().SetUint(100), allocator);
+
+    Value position(kObjectType);
+    position.AddMember("latitude", Value().SetInt64(maneuverRec->getWaypoints().at(0)->getLatitude()), allocator)
+            .AddMember("longitude", Value().SetInt64(maneuverRec->getWaypoints().at(0)->getLongitude()), allocator);
+    message.AddMember("position", position, allocator);
+
+    Value size(kObjectType);
+    size.AddMember("length", Value().SetFloat(4), allocator)
+        .AddMember("width", Value().SetFloat(2), allocator)
+        .AddMember("height", Value().SetFloat(2), allocator);
+    message.AddMember("size", size, allocator);
+
+    Value accuracy(kObjectType);
+    accuracy.AddMember("position_semi_major_confidence", Value().SetInt(2), allocator)
+            .AddMember("position_semi_minor_confidence", Value().SetInt(2), allocator)
+            .AddMember("position_semi_major_orientation", Value().SetInt(2), allocator)
+            .AddMember("heading", Value().SetInt(2), allocator)
+            .AddMember("speed", Value().SetInt(10), allocator)
+            .AddMember("acceleration", Value().SetInt(2), allocator)
+            .AddMember("yaw_rate", Value().SetInt(2), allocator);
+
+    Value size2(kObjectType);
+    size2.AddMember("length", Value().SetInt(1), allocator)
+            .AddMember("width", Value().SetInt(1), allocator)
+            .AddMember("height", Value().SetInt(1), allocator);
+    accuracy.AddMember("size", size2, allocator);
+
+    message.AddMember("accuracy", accuracy, allocator);
+
+    document.AddMember("message", message, allocator);
+
+    Value extra(kArrayType);
+    document.AddMember("extra", extra, allocator);
+
+    document.AddMember("signature", Value().SetString(maneuverRec->getSignature().c_str(), allocator), allocator);
+
+    StringBuffer strbuf;
+    Writer<StringBuffer> writer(strbuf);
+    document.Accept(writer);
+
+    return strbuf.GetString();
 }
 
 int SendInterface::sendTCP(std::string jsonString, bool newSocket) {

@@ -39,6 +39,9 @@ namespace SendInterface {
     std::string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq);
     std::string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq);
     std::string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec);
+
+    std::string createRUDDescription(std::shared_ptr<ManeuverRecommendation> maneuverRec);
+
     int sendTCP(std::string jsonString, bool newSocket=false);
 }
 

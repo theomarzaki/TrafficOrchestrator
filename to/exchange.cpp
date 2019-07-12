@@ -228,6 +228,12 @@ void handleUnSubscriptionResponse(Document &document) {
 }
 
 void handleNotifyAdd(Document &document) {
+
+    StringBuffer buffer;
+    Writer<StringBuffer> writer(buffer);
+    document["message"]["ru_description_list"][0].Accept(writer);
+    logger::dumpToFile(buffer.GetString());
+
 	logger::write("Notify Add Received.");
 	const vector<Detected_Road_User> &roadUsers = assignNotificationVals(document).ru_description_list;
     // we trace the reception as soon as possible and when the message_id stays available
@@ -238,12 +244,12 @@ void handleNotifyAdd(Document &document) {
                       if ("placeholder" != roadUser.message_id) {
                           std::stringstream log;
                           // we may have v2x_gateway into the source_uuid, bu we receive the original one
-                          log << "traffic_orchestrator ru_description received_from v2x_gateway "
+                          /*log << "traffic_orchestrator ru_description received_from v2x_gateway "
                               << roadUser.message_id
                               << " at "
                               << std::chrono::duration_cast<std::chrono::milliseconds>(
                                       std::chrono::system_clock::now().time_since_epoch()).count()
-                              << std::endl;
+                              << std::endl;*/
                           std::cout << log.str();
                           std::cout.flush();
                       }
@@ -259,7 +265,7 @@ bool handleTrajectoryFeedback(Document &document) {
     // we trace the reception as soon as possible
     std::stringstream log;
     // we may have v2x_gateway into the source_uuid, bu we receive the original one
-    log << "traffic_orchestrator maneuver_feedback received_from v2x_gateway "
+    /*log << "traffic_orchestrator maneuver_feedback received_from v2x_gateway "
         // TODO use std:optional instead of use a "placeholder" default value
         << ("placeholder" != maneuverFeed->getUuidManeuver() ? maneuverFeed->getUuidManeuver() : "")
         << "/"
@@ -271,7 +277,7 @@ bool handleTrajectoryFeedback(Document &document) {
         << " at "
         << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count()
-        << std::endl;
+        << std::endl; */
     std::cout << log.str();
     std::cout.flush();
 	auto roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
