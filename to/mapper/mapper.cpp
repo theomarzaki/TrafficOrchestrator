@@ -147,7 +147,7 @@ Point_2D Mapper::transformCoordinatesFromGPSTo2DGrid(double latitudeBase, double
     y = latitude < latitudeBase ? -y : y;
     return {
         x,
-        y
+        y,
     };
 }
 
@@ -298,12 +298,15 @@ std::shared_ptr<Mapper::Gps_Descriptor> Mapper::getPositionDescriptor(double lat
 
 std::shared_ptr<Gps_View> Mapper::getCoordinatesBydistanceAndRoadPath(double latitude, double longitude, double distance, double heading, double maxHeading) {
     auto gps{getPositionDescriptor(latitude,longitude)};
+    auto distanceToMiddle{getPositionDescriptor(latitude,longitude,1)->distance_to_middle};
     auto lane{m_roads.at(gps->roadId).lanes.find(gps->laneId)->second};
     auto node{lane.nodes.at(gps->nodeId)};
     auto nextNode{lane.nodes.at(gps->nodeId+1)};
 
-    if (gps->distance_to_middle > distance/3) {
-        for (int i = 2; distance > 0; i++) {
+     std::cout << distance << " " << distanceToMiddle << std::endl;
+
+    if (distanceToMiddle > distance/2) {
+        for (unsigned long i = 2; i < lane.nodes.size()-2; i++) {
             auto nextDistance{distanceBetween2GPSCoordinates(latitude, longitude, nextNode->latitude, nextNode->longitude)};
             if (nextDistance < distance) {
                 distance -= nextDistance;
@@ -358,7 +361,7 @@ std::optional<bool> Mapper::isItBehindAGpsOnSameRoadPath(Gps_Point carBase, Gps_
             } else if (gpsBase->nodeId == 0) {
                 nextIndex=1;
             } else {
-                nextIndex+=1;
+                nextIndex++;
             }
 
             auto nextNodeBase{laneBase->second.nodes.at(nextIndex)};
@@ -383,12 +386,12 @@ std::shared_ptr<Gps_View> Mapper::findCrossingPointBetweenLaneAndGpsVector(int r
     auto pathFound{false};
     Gps_View gpsSolution;
 
-    for (double angle=heading-maxAngle; angle < heading+maxAngle; angle+=1.0) { // Non need to be precise
-        auto mergingCarGps{projectGpsPoint({car.latitude,car.longitude},maxDistance,angle)};
-        auto distantMergingPoints{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.latitude, mergingCarGps.latitude, mergingCarGps.longitude)};
+    auto baseRoad{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.longitude, node->latitude, node->longitude)};
+    auto distantRoad{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.longitude, nextNode->latitude, nextNode->longitude)};
 
-        auto baseRoad{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.latitude, node->latitude, node->longitude)};
-        auto distantRoad{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.latitude, nextNode->latitude, nextNode->longitude)};
+    for (double angle=heading-maxAngle; angle < heading+maxAngle; angle+=1.0) { // TODO Can break
+        auto mergingCarGps{projectGpsPoint({car.latitude,car.longitude},maxDistance,angle)};
+        auto distantMergingPoints{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.longitude, mergingCarGps.latitude, mergingCarGps.longitude)};
 
         double Ua{((distantRoad.x-baseRoad.x)*(-baseRoad.y)-(distantRoad.y-baseRoad.y)*(-baseRoad.x))/((distantRoad.y-baseRoad.y)*(distantMergingPoints.x)-(distantRoad.x-baseRoad.x)*(distantMergingPoints.y))};
 

@@ -60,6 +60,7 @@ public:
     static std::shared_ptr<ManeuverRecommendation> telemetryStructToManeuverRecommendation(const Timebase_Telemetry_Waypoint& car);
     static OptimizerEngine* getEngine();
     static double mergeHeading(double h0, double h1);
+    static double getHeadingDelta(double h0, double h1);
 
     std::shared_ptr<std::thread> getThread();
     void killOptimizer();

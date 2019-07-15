@@ -8,6 +8,7 @@
 namespace Physx {
     double getSecurityDistance(double carSpeed, double objectSpeed, double carMass);
     double getCarMass(double height, double length, double width);
+    double getDistanceWithSpeedLimitAndjustAndLinearAcceleration(double deltaT, double acceleration, double speed, double speedLimit);
 }
 
 

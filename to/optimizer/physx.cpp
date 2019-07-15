@@ -16,7 +16,7 @@ double Physx::getSecurityDistance(double carSpeed, double objectSpeed, double ca
     auto minDistance{carSpeed*HUMAN_REACTION_TIME};
     auto distance{0.0};
     if (carSpeed > objectSpeed) {
-        distance = 0.5 * carMass * std::pow(carSpeed - objectSpeed, 2) / (BRAKE_AVERAGE_DISSIPATION_CONSTENT*(carMass/AVERAGE_CAR_MASS)*BRAKE_PERFORMANCE_COEF) + minDistance;
+        distance = 0.5 * carMass * (std::pow(carSpeed, 2) - std::pow(objectSpeed, 2))  / (BRAKE_AVERAGE_DISSIPATION_CONSTENT*(carMass/AVERAGE_CAR_MASS)*BRAKE_PERFORMANCE_COEF) + minDistance;
     }
     return distance > minDistance ? distance : minDistance;
 }
@@ -28,3 +28,17 @@ double Physx::getCarMass(double height, double length, double width) {
         return height*length*width*AVERAGE_CAR_DENSITY;
     }
 }
+
+//double Physx::getDistanceWithSpeedLimitAndjustAndLinearAcceleration(double deltaT,
+//                                                                    double acceleration,
+//                                                                    double speed,
+//                                                                    double speedLimit) {
+//    auto deltaV{speedLimit - speed};
+//    auto needTime{std::fabs(deltaV/acceleration)};
+//
+//    if (needTime < deltaT) {
+//        (deltaT-needTime)*speedLimit+(deltaT-(deltaT-needTime))*speed+0.5*acceleration*needTime*needTime;
+//    } else {
+//
+//    }
+//}

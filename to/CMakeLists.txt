@@ -36,3 +36,5 @@ target_link_libraries(${PROJECT_NAME}
                         includes)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+file(REMOVE ${CMAKE_BINARY_DIR}/logs/Montlhery_dump.json)

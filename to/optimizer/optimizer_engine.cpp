@@ -13,7 +13,7 @@
 #define ROAD_DEFAULT_SPEED 20
 #define MAX_ACCELERATION 2.0
 
-#define HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE 0.6
+#define HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE 0.4
 #define HUMAN_LATENCY_FACTOR 2000
 #define LATENCY_DROP_FACTOR 2000
 #define HEADING_REAJUST_UNIT 10.0
@@ -110,6 +110,11 @@ double OptimizerEngine::mergeHeading(double h0, double h1) {
     }
 }
 
+double OptimizerEngine::getHeadingDelta(double h0, double h1) {
+    auto delta{std::fabs(h0 - h1)};
+    return delta < 180.0 ? delta : 360 - delta;
+}
+
 void OptimizerEngine::updateSimulationState(std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> cars) {
     for (auto& car : *cars ) {
         auto buff{createTelemetryElementFromRoadUser(car)};
@@ -161,7 +166,6 @@ Timebase_Telemetry_Waypoint OptimizerEngine::getPositionOnRoadInInterval(Timebas
     };
 
     double distance{Mapper::getDistance(car.speed,car.accelleration, (deltaTime + interval)/1000.0)};
-//    std::cout << deltaTime << "\n";
 
     auto descriptor = Mapper::getMapper()->getPositionDescriptor(car.coordinates.latitude,car.coordinates.longitude);
 
@@ -170,11 +174,11 @@ Timebase_Telemetry_Waypoint OptimizerEngine::getPositionOnRoadInInterval(Timebas
     auto angle{descriptor->heading};
     auto nextAngle{descriptor->next_heading};
 
-    angle -= (angle - nextAngle);
-    auto heading{mergeHeading(car.heading,angle)};
-    car.heading = heading;
+    auto heading{mergeHeading(car.heading,std::fmod(angle+getHeadingDelta(nextAngle,angle)*2,360))}; //
 
-//    std::cout << descriptor->heading << " " << car.heading << " " << nextAngle << " " << angle << " " << heading << std::endl;
+//    std::cout << car.heading << " " << nextAngle << " " << angle << " " << heading << std::endl;
+
+    car.heading = heading;
 
     car.timestamp = timenow + HUMAN_LATENCY_FACTOR;
     car.coordinates = Mapper::projectGpsPoint(gps, distance,heading);
@@ -188,16 +192,20 @@ Timebase_Telemetry_Waypoint OptimizerEngine::forceCarMerging(Timebase_Telemetry_
     double distance;
     double deltaT{(deltaTime + interval)/1000.0};
 
+    std::cout << "L " << car.speed << std::endl;
+
     double deltaV{car.max_speed - car.speed};
     double needTime{(deltaV / MAX_ACCELERATION)};
     if (car.speed < car.max_speed) {
         if (needTime < deltaT) {
             distance = (deltaT-needTime)*car.max_speed+(deltaT-(deltaT-needTime))*car.speed+0.5*MAX_ACCELERATION*needTime*needTime;
             car.speed = car.max_speed;
+            std::cout << "Short " << distance << std::endl;
         } else {
             auto speed{MAX_ACCELERATION*deltaT+car.speed};
             distance = (speed + 0.5*MAX_ACCELERATION*deltaT)*deltaT;
             car.speed = speed;
+            std::cout << "Long " << distance << " " << car.speed << std::endl;
         }
     } else {
         needTime *= -1;
@@ -234,8 +242,7 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
     for (auto& car: game) {
         int64_t time{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
         if ((time - car.second.timestamp) < LATENCY_DROP_FACTOR) {
-            if (car.second.laneId == 0) {
-                std::cout << std::setprecision(GPS_SIGNIFCAND) << std::fixed << car.second.uuid << " " << car.second.laneId << " " << car.second.coordinates.latitude << "," << car.second.coordinates.longitude << std::endl; // TODO lane_position fix
+            if (car.second.laneId == 0 and Mapper::getMapper()->getPositionDescriptor(car.second.coordinates.latitude,car.second.coordinates.longitude)->laneId == car.second.laneId) {
                 car.second = forceCarMerging(car.second,HUMAN_LATENCY_FACTOR,time);
                 merginCarUuid = car.second.uuid;
             } else {
@@ -327,7 +334,7 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
     //TODO Optimise graph only with connected
 
     for(auto& car: graphList) {
-        if(car->telemetry->connected) {
+        if(car->telemetry->connected and car->telemetry->laneId == 0) {
             std::cout << std::setprecision(GPS_SIGNIFCAND) << std::fixed << car->telemetry->uuid << " " << car->telemetry->laneId << " " << car->telemetry->coordinates.latitude << "," << car->telemetry->coordinates.longitude << "\n";
             recos.push_back(car->telemetry);
         }
@@ -335,12 +342,7 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
 
     std::cout << std::endl;
 
-//    for(auto& car: carStack) {
-//        if(car.second->connected) {
-//            recos.push_back(car.second);
-//        }
-//    }
-// TODO Game updater Soon
+    // TODO Inter frame game updater ... Soon
     for (auto& uuid : erase) game.erase(uuid);
     return recos;
 }
