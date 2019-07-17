@@ -340,10 +340,10 @@ void terminate_to(int signum ){
 	exit(signum);
 }
 
-void handleMessage(const std::string &captured_data){
+void handleAIMessage(const std::string &captured_data){
 	rapidjson::Document document = parse(captured_data);
 	message_type messageType = filterInput(document);
-	if (captured_data == "\n" || captured_data == std::string()) {
+	if (captured_data == "\n" || captured_data.empty()) {
 			messageType = message_type::heart_beat;
 	}
 
@@ -378,31 +378,60 @@ void handleMessage(const std::string &captured_data){
 	}
 }
 
+void handleGraphMessage(const std::string &captured_data){
+    rapidjson::Document document = parse(captured_data);
+    message_type messageType = filterInput(document);
+    if (captured_data == "\n" || captured_data.empty()) {
+        messageType = message_type::heart_beat;
+    }
+
+    OptimizerEngine::getEngine()->startManeuverFeedback();
+    switch (messageType) {
+        case message_type::notify_add:
+            handleNotifyAdd(document);
+            OptimizerEngine::getEngine()->locker.lock();
+            OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+            OptimizerEngine::getEngine()->locker.unlock();
+            break;
+        case message_type::notify_delete:
+            handleNotifyDelete(document);
+            OptimizerEngine::getEngine()->locker.lock();
+            for (auto& uuid : assignNotificationDeleteVals(document)) {
+                std::cout << uuid << std::endl;
+                OptimizerEngine::getEngine()->removeFromSimulation(uuid);
+            }
+            OptimizerEngine::getEngine()->locker.unlock();
+            break;
+        case message_type::subscription_response:
+            handleSubscriptionResponse();
+            break;
+        case message_type::unsubscription_response:
+            OptimizerEngine::getEngine()->pauseManeuverFeedback();
+            handleUnSubscriptionResponse();
+            break;
+        case message_type::trajectory_feedback:
+            if (!handleTrajectoryFeedback(document)) {
+                OptimizerEngine::getEngine()->locker.lock();
+                OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+                OptimizerEngine::getEngine()->locker.unlock();
+            }
+            break;
+        case message_type::heart_beat:
+            break;
+        case message_type::reconnect:
+            logger::write("Reconnecting");
+            break;
+        default:
+            logger::write("error: couldn't handle message " + captured_data);
+            break;
+    }
+}
+
 
 int main() {
 
     char readBuffer[65536];
     rapidjson::Document args;
-
-//
-//        do {
-//            auto datapacket = listenDataTCP(socket_c);
-//						listening = true;
-//						for(const string & captured_data : datapacket){
-//							if(captured_data == "RECONNECT") listening = false;
-//							handleMessage(captured_data);
-//        		}
-//        } while (listening);
-//    }
-//
-//    while (true) {
-//        std::this_thread::sleep_for(std::chrono::seconds(10));
-//				close(socket_c);
-//				lstm_model.reset();
-//				rl_model.reset();
-//        main();
-//    }
-//
 
     auto file{fopen("include/TO_config.json", "r")};
     if (file == nullptr) {
@@ -451,84 +480,10 @@ int main() {
             do {
                 for (const auto& captured_data : listenDataTCP(socket_c)) {
                     try {
-                        OptimizerEngine::getEngine()->startManeuverFeedback();
-
-                        auto document{parse(captured_data)};
-                        message_type messageType{filterInput(document)};
-                        if (captured_data == "\n" || captured_data.empty()) {
-                            messageType = message_type::heart_beat;
-                        }
-
                         if (args["computation_with_ai"].GetBool()) {
-                            switch (messageType) {
-                            case message_type::notify_add:
-                                handleNotifyAdd(document);
-                                computeManeuvers();
-                                break;
-                            case message_type::notify_delete:
-                                handleNotifyDelete(document);
-                                break;
-                            case message_type::subscription_response:
-                                handleSubscriptionResponse();
-                                break;
-                            case message_type::unsubscription_response:
-                                handleUnSubscriptionResponse();
-                                break;
-                            case message_type::trajectory_feedback:
-                                if (!handleTrajectoryFeedback(document)) {
-                                    computeManeuvers();
-                                }
-                            break;
-                            case message_type::heart_beat:
-                                break;
-                            case message_type::reconnect:
-                                logger::write("Reconnecting");
-                                break;
-                            default:
-                                logger::write("error: couldn't handle message " + captured_data);
-                                break;
-                            }
+                            handleAIMessage(captured_data);
                         } else {
-                            OptimizerEngine::getEngine()->startManeuverFeedback();
-                            switch (messageType) {
-                            case message_type::notify_add:
-                                handleNotifyAdd(document);
-                                OptimizerEngine::getEngine()->locker.lock();
-                                OptimizerEngine::getEngine()->updateSimulationState(database->dump());
-                                OptimizerEngine::getEngine()->locker.unlock();
-                                break;
-                            case message_type::notify_delete:
-                                handleNotifyDelete(document);
-                                OptimizerEngine::getEngine()->locker.lock();
-                                for (auto& uuid : assignNotificationDeleteVals(document)) {
-                                    std::cout << uuid << std::endl;
-                                    OptimizerEngine::getEngine()->removeFromSimulation(uuid);
-                                }
-                                OptimizerEngine::getEngine()->locker.unlock();
-                                break;
-                            case message_type::subscription_response:
-                                handleSubscriptionResponse();
-                                break;
-                            case message_type::unsubscription_response:
-                                OptimizerEngine::getEngine()->pauseManeuverFeedback();
-                                handleUnSubscriptionResponse();
-                                break;
-                            case message_type::trajectory_feedback:
-                                if (!handleTrajectoryFeedback(document)) {
-                                    OptimizerEngine::getEngine()->locker.lock();
-                                    OptimizerEngine::getEngine()->updateSimulationState(database->dump());
-                                    OptimizerEngine::getEngine()->locker.unlock();
-                                }
-                                break;
-                            case message_type::heart_beat:
-                                break;
-                            case message_type::reconnect:
-                                logger::write("Reconnecting");
-                                break;
-                            default:
-                                logger::write("error: couldn't handle message " + captured_data);
-                                break;
-                            }
+                            handleGraphMessage(captured_data);
                         }
                     } catch (const std::exception &e) {
                         logger::write("[ERROR] Malformed JSON");

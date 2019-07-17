@@ -97,22 +97,37 @@ Timebase_Telemetry_Waypoint OptimizerEngine::createTelemetryElementFromRoadUser(
 }
 
 double OptimizerEngine::mergeHeading(double h0, double h1) {
-    if ( std::fabs(h0-h1) < 180 ) {
-        h0 *= HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE;
-        h1 += h1*(1-HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE);
-        return (h0+h1)/2;
-    } else { // TODO Opah need serious refacto
-        if (h0 > h1 ) {
-            return std::fmod(h0+(-(h0-360)+h1)/2,360);
-        } else {
-            return std::fmod(h1 + (-(h1 - 360) + h0) / 2, 360);
-        }
+    if (h0 < h1) {
+        auto buff{h0};
+        h0 = h1;
+        h1 = buff;
+    }
+    auto delta{getHeadingDelta(h0,h1)};
+    if (std::fabs(h0 - h1) > 180) {
+        auto adjust{delta/(1+HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE)};
+        return h1 - adjust > 0 ? h1 - adjust : h0 + (delta - adjust);
+    } else {
+        return h1 + delta/(1+HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE);
     }
 }
 
 double OptimizerEngine::getHeadingDelta(double h0, double h1) {
+    if (h0 < h1) {
+        auto buff{h0};
+        h0 = h1;
+        h1 = buff;
+    }
     auto delta{std::fabs(h0 - h1)};
     return delta < 180.0 ? delta : 360 - delta;
+}
+
+double OptimizerEngine::safeHeadingValue(double heading) {
+    auto value{std::fmod(heading,360)};
+    if (value < 0) {
+        return 360+value;
+    } else {
+        return value;
+    }
 }
 
 void OptimizerEngine::updateSimulationState(std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> cars) {
@@ -174,7 +189,7 @@ Timebase_Telemetry_Waypoint OptimizerEngine::getPositionOnRoadInInterval(Timebas
     auto angle{descriptor->heading};
     auto nextAngle{descriptor->next_heading};
 
-    auto heading{mergeHeading(car.heading,std::fmod(angle+getHeadingDelta(nextAngle,angle)*2,360))}; //
+    auto heading{mergeHeading(car.heading,safeHeadingValue(angle+getHeadingDelta(nextAngle,angle)*2))};
 
 //    std::cout << car.heading << " " << nextAngle << " " << angle << " " << heading << std::endl;
 

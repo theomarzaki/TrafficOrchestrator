@@ -61,6 +61,7 @@ public:
     static OptimizerEngine* getEngine();
     static double mergeHeading(double h0, double h1);
     static double getHeadingDelta(double h0, double h1);
+    static double safeHeadingValue(double heading)
 
     std::shared_ptr<std::thread> getThread();
     void killOptimizer();
