@@ -22,7 +22,7 @@ void Waypoint::setLanePosition(uint4 parameter){lane_position = parameter;}
 void Waypoint::setHeading(uint16_t parameter){heading = parameter;}
 
 
-ostream& operator<<(ostream& os, Waypoint * waypoint) {
+std::ostream& operator<<(std::ostream& os, Waypoint * waypoint) {
 
   os
   << "["

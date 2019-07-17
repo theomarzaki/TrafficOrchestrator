@@ -15,12 +15,10 @@
 
 #include "road_user.h"
 
-using namespace std;
-
 class Database {
 
 private:
-    unordered_map<string, shared_ptr<RoadUser>> database;
+    std::unordered_map<std::string, std::shared_ptr<RoadUser>> database;
 
 public:
 
@@ -28,12 +26,12 @@ public:
 
     /* General access and display functions. */
     void displayDatabase();
-    void upsert(shared_ptr<RoadUser> roadUser);
-    void deleteRoadUser(string uuid);
+    void upsert(std::shared_ptr<RoadUser> roadUser);
+    void deleteRoadUser(std::string uuid);
     void deleteAll();
-    std::shared_ptr<RoadUser> findRoadUser(string uuid);
+    std::shared_ptr<RoadUser> findRoadUser(std::string uuid);
     int getSize();
-    vector<shared_ptr<RoadUser>> findAll();
+    std::vector<std::shared_ptr<RoadUser>> findAll();
     std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> dump();
 };
 

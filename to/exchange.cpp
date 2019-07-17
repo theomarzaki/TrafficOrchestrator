@@ -27,8 +27,7 @@
 #include <torch/torch.h>
 #include <torch/script.h>
 
-#include "road_safety.cpp"
-
+#include <road_safety.h>
 #include <logger.h>
 #include <database.h>
 #include <maneuver_feedback.h>
@@ -38,10 +37,6 @@
 #include <detection_interface.h>
 #include <create_trajectory.h>
 #include <network_interface.h>
-
-using namespace rapidjson;
-using namespace experimental;
-using namespace std::chrono;
 
 auto database{std::make_shared<Database>()};
 std::shared_ptr<SubscriptionResponse> subscriptionResponse;
@@ -55,11 +50,11 @@ std::shared_ptr<torch::jit::script::Module> lstm_model;
 std::shared_ptr<torch::jit::script::Module> rl_model;
 
 
-vector<shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Detected_Road_User> &v) {
+vector<std::shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Detected_Road_User> &v) {
 
-	logger::write("Detected number of RoadUsers: " + string(to_string(v.size())));
+	logger::write("Detected number of RoadUsers: " + std::string(std::to_string(v.size())));
 
-	vector<shared_ptr<RoadUser>> road_users;
+	vector<std::shared_ptr<RoadUser>> road_users;
 
 	for(const auto& d : v) {
 
@@ -168,7 +163,7 @@ void generateReqID(){
 
 void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommendation>> &v) {
 	for(const auto &m : v) {
-		m->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
+		m->setSourceUUID("traffic_orchestrator_" + std::to_string(request_id));
         auto maneuverJson{SendInterface::createManeuverJSON(m)};
         logger::write(maneuverJson);
         // we trace the emission as far as possible
@@ -191,7 +186,7 @@ void initiateSubscription() {
 	std::chrono::milliseconds timeSub = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 	auto subscriptionReq{std::make_shared<SubscriptionRequest>()};
 	generateReqID();
-	subscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
+	subscriptionReq->setSourceUUID("traffic_orchestrator_" + std::to_string(request_id));
 	subscriptionReq->setFilter(filter);
 
 	subscriptionReq->setShape("rectangle");
@@ -201,36 +196,36 @@ void initiateSubscription() {
 	subscriptionReq->setSouthWest(southwest);
 	// FIXME do not cast an unsigned int 64 from a long
 	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
-	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
+	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(std::to_string(subscriptionReq->getRequestId())) + "/" + std::string(std::to_string(subscriptionReq->getTimestamp())));
     socket_c = SendInterface::sendTCP(SendInterface::createSubscriptionRequestJSON(subscriptionReq),true);
-	logger::write("Sent subscription request to " + SendInterface::connectionAddress + ":"+ to_string(SendInterface::port));
+	logger::write("Sent subscription request to " + SendInterface::connectionAddress + ":"+ std::to_string(SendInterface::port));
 }
 
 void initiateUnsubscription() {
 
     std::chrono::milliseconds timeUnsub = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 	auto unsubscriptionReq{std::make_shared<UnsubscriptionRequest>()};
-	unsubscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
+	unsubscriptionReq->setSourceUUID("traffic_orchestrator_" + std::to_string(request_id));
 	unsubscriptionReq->setSubscriptionId(request_id);
 	// FIXME do not cast an unsigned int 64 from a long
 	unsubscriptionReq->setTimestamp(static_cast<uint64_t>(timeUnsub.count()));
     SendInterface::sendTCP(SendInterface::createUnsubscriptionRequestJSON(unsubscriptionReq));
 }
 
-void handleSubscriptionResponse(Document &document) {
+void handleSubscriptionResponse(/*rapidjson::Document &document*/) {
 	logger::write("Subscription Response Received.");
 //	return detectedToSubscription(assignSubResponseVals(document));
 }
 
-void handleUnSubscriptionResponse(Document &document) {
+void handleUnSubscriptionResponse(/*rapidjson::Document &document*/) {
 	logger::write("unsubscription response Received.");
 	// return detectedToUnsubscription(assignUnsubResponseVals(document));
 }
 
-void handleNotifyAdd(Document &document) {
+void handleNotifyAdd(rapidjson::Document &document) {
 
-    StringBuffer buffer;
-    Writer<StringBuffer> writer(buffer);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     document["message"]["ru_description_list"][0].Accept(writer);
     logger::dumpToFile(buffer.GetString());
 
@@ -260,7 +255,7 @@ void handleNotifyAdd(Document &document) {
 	}
 }
 
-bool handleTrajectoryFeedback(Document &document) {
+bool handleTrajectoryFeedback(rapidjson::Document &document) {
     auto maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
     // we trace the reception as soon as possible
     std::stringstream log;
@@ -299,21 +294,21 @@ bool handleTrajectoryFeedback(Document &document) {
 	return true;
 }
 
-void handleNotifyDelete(Document &document) {
+void handleNotifyDelete(rapidjson::Document &document) {
 	logger::write("Notify delete Received.");
 	auto uuidsVector{assignNotificationDeleteVals(document)};
-	for_each(uuidsVector.begin(), uuidsVector.end(), [](string uuid) {
+	for_each(uuidsVector.begin(), uuidsVector.end(), [](std::string uuid) {
          database->deleteRoadUser(uuid);
          logger::write("Deleted road user " + uuid);
 	});
 }
 
 void inputNorthEast(int longt, int lat){
-	northeast = make_pair(longt,lat);
+	northeast = {longt,lat};
 }
 
 void inputSouthWest(int longt, int lat){
-	southwest = make_pair(longt,lat);
+	southwest = {longt,lat};
 }
 
 void computeManeuvers() {
@@ -345,10 +340,10 @@ void terminate_to(int signum ){
 	exit(signum);
 }
 
-void handleMessage(const string &captured_data){
-	Document document = parse(captured_data);
+void handleMessage(const std::string &captured_data){
+	rapidjson::Document document = parse(captured_data);
 	message_type messageType = filterInput(document);
-	if (captured_data == "\n" || captured_data == string()) {
+	if (captured_data == "\n" || captured_data == std::string()) {
 			messageType = message_type::heart_beat;
 	}
 
@@ -362,10 +357,10 @@ void handleMessage(const string &captured_data){
 					handleNotifyDelete(document);
 					break;
 			case message_type::subscription_response:
-					handleSubscriptionResponse(document);
+					handleSubscriptionResponse();
 					break;
 			case message_type::unsubscription_response:
-					handleUnSubscriptionResponse(document);
+					handleUnSubscriptionResponse();
 					break;
 			case message_type::trajectory_feedback:
 					if (!handleTrajectoryFeedback(document)) {
@@ -387,7 +382,7 @@ void handleMessage(const string &captured_data){
 int main() {
 
     char readBuffer[65536];
-    Document args;
+    rapidjson::Document args;
 
 //
 //        do {
@@ -414,7 +409,7 @@ int main() {
         logger::write("[ERROR] Config File failed to load -> Abort");
         return 1;
     }
-    if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
+    if (!std::experimental::filesystem::create_directory("logs") && !std::experimental::filesystem::exists("logs")) {
         logger::write("[ERROR] Unable to create the logs directory -> Abort");
         return 2;
     }
@@ -433,7 +428,7 @@ int main() {
     }
     logger::write("[INFO] import of rl model successful\n");
 
-    FileReadStream is(file, readBuffer, sizeof(readBuffer));
+    rapidjson::FileReadStream is(file, readBuffer, sizeof(readBuffer));
     args.ParseStream(is);
     fclose(file);
 
@@ -474,10 +469,10 @@ int main() {
                                 handleNotifyDelete(document);
                                 break;
                             case message_type::subscription_response:
-                                handleSubscriptionResponse(document);
+                                handleSubscriptionResponse();
                                 break;
                             case message_type::unsubscription_response:
-                                handleUnSubscriptionResponse(document);
+                                handleUnSubscriptionResponse();
                                 break;
                             case message_type::trajectory_feedback:
                                 if (!handleTrajectoryFeedback(document)) {
@@ -512,11 +507,11 @@ int main() {
                                 OptimizerEngine::getEngine()->locker.unlock();
                                 break;
                             case message_type::subscription_response:
-                                handleSubscriptionResponse(document);
+                                handleSubscriptionResponse();
                                 break;
                             case message_type::unsubscription_response:
                                 OptimizerEngine::getEngine()->pauseManeuverFeedback();
-                                handleUnSubscriptionResponse(document);
+                                handleUnSubscriptionResponse();
                                 break;
                             case message_type::trajectory_feedback:
                                 if (!handleTrajectoryFeedback(document)) {

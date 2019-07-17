@@ -10,27 +10,24 @@
 #include <string>
 #include <ostream>
 
-using namespace std;
-using std::string;
-
 class SubscriptionResponse {
 	private:
-		string type;
-		string context;
-		string origin;
-		string version;
+		std::string type;
+		std::string context;
+		std::string origin;
+		std::string version;
 		uint64_t timestamp;
-		string result;
+		std::string result;
 		int subscriptionId;
-		string signature;
+		std::string signature;
 		int request_id;
-		string source_uuid;
-		string destination_uuid;
+		std::string source_uuid;
+		std::string destination_uuid;
 
 	public:
 
-		SubscriptionResponse(string type, string context, string origin, string version,
-		uint64_t timestamp, string result, int subscriptionId, string signature,int request_id) :
+		SubscriptionResponse(std::string type, std::string context, std::string origin, std::string version,
+		uint64_t timestamp, std::string result, int subscriptionId, std::string signature,int request_id) :
 		type(type),
 		context(context),
 		origin(origin),
@@ -50,31 +47,31 @@ class SubscriptionResponse {
 			context = "subscriptions";
 		}
 
-	friend std::ostream& operator<< (ostream& os, SubscriptionResponse * subscriptionResp);
+	friend std::ostream& operator<< (std::ostream& os, SubscriptionResponse * subscriptionResp);
 
-		string getType();
-		string getContext();
-		string getOrigin();
-		string getVersion();
+		std::string getType();
+		std::string getContext();
+		std::string getOrigin();
+		std::string getVersion();
 		uint64_t getTimestamp();
-		string getResult();
+		std::string getResult();
 		int getSubscriptionId();
-		string getSignature();
+		std::string getSignature();
 		int getRequestId();
-		string getSourceUUID();
-		string getDestinationUUID();
+		std::string getSourceUUID();
+		std::string getDestinationUUID();
 
-		void setType(string);
-		void setContext(string);
-		void setOrigin(string);
-		void setVersion(string);
+		void setType(std::string);
+		void setContext(std::string);
+		void setOrigin(std::string);
+		void setVersion(std::string);
 		void setTimestamp(uint64_t);
-		void setResult(string);
+		void setResult(std::string);
 		void setSubscriptionId(int);
-		void setSignature(string);
+		void setSignature(std::string);
 		void setRequestId(int);
-		void setSourceUUID(string);
-		void setDestinationUUID(string);
+		void setSourceUUID(std::string);
+		void setDestinationUUID(std::string);
 
 };
 

@@ -11,28 +11,26 @@
 #include <string>
 #include <ostream>
 
-using namespace std;
-
 class SubscriptionRequest {
 	private:
-		string type;
-		string context;
-		string origin;
-		string version = "1.2.0";
+		std::string type;
+		std::string context;
+		std::string origin;
+		std::string version = "1.2.0";
 		uint64_t timestamp;
 		bool filter;
-		string shape;
-		pair <int,int> northeast;
-		pair <int,int> southwest;
-		string signature;
-		string source_uuid;
-		string destination_uuid;
+		std::string shape;
+		std::pair <int,int> northeast;
+		std::pair <int,int> southwest;
+		std::string signature;
+		std::string source_uuid;
+		std::string destination_uuid;
 		int request_id;
-		string message_id;
+		std::string message_id;
 
 	public:
-		SubscriptionRequest(string type, string context,string origin, string version, uint64_t timestamp,
-		bool filter,int request_id,string shape, string signature,string source_uuid) :
+		SubscriptionRequest(std::string type, std::string context,std::string origin, std::string version, uint64_t timestamp,
+		bool filter,int request_id,std::string shape, std::string signature,std::string source_uuid) :
 		type(type),
 		context(context),
 		origin(origin),
@@ -61,42 +59,42 @@ class SubscriptionRequest {
 
 	~SubscriptionRequest();
 
-	friend std::ostream& operator<< (ostream& os, SubscriptionRequest * subscriptionReq);
+	friend std::ostream& operator<< (std::ostream& os, SubscriptionRequest * subscriptionReq);
 
-	string getType();
-	string getContext();
-	string getOrigin();
-	string getVersion();
+	std::string getType();
+	std::string getContext();
+	std::string getOrigin();
+	std::string getVersion();
 	uint64_t getTimestamp();
 	bool getFilter();
-	string getShape();
-	pair<int,int> getNorthEast();
-	pair<int,int> getSouthWest();
+	std::string getShape();
+	std::pair<int,int> getNorthEast();
+	std::pair<int,int> getSouthWest();
 
-	string getSignature();
+	std::string getSignature();
 	int getRequestId();
-	string getSourceUUID();
-	string getDestinationUUID();
-	string getMessageID();
+	std::string getSourceUUID();
+	std::string getDestinationUUID();
+	std::string getMessageID();
 
 
-	void setType(string);
-	void setContext(string);
-	void setOrigin(string);
-	void setVersion(string);
+	void setType(std::string);
+	void setContext(std::string);
+	void setOrigin(std::string);
+	void setVersion(std::string);
 	void setTimestamp(uint64_t);
 	void setFilter(bool);
-	void setShape(string);
+	void setShape(std::string);
 	void setLongitude(double);
 	void setLatitude(double);
 	void setRadius(double);
-	void setSignature(string);
+	void setSignature(std::string);
 	void setRequestId(int);
-	void setSourceUUID(string);
-	void setDestinationUUID(string);
-	void setMessageID(string);
-	void setNorthEast(pair<int,int>);
-	void setSouthWest(pair<int,int>);
+	void setSourceUUID(std::string);
+	void setDestinationUUID(std::string);
+	void setMessageID(std::string);
+	void setNorthEast(std::pair<int,int>);
+	void setSouthWest(std::pair<int,int>);
 
 };
 

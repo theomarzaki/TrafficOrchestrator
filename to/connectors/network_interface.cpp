@@ -13,64 +13,64 @@ std::string SendInterface::receiveAddress;
 int SendInterface::receivePort;
 
 std::string SendInterface::createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq) {
-    Document document;
+    rapidjson::Document document;
 
     document.SetObject();
 
-    Document::AllocatorType &allocator = document.GetAllocator();
+    rapidjson::Document::AllocatorType &allocator = document.GetAllocator();
 
-    Value timestamp(subscriptionReq->getTimestamp());
+    rapidjson::Value timestamp(subscriptionReq->getTimestamp());
 
     if (!subscriptionReq->getFilter()) {
-        document.AddMember("type", Value().SetString(subscriptionReq->getType().c_str(), allocator), allocator)
-                .AddMember("context", Value().SetString(subscriptionReq->getContext().c_str(), allocator), allocator)
-                .AddMember("origin", Value().SetString(subscriptionReq->getOrigin().c_str(), allocator), allocator)
-                .AddMember("version", Value().SetString(subscriptionReq->getVersion().c_str(), allocator), allocator)
+        document.AddMember("type", rapidjson::Value().SetString(subscriptionReq->getType().c_str(), allocator), allocator)
+                .AddMember("context", rapidjson::Value().SetString(subscriptionReq->getContext().c_str(), allocator), allocator)
+                .AddMember("origin", rapidjson::Value().SetString(subscriptionReq->getOrigin().c_str(), allocator), allocator)
+                .AddMember("version", rapidjson::Value().SetString(subscriptionReq->getVersion().c_str(), allocator), allocator)
                 .AddMember("timestamp", timestamp, allocator);
 
-        Value message(kObjectType);
-        Value filter(kObjectType);
+        rapidjson::Value message(rapidjson::kObjectType);
+        rapidjson::Value filter(rapidjson::kObjectType);
 
         message.AddMember("filter", filter, allocator);
-        message.AddMember("request_id", Value().SetInt(subscriptionReq->getRequestId()), allocator);
+        message.AddMember("request_id", rapidjson::Value().SetInt(subscriptionReq->getRequestId()), allocator);
 
         document.AddMember("message", message, allocator)
-                .AddMember("signature", Value().SetString(subscriptionReq->getSignature().c_str(), allocator), allocator);
+                .AddMember("signature", rapidjson::Value().SetString(subscriptionReq->getSignature().c_str(), allocator), allocator);
 
     } else {
-        document.AddMember("type", Value().SetString(subscriptionReq->getType().c_str(), allocator), allocator)
-                .AddMember("context", Value().SetString(subscriptionReq->getContext().c_str(), allocator), allocator)
-                .AddMember("origin", Value().SetString(subscriptionReq->getOrigin().c_str(), allocator), allocator)
-                .AddMember("version", Value().SetString(subscriptionReq->getVersion().c_str(), allocator), allocator)
+        document.AddMember("type", rapidjson::Value().SetString(subscriptionReq->getType().c_str(), allocator), allocator)
+                .AddMember("context", rapidjson::Value().SetString(subscriptionReq->getContext().c_str(), allocator), allocator)
+                .AddMember("origin", rapidjson::Value().SetString(subscriptionReq->getOrigin().c_str(), allocator), allocator)
+                .AddMember("version", rapidjson::Value().SetString(subscriptionReq->getVersion().c_str(), allocator), allocator)
                 .AddMember("timestamp", timestamp, allocator)
-                .AddMember("source_uuid", Value().SetString(subscriptionReq->getSourceUUID().c_str(), allocator), allocator)
-                .AddMember("destination_uuid", Value().SetString(subscriptionReq->getDestinationUUID().c_str(), allocator), allocator);
+                .AddMember("source_uuid", rapidjson::Value().SetString(subscriptionReq->getSourceUUID().c_str(), allocator), allocator)
+                .AddMember("destination_uuid", rapidjson::Value().SetString(subscriptionReq->getDestinationUUID().c_str(), allocator), allocator);
 
-        Value object(kObjectType);
-        Value objectTwo(kObjectType);
-        Value objectThree(kObjectType);
-        Value objectFour(kObjectType);
-        Value objectFive(kObjectType);
+        rapidjson::Value object(rapidjson::kObjectType);
+        rapidjson::Value objectTwo(rapidjson::kObjectType);
+        rapidjson::Value objectThree(rapidjson::kObjectType);
+        rapidjson::Value objectFour(rapidjson::kObjectType);
+        rapidjson::Value objectFive(rapidjson::kObjectType);
 
-        objectTwo.AddMember("latitude", Value().SetInt(subscriptionReq->getNorthEast().second), allocator)
-                .AddMember("longitude", Value().SetInt(subscriptionReq->getNorthEast().first), allocator);
-        objectFive.AddMember("latitude", Value().SetInt(subscriptionReq->getSouthWest().second), allocator).
-                AddMember("longitude", Value().SetInt(subscriptionReq->getSouthWest().first), allocator);
+        objectTwo.AddMember("latitude", rapidjson::Value().SetInt(subscriptionReq->getNorthEast().second), allocator)
+                .AddMember("longitude", rapidjson::Value().SetInt(subscriptionReq->getNorthEast().first), allocator);
+        objectFive.AddMember("latitude", rapidjson::Value().SetInt(subscriptionReq->getSouthWest().second), allocator).
+                AddMember("longitude", rapidjson::Value().SetInt(subscriptionReq->getSouthWest().first), allocator);
 
-        object.AddMember("shape", Value().SetString(subscriptionReq->getShape().c_str(), allocator), allocator);
+        object.AddMember("shape", rapidjson::Value().SetString(subscriptionReq->getShape().c_str(), allocator), allocator);
         object.AddMember("northeast", objectTwo, allocator);
         object.AddMember("southwest", objectFive, allocator);
         objectFour.AddMember("area", object, allocator);
         objectThree.AddMember("filter", objectFour, allocator);
-        objectThree.AddMember("request_id", Value().SetInt(subscriptionReq->getRequestId()), allocator);
+        objectThree.AddMember("request_id", rapidjson::Value().SetInt(subscriptionReq->getRequestId()), allocator);
         document.AddMember("message", objectThree, allocator);
-        document.AddMember("signature", Value().SetString(subscriptionReq->getSignature().c_str(), allocator), allocator);
+        document.AddMember("signature", rapidjson::Value().SetString(subscriptionReq->getSignature().c_str(), allocator), allocator);
 
     }
 
-    StringBuffer strbuf;
+    rapidjson::StringBuffer strbuf;
     /* Allocates memory buffer for writing the JSON string. */
-    Writer<StringBuffer> writer(strbuf);
+    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
     document.Accept(writer);
 
     return strbuf.GetString();
@@ -78,34 +78,34 @@ std::string SendInterface::createSubscriptionRequestJSON(std::shared_ptr<Subscri
 }
 
 std::string SendInterface::createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq) {
-    Document document;
+    rapidjson::Document document;
 
     document.SetObject();
 
-    Document::AllocatorType &allocator = document.GetAllocator();
+    rapidjson::Document::AllocatorType &allocator = document.GetAllocator();
 
-    Value timestamp(unsubscriptionReq->getTimestamp());
-    Value subscription_id(unsubscriptionReq->getSubscriptionId());
+    rapidjson::Value timestamp(unsubscriptionReq->getTimestamp());
+    rapidjson::Value subscription_id(unsubscriptionReq->getSubscriptionId());
 
-    document.AddMember("type", Value().SetString(unsubscriptionReq->getType().c_str(), allocator), allocator)
-            .AddMember("context", Value().SetString(unsubscriptionReq->getContext().c_str(), allocator), allocator)
-            .AddMember("origin", Value().SetString(unsubscriptionReq->getOrigin().c_str(), allocator), allocator)
-            .AddMember("version", Value().SetString(unsubscriptionReq->getVersion().c_str(), allocator), allocator)
+    document.AddMember("type", rapidjson::Value().SetString(unsubscriptionReq->getType().c_str(), allocator), allocator)
+            .AddMember("context", rapidjson::Value().SetString(unsubscriptionReq->getContext().c_str(), allocator), allocator)
+            .AddMember("origin", rapidjson::Value().SetString(unsubscriptionReq->getOrigin().c_str(), allocator), allocator)
+            .AddMember("version", rapidjson::Value().SetString(unsubscriptionReq->getVersion().c_str(), allocator), allocator)
             .AddMember("timestamp", timestamp, allocator)
-            .AddMember("source_uuid", Value().SetString(unsubscriptionReq->getSourceUUID().c_str(), allocator), allocator)
-            .AddMember("destination_uuid", Value().SetString(unsubscriptionReq->getDestinationUUID().c_str(), allocator), allocator);
+            .AddMember("source_uuid", rapidjson::Value().SetString(unsubscriptionReq->getSourceUUID().c_str(), allocator), allocator)
+            .AddMember("destination_uuid", rapidjson::Value().SetString(unsubscriptionReq->getDestinationUUID().c_str(), allocator), allocator);
 
-    Value object(kObjectType);
+    rapidjson::Value object(rapidjson::kObjectType);
 
     object.AddMember("subscription_id", subscription_id, allocator);
 
     document.AddMember("message", object, allocator);
 
-    document.AddMember("signature", Value().SetString(unsubscriptionReq->getSignature().c_str(), allocator), allocator);
+    document.AddMember("signature", rapidjson::Value().SetString(unsubscriptionReq->getSignature().c_str(), allocator), allocator);
 
-    StringBuffer strbuf;
+    rapidjson::StringBuffer strbuf;
     /* Allocates memory buffer for writing the JSON string. */
-    Writer<StringBuffer> writer(strbuf);
+    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
     document.Accept(writer);
 
     return strbuf.GetString();
@@ -114,38 +114,38 @@ std::string SendInterface::createUnsubscriptionRequestJSON(std::shared_ptr<Unsub
 
 std::string SendInterface::createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec) {
 
-    Document document; // RapidJSON Document to build JSON message.
+    rapidjson::Document document; // RapidJSON rapidjson::Document to build JSON message.
     document.SetObject();
-    Document::AllocatorType &allocator = document.GetAllocator();
+    rapidjson::Document::AllocatorType &allocator = document.GetAllocator();
 
     /* Adds trajectory recommendation fields to the JSON document. */
-    document.AddMember("type", Value().SetString(maneuverRec->getType().c_str(), allocator), allocator)
-            .AddMember("context", Value().SetString(maneuverRec->getContext().c_str(), allocator), allocator)
-            .AddMember("origin", Value().SetString(maneuverRec->getOrigin().c_str(), allocator), allocator)
-            .AddMember("version", Value().SetString(maneuverRec->getVersion().c_str(), allocator), allocator)
-            .AddMember("source_uuid", Value().SetString(maneuverRec->getSourceUUID().c_str(), allocator), allocator)
-            .AddMember("destination_uuid", Value().SetString(maneuverRec->getUuidTo().c_str(), allocator), allocator)
-            .AddMember("timestamp", Value().SetUint64(maneuverRec->getTimestamp()), allocator)
-            .AddMember("message_id", Value().SetString(maneuverRec->getMessageID().c_str(), allocator), allocator);
+    document.AddMember("type", rapidjson::Value().SetString(maneuverRec->getType().c_str(), allocator), allocator)
+            .AddMember("context", rapidjson::Value().SetString(maneuverRec->getContext().c_str(), allocator), allocator)
+            .AddMember("origin", rapidjson::Value().SetString(maneuverRec->getOrigin().c_str(), allocator), allocator)
+            .AddMember("version", rapidjson::Value().SetString(maneuverRec->getVersion().c_str(), allocator), allocator)
+            .AddMember("source_uuid", rapidjson::Value().SetString(maneuverRec->getSourceUUID().c_str(), allocator), allocator)
+            .AddMember("destination_uuid", rapidjson::Value().SetString(maneuverRec->getUuidTo().c_str(), allocator), allocator)
+            .AddMember("timestamp", rapidjson::Value().SetUint64(maneuverRec->getTimestamp()), allocator)
+            .AddMember("message_id", rapidjson::Value().SetString(maneuverRec->getMessageID().c_str(), allocator), allocator);
 
 
-    Value message(kObjectType);
-    message.AddMember("uuid_maneuver", Value().SetString(maneuverRec->getUuidManeuver().c_str(), allocator), allocator);
+    rapidjson::Value message(rapidjson::kObjectType);
+    message.AddMember("uuid_maneuver", rapidjson::Value().SetString(maneuverRec->getUuidManeuver().c_str(), allocator), allocator);
 
-    Value waypoints(kArrayType);
+    rapidjson::Value waypoints(rapidjson::kArrayType);
 
     for (auto waypoint : maneuverRec->getWaypoints()) {
-        Value point(kObjectType);
+        rapidjson::Value point(rapidjson::kObjectType);
 
-        point.AddMember("timestamp", Value().SetUint64(waypoint->getTimestamp()), allocator);
+        point.AddMember("timestamp", rapidjson::Value().SetUint64(waypoint->getTimestamp()), allocator);
 
-        Value position(kObjectType);
-        position.AddMember("latitude", Value().SetInt(waypoint->getLatitude()), allocator)
-                .AddMember("longitude", Value().SetInt(waypoint->getLongitude()), allocator);
+        rapidjson::Value position(rapidjson::kObjectType);
+        position.AddMember("latitude", rapidjson::Value().SetInt(waypoint->getLatitude()), allocator)
+                .AddMember("longitude", rapidjson::Value().SetInt(waypoint->getLongitude()), allocator);
 
         point.AddMember("position", position, allocator)
-                .AddMember("speed", Value().SetUint(waypoint->getSpeed()), allocator)
-                .AddMember("lane_position", Value().SetUint(waypoint->getLanePosition()), allocator);
+                .AddMember("speed", rapidjson::Value().SetUint(waypoint->getSpeed()), allocator)
+                .AddMember("lane_position", rapidjson::Value().SetUint(waypoint->getLanePosition()), allocator);
 
 
         waypoints.PushBack(point, allocator);
@@ -153,26 +153,26 @@ std::string SendInterface::createManeuverJSON(std::shared_ptr<ManeuverRecommenda
 
     message.AddMember("waypoints", waypoints, allocator);
 
-    Value action(kObjectType);
+    rapidjson::Value action(rapidjson::kObjectType);
 
-    // action.AddMember("timestamp", Value().SetUint64(maneuverRec->getTimestampAction()),allocator);
+    // action.AddMember("timestamp", rapidjson::Value().SetUint64(maneuverRec->getTimestampAction()),allocator);
     //
-    // Value action_position(kObjectType);
+    // rapidjson::Value action_position(rapidjson::kObjectType);
     //
-    // action_position.AddMember("latitude", Value().SetInt(maneuverRec->getLatitudeAction()),allocator)
-    // .AddMember("longitude",Value().SetInt(maneuverRec->getLongitudeAction()),allocator);
+    // action_position.AddMember("latitude", rapidjson::Value().SetInt(maneuverRec->getLatitudeAction()),allocator)
+    // .AddMember("longitude",rapidjson::Value().SetInt(maneuverRec->getLongitudeAction()),allocator);
     //
     // action.AddMember("position", action_position, allocator)
-    // .AddMember("speed", Value().SetUint(maneuverRec->getSpeedAction()), allocator)
-    // .AddMember("lane_position", Value().SetUint(maneuverRec->getLanePositionAction()), allocator);
+    // .AddMember("speed", rapidjson::Value().SetUint(maneuverRec->getSpeedAction()), allocator)
+    // .AddMember("lane_position", rapidjson::Value().SetUint(maneuverRec->getLanePositionAction()), allocator);
 
     // message.AddMember("action", action, allocator);
 
     document.AddMember("message", message, allocator);
-    document.AddMember("signature", Value().SetString(maneuverRec->getSignature().c_str(), allocator), allocator);
+    document.AddMember("signature", rapidjson::Value().SetString(maneuverRec->getSignature().c_str(), allocator), allocator);
 
-    StringBuffer strbuf;
-    Writer<StringBuffer> writer(strbuf);
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
     document.Accept(writer);
 
     return strbuf.GetString();
@@ -181,70 +181,70 @@ std::string SendInterface::createManeuverJSON(std::shared_ptr<ManeuverRecommenda
 // STUBY BUGZY YOU WILL CHANGE THE MESSAGE TO HELP ME
 std::string SendInterface::createRUDDescription(std::shared_ptr<ManeuverRecommendation> maneuverRec) {
 
-    Document document; // RapidJSON Document to build JSON message.
+    rapidjson::Document document; // RapidJSON rapidjson::Document to build JSON message.
     document.SetObject();
-    Document::AllocatorType &allocator = document.GetAllocator();
+    rapidjson::Document::AllocatorType &allocator = document.GetAllocator();
 
     /* Adds trajectory recommendation fields to the JSON document. */
-    document.AddMember("type", Value().SetString("ru_description", allocator), allocator)
-            .AddMember("context", Value().SetString("general", allocator), allocator)
-            .AddMember("origin", Value().SetString("self", allocator), allocator)
-            .AddMember("version", Value().SetString(maneuverRec->getVersion().c_str(), allocator), allocator)
-            .AddMember("source_uuid", Value().SetString(std::string(maneuverRec->getUuidTo()+"_rec").c_str(), allocator), allocator)
-            .AddMember("timestamp", Value().SetUint64(maneuverRec->getTimestamp()), allocator)
-            .AddMember("message_id", Value().SetString(maneuverRec->getMessageID().c_str(), allocator), allocator);
+    document.AddMember("type", rapidjson::Value().SetString("ru_description", allocator), allocator)
+            .AddMember("context", rapidjson::Value().SetString("general", allocator), allocator)
+            .AddMember("origin", rapidjson::Value().SetString("self", allocator), allocator)
+            .AddMember("version", rapidjson::Value().SetString(maneuverRec->getVersion().c_str(), allocator), allocator)
+            .AddMember("source_uuid", rapidjson::Value().SetString(std::string(maneuverRec->getUuidTo()+"_rec").c_str(), allocator), allocator)
+            .AddMember("timestamp", rapidjson::Value().SetUint64(maneuverRec->getTimestamp()), allocator)
+            .AddMember("message_id", rapidjson::Value().SetString(maneuverRec->getMessageID().c_str(), allocator), allocator);
 
-    Value message(kObjectType);
-    message.AddMember("uuid", Value().SetString(std::string(maneuverRec->getUuidTo()+"_rec").c_str(), allocator), allocator)
-            .AddMember("its_station_type", Value().SetString("passengerCar", allocator), allocator)
-            .AddMember("connected", Value().SetBool(true), allocator)
-            .AddMember("position_type", Value().SetString("gnss_raw_rtk", allocator), allocator)
-            .AddMember("heading", Value().SetInt(maneuverRec->getWaypoints().at(0)->getHeading()), allocator)
-            .AddMember("speed", Value().SetInt(maneuverRec->getWaypoints().at(0)->getSpeed()), allocator)
-            .AddMember("lane_position", Value().SetUint(maneuverRec->getWaypoints().at(0)->getLanePosition()), allocator)
-            .AddMember("acceleration", Value().SetUint(0), allocator)
-            .AddMember("yaw_rate", Value().SetUint(0), allocator)
-            .AddMember("raw_data", Value().SetBool(true), allocator)
-            .AddMember("color", Value().SetString("0xFFFFFF", allocator), allocator)
-            .AddMember("existence_probability", Value().SetUint(100), allocator);
+    rapidjson::Value message(rapidjson::kObjectType);
+    message.AddMember("uuid", rapidjson::Value().SetString(std::string(maneuverRec->getUuidTo()+"_rec").c_str(), allocator), allocator)
+            .AddMember("its_station_type", rapidjson::Value().SetString("passengerCar", allocator), allocator)
+            .AddMember("connected", rapidjson::Value().SetBool(true), allocator)
+            .AddMember("position_type", rapidjson::Value().SetString("gnss_raw_rtk", allocator), allocator)
+            .AddMember("heading", rapidjson::Value().SetInt(maneuverRec->getWaypoints().at(0)->getHeading()), allocator)
+            .AddMember("speed", rapidjson::Value().SetInt(maneuverRec->getWaypoints().at(0)->getSpeed()), allocator)
+            .AddMember("lane_position", rapidjson::Value().SetUint(maneuverRec->getWaypoints().at(0)->getLanePosition()), allocator)
+            .AddMember("acceleration", rapidjson::Value().SetUint(0), allocator)
+            .AddMember("yaw_rate", rapidjson::Value().SetUint(0), allocator)
+            .AddMember("raw_data", rapidjson::Value().SetBool(true), allocator)
+            .AddMember("color", rapidjson::Value().SetString("0xFFFFFF", allocator), allocator)
+            .AddMember("existence_probability", rapidjson::Value().SetUint(100), allocator);
 
-    Value position(kObjectType);
-    position.AddMember("latitude", Value().SetInt64(maneuverRec->getWaypoints().at(0)->getLatitude()), allocator)
-            .AddMember("longitude", Value().SetInt64(maneuverRec->getWaypoints().at(0)->getLongitude()), allocator);
+    rapidjson::Value position(rapidjson::kObjectType);
+    position.AddMember("latitude", rapidjson::Value().SetInt64(maneuverRec->getWaypoints().at(0)->getLatitude()), allocator)
+            .AddMember("longitude", rapidjson::Value().SetInt64(maneuverRec->getWaypoints().at(0)->getLongitude()), allocator);
     message.AddMember("position", position, allocator);
 
-    Value size(kObjectType);
-    size.AddMember("length", Value().SetFloat(4), allocator)
-        .AddMember("width", Value().SetFloat(2), allocator)
-        .AddMember("height", Value().SetFloat(2), allocator);
+    rapidjson::Value size(rapidjson::kObjectType);
+    size.AddMember("length", rapidjson::Value().SetFloat(4), allocator)
+        .AddMember("width", rapidjson::Value().SetFloat(2), allocator)
+        .AddMember("height", rapidjson::Value().SetFloat(2), allocator);
     message.AddMember("size", size, allocator);
 
-    Value accuracy(kObjectType);
-    accuracy.AddMember("position_semi_major_confidence", Value().SetInt(2), allocator)
-            .AddMember("position_semi_minor_confidence", Value().SetInt(2), allocator)
-            .AddMember("position_semi_major_orientation", Value().SetInt(2), allocator)
-            .AddMember("heading", Value().SetInt(2), allocator)
-            .AddMember("speed", Value().SetInt(10), allocator)
-            .AddMember("acceleration", Value().SetInt(2), allocator)
-            .AddMember("yaw_rate", Value().SetInt(2), allocator);
+    rapidjson::Value accuracy(rapidjson::kObjectType);
+    accuracy.AddMember("position_semi_major_confidence", rapidjson::Value().SetInt(2), allocator)
+            .AddMember("position_semi_minor_confidence", rapidjson::Value().SetInt(2), allocator)
+            .AddMember("position_semi_major_orientation", rapidjson::Value().SetInt(2), allocator)
+            .AddMember("heading", rapidjson::Value().SetInt(2), allocator)
+            .AddMember("speed", rapidjson::Value().SetInt(10), allocator)
+            .AddMember("acceleration", rapidjson::Value().SetInt(2), allocator)
+            .AddMember("yaw_rate", rapidjson::Value().SetInt(2), allocator);
 
-    Value size2(kObjectType);
-    size2.AddMember("length", Value().SetInt(1), allocator)
-            .AddMember("width", Value().SetInt(1), allocator)
-            .AddMember("height", Value().SetInt(1), allocator);
+    rapidjson::Value size2(rapidjson::kObjectType);
+    size2.AddMember("length", rapidjson::Value().SetInt(1), allocator)
+            .AddMember("width", rapidjson::Value().SetInt(1), allocator)
+            .AddMember("height", rapidjson::Value().SetInt(1), allocator);
     accuracy.AddMember("size", size2, allocator);
 
     message.AddMember("accuracy", accuracy, allocator);
 
     document.AddMember("message", message, allocator);
 
-    Value extra(kArrayType);
+    rapidjson::Value extra(rapidjson::kArrayType);
     document.AddMember("extra", extra, allocator);
 
-    document.AddMember("signature", Value().SetString(maneuverRec->getSignature().c_str(), allocator), allocator);
+    document.AddMember("signature", rapidjson::Value().SetString(maneuverRec->getSignature().c_str(), allocator), allocator);
 
-    StringBuffer strbuf;
-    Writer<StringBuffer> writer(strbuf);
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
     document.Accept(writer);
 
     return strbuf.GetString();

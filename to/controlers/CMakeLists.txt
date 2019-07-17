@@ -9,12 +9,16 @@ include(GNUInstallDirs)
 set(LIB_SRC
         collision_alert.cpp
         create_trajectory.cpp
-        nearest_neighbour.cpp)
+        nearest_neighbour.cpp
+        road_actions.cpp
+        road_safety.cpp)
 
 set(LIB_H
         include/collision_alert.h
         include/create_trajectory.h
-        include/nearest_neighbour.h)
+        include/nearest_neighbour.h
+        include/road_actions.h
+        include/road_safety.h)
 
 
 add_library(${PROJECT_NAME} SHARED ${LIB_SRC} ${LIB_H})

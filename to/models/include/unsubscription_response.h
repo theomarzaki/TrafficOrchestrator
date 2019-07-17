@@ -10,26 +10,23 @@
 #include <ostream>
 #include <string>
 
-using namespace std;
-using std::string;
-
 class UnsubscriptionResponse {
 private:
-	string type;
-	string context;
-	string origin;
-	string version;
+	std::string type;
+	std::string context;
+	std::string origin;
+	std::string version;
 	uint64_t timestamp;
-	string result;
-	string signature;
+	std::string result;
+	std::string signature;
 	int request_id;
-	string source_uuid;
-	string destination_uuid;
+	std::string source_uuid;
+	std::string destination_uuid;
 
 public:
 
-	UnsubscriptionResponse(string type, string context, string origin, string version,
-	uint64_t timestamp, string result,int request_id,string signature) :
+	UnsubscriptionResponse(std::string type, std::string context, std::string origin, std::string version,
+	uint64_t timestamp, std::string result,int request_id,std::string signature) :
 	type(type),
 	context(context),
 	origin(origin),
@@ -50,29 +47,29 @@ public:
 		origin = "v2x gateway";
 	}
 
-	friend std::ostream& operator<< (ostream& os, UnsubscriptionResponse * unsubscriptionRes);
+	friend std::ostream& operator<< (std::ostream& os, UnsubscriptionResponse * unsubscriptionRes);
 
-	string getType();
-	string getContext();
-	string getOrigin();
-	string getVersion();
+	std::string getType();
+	std::string getContext();
+	std::string getOrigin();
+	std::string getVersion();
 	uint64_t getTimestamp();
-	string getResult();
-	string getSignature();
+	std::string getResult();
+	std::string getSignature();
 	int getRequestId();
-	string getSouceUUID();
-	string getDestinationUUID();
+	std::string getSouceUUID();
+	std::string getDestinationUUID();
 
-	void setType(string);
-	void setContext(string);
-	void setOrigin(string);
-	void setVersion(string);
+	void setType(std::string);
+	void setContext(std::string);
+	void setOrigin(std::string);
+	void setVersion(std::string);
 	void setTimestamp(uint64_t);
-	void setResult(string);
-	void setSignature(string);
+	void setResult(std::string);
+	void setSignature(std::string);
 	void setRequestId(int);
-	void setSourceUUID(string);
-	void setDestinationUUID(string);
+	void setSourceUUID(std::string);
+	void setDestinationUUID(std::string);
 
 };
 

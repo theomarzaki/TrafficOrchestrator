@@ -9,8 +9,6 @@
 #include <iostream>
 #include <ostream>
 
-using namespace std;
-
 typedef uint32_t uint4;
 
 class Waypoint {
@@ -38,7 +36,7 @@ public:
 
 	~Waypoint();
 
-	friend ostream& operator<<(ostream& os, Waypoint * waypoint); // Overload << to print out a Waypoint pointer.
+	friend std::ostream& operator<<(std::ostream& os, Waypoint * waypoint); // Overload << to print out a Waypoint pointer.
 
 	uint64_t getTimestamp();
 	uint32_t getLatitude();

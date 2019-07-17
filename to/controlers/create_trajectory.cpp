@@ -17,18 +17,12 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include <torch/torch.h>
-#include <torch/script.h>
 #include <math.h>
 #include <memory>
 #include <time.h>
 
-#include "road_actions.cpp"
-
+#include <road_actions.h>
 #include <mapper.h>
-
-using namespace rapidjson;
-using namespace std::chrono;
 
 
 std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser>& merging_car, const std::vector<std::shared_ptr<RoadUser>>& close_by, int number_lanes_offset) {
@@ -180,7 +174,7 @@ auto calculatedTrajectories(const std::shared_ptr<Database>& database,
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
     std::vector<torch::jit::IValue> rl_inputs;
 
-		auto timestamp = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+		auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     mergingManeuver->setTimestamp(timestamp);
     mergingManeuver->setUuidVehicle(mergingVehicle->getUuid());
@@ -191,7 +185,7 @@ auto calculatedTrajectories(const std::shared_ptr<Database>& database,
     mergingManeuver->setSpeedAction(ProcessedSpeedtoRoadUserSpeed(mergingVehicle->getSpeed()));
     mergingManeuver->setLanePositionAction(mergingVehicle->getLanePosition());
     mergingManeuver->setMessageID(std::string(mergingManeuver->getOrigin()) + "/" + std::string(mergingManeuver->getUuidManeuver()) + "/" +
-                                  std::string(to_string(mergingManeuver->getTimestamp())));
+                                  std::string(std::to_string(mergingManeuver->getTimestamp())));
 
     rl_inputs.emplace_back(models_input);
     auto calculated_action = rl_model->forward(rl_inputs).toTensor();
@@ -202,10 +196,10 @@ auto calculatedTrajectories(const std::shared_ptr<Database>& database,
 
     auto waypoint{std::make_shared<Waypoint>()};
     waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(mergingVehicle->getLatitude()), RoadUserGPStoProcessedGPS(mergingVehicle->getLongitude()),
-                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / max(calculated_n_1_states[0][4].item<float>(),float(70))) * 100); //distance to mergeing point
+                  calculated_n_1_states[0][0].item<float>(),calculated_n_1_states[0][1].item<float>()) / fmax(calculated_n_1_states[0][4].item<float>(),float(70))) * 100); //distance to mergeing point
     waypoint->setLongitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][0].item<float>()));
     waypoint->setLatitude(ProcessedGPStoRoadUserGPS(calculated_n_1_states[0][1].item<float>()));
-    waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(max(calculated_n_1_states[0][4].item<float>(),float(70)) / 3.6));
+    waypoint->setSpeed(ProcessedSpeedtoRoadUserSpeed(fmax(calculated_n_1_states[0][4].item<float>(),float(70)) / 3.6));
     (!(valid_action.second)) ? waypoint->setLanePosition(mergingVehicle->getLanePosition() + 1) : waypoint->setLanePosition(mergingVehicle->getLanePosition());
 		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(calculated_n_1_states[0][19].item<float>()));
     mergingManeuver->addWaypoint(waypoint);
@@ -226,7 +220,7 @@ auto ManeuverParser(const std::shared_ptr<Database>& database,const std::shared_
             database->upsert(r);
         }
         if (r->getConnected() && r->getLanePosition() == 0 && !(r->getProcessingWaypoint())) {
-            auto neighbours{mapNeighbours(database, 10000)};
+            auto neighbours{mapNeighbours(database)};
             auto input_values{RoadUsertoModelInput(r, neighbours)};
             if (input_values) {
                 auto models_input{torch::tensor(input_values.value()).unsqueeze(0)};

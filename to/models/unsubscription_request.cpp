@@ -5,27 +5,27 @@
 // Modified by: Omar Nassef (KCL)
 #include "include/unsubscription_request.h"
 
-string UnsubscriptionRequest::getType(){return type;}
-string UnsubscriptionRequest::getContext(){return context;}
-string UnsubscriptionRequest::getOrigin(){return origin;}
-string UnsubscriptionRequest::getVersion(){return version;}
+std::string UnsubscriptionRequest::getType(){return type;}
+std::string UnsubscriptionRequest::getContext(){return context;}
+std::string UnsubscriptionRequest::getOrigin(){return origin;}
+std::string UnsubscriptionRequest::getVersion(){return version;}
 uint64_t UnsubscriptionRequest::getTimestamp(){return timestamp;}
 int UnsubscriptionRequest::getSubscriptionId(){return subscriptionId;}
-string UnsubscriptionRequest::getSignature(){return signature;}
+std::string UnsubscriptionRequest::getSignature(){return signature;}
 int UnsubscriptionRequest::getRequestId(){return request_id;}
-string UnsubscriptionRequest::getSourceUUID(){return source_uuid;}
-string UnsubscriptionRequest::getDestinationUUID(){return destination_uuid;}
+std::string UnsubscriptionRequest::getSourceUUID(){return source_uuid;}
+std::string UnsubscriptionRequest::getDestinationUUID(){return destination_uuid;}
 
-void UnsubscriptionRequest::setType(string parameter){type = parameter;}
-void UnsubscriptionRequest::setContext(string parameter){context = parameter;}
-void UnsubscriptionRequest::setOrigin(string parameter){origin = parameter;}
-void UnsubscriptionRequest::setVersion(string parameter){version = parameter;}
+void UnsubscriptionRequest::setType(std::string parameter){type = parameter;}
+void UnsubscriptionRequest::setContext(std::string parameter){context = parameter;}
+void UnsubscriptionRequest::setOrigin(std::string parameter){origin = parameter;}
+void UnsubscriptionRequest::setVersion(std::string parameter){version = parameter;}
 void UnsubscriptionRequest::setTimestamp(uint64_t parameter){timestamp = parameter;}
 void UnsubscriptionRequest::setSubscriptionId(int parameter){subscriptionId = parameter;}
-void UnsubscriptionRequest::setSignature(string parameter){signature = parameter;}
+void UnsubscriptionRequest::setSignature(std::string parameter){signature = parameter;}
 void UnsubscriptionRequest::setRequestId(int parameter){request_id=parameter;}
-void UnsubscriptionRequest::setSourceUUID(string parameter){source_uuid = parameter;}
-void UnsubscriptionRequest::setDestinationUUID(string parameter){destination_uuid = parameter;}
+void UnsubscriptionRequest::setSourceUUID(std::string parameter){source_uuid = parameter;}
+void UnsubscriptionRequest::setDestinationUUID(std::string parameter){destination_uuid = parameter;}
 
 std::ostream& operator<<(std::ostream& os, UnsubscriptionRequest * unsubscriptionReq) {
 

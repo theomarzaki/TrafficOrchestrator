@@ -39,12 +39,6 @@
 #define TRAJECTORY_FEEDBACK "maneuver_feedback"
 #define MAXIMUM_TRANSFER 100000
 
-using namespace rapidjson;
-using namespace std;
-using std::string;
-using std::tuple;
-using std::vector;
-
 typedef uint32_t uint4;
 
 enum class message_type {
@@ -54,17 +48,17 @@ enum class message_type {
 /* struct to represent fields found in JSON string. */
 struct Detected_Road_User {
 
-  string type;
-  string context;
-  string origin;
-  string version;
+  std::string type;
+  std::string context;
+  std::string origin;
+  std::string version;
   uint64_t timestamp;
-  string uuid;
-  string its_station_type;
+  std::string uuid;
+  std::string its_station_type;
   bool connected;
   int32_t latitude;
   int32_t longitude;
-  string position_type;
+  std::string position_type;
   uint16_t heading;
   uint16_t speed;
   int16_t acceleration;
@@ -72,7 +66,7 @@ struct Detected_Road_User {
   float length;
   float width;
   float height;
-  string color;
+  std::string color;
   uint4 lane_position;
   uint8_t existence_probability;
   uint16_t position_semi_major_confidence;
@@ -85,83 +79,83 @@ struct Detected_Road_User {
   float length_c;
   float width_c;
   float height_c;
-  string signature;
-  string message_id;
-  string source_uuid;
+  std::string signature;
+  std::string message_id;
+  std::string source_uuid;
 
 };
 
 struct Detected_To_Notification {
-  string type;
-  string context;
-  string origin;
-  string version;
-  string uuid;
-  string source_uuid;
+  std::string type;
+  std::string context;
+  std::string origin;
+  std::string version;
+  std::string uuid;
+  std::string source_uuid;
   uint64_t timestamp;
   int subscriptionId;
-  vector<Detected_Road_User> ru_description_list;
-  string signature;
-  string message_id;
+  std::vector<Detected_Road_User> ru_description_list;
+  std::string signature;
+  std::string message_id;
 };
 
 struct Detected_Trajectory_Feedback {
-  string type;
-  string context;
-  string origin;
-  string version;
+  std::string type;
+  std::string context;
+  std::string origin;
+  std::string version;
   uint64_t timestamp;
-  string source_uuid;
-  string uuid_vehicle;
-  string uuid_to;
-  string uuid_maneuver;
+  std::string source_uuid;
+  std::string uuid_vehicle;
+  std::string uuid_to;
+  std::string uuid_maneuver;
   uint64_t timestamp_message;
-  string feedback;
-  string reason;
-  string signature;
-  string message_id;
+  std::string feedback;
+  std::string reason;
+  std::string signature;
+  std::string message_id;
 
 };
 
 struct Detected_Subscription_Response {
-  string type;
-  string context;
-  string origin;
-  string version;
+  std::string type;
+  std::string context;
+  std::string origin;
+  std::string version;
   uint64_t timestamp;
-  string result;
+  std::string result;
   int request_id;
-  string source_uuid;
-  string destination_uuid;
+  std::string source_uuid;
+  std::string destination_uuid;
   int subscriptionId;
-  string signature;
-  string message_id;
+  std::string signature;
+  std::string message_id;
 
 };
 
 struct Detected_Unsubscription_Response {
-  string type;
-  string context;
-  string origin;
-  string version;
+  std::string type;
+  std::string context;
+  std::string origin;
+  std::string version;
   uint64_t timestamp;
-  string result;
-  string source_uuid;
-  string destination_uuid;
+  std::string result;
+  std::string source_uuid;
+  std::string destination_uuid;
   int request_id;
-  string signature;
-  string message_id;
+  std::string signature;
+  std::string message_id;
 };
 
-Document parse(string readFromServer);
+rapidjson::Document parse(std::string readFromServer);
 
-Detected_Road_User assignRoadUserVals(Document &document);
-std::vector<string> assignNotificationDeleteVals(Document &document);
-Detected_To_Notification assignNotificationVals(Document &document);
-Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document &document);
-Detected_Subscription_Response assignSubResponseVals(Document &document);
-Detected_Unsubscription_Response assignUnsubResponseVals(Document &document);
-message_type filterInput(Document &document);
+Detected_Road_User assignRoadUserVals(rapidjson::Document &document);
+std::vector<std::string> assignNotificationDeleteVals(rapidjson::Document &document);
+Detected_To_Notification assignNotificationVals(rapidjson::Document &document);
+Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(rapidjson::Document &document);
+Detected_Subscription_Response assignSubResponseVals(rapidjson::Document &document);
+Detected_Unsubscription_Response assignUnsubResponseVals(rapidjson::Document &document);
+message_type filterInput(rapidjson::Document &document);
 std::vector<std::string> listenDataTCP(int socket_c);
 
 #endif

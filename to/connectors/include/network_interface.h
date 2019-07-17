@@ -26,8 +26,6 @@
 
 #define MAXIMUM_TRANSFER 100000
 
-using namespace rapidjson;
-
 namespace SendInterface {
 
     extern int m_socket;

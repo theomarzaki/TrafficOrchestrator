@@ -8,7 +8,7 @@
 *   @description Displays all RoadUsers in the database.
 */
 void Database::displayDatabase() {
-  for_each(database.begin(), database.end() , [](pair<string, shared_ptr<RoadUser>> element){
+  for_each(database.begin(), database.end() , [](std::pair<std::string, std::shared_ptr<RoadUser>> element){
       std::ostringstream elementStream;
       elementStream << element.first << " :: " << element.second;
       logger::write(elementStream.str());
@@ -20,7 +20,7 @@ void Database::displayDatabase() {
 *   @param roadUser is a RoadUser pointer.
 */
 
-void Database::upsert(shared_ptr<RoadUser> roadUser) {
+void Database::upsert(std::shared_ptr<RoadUser> roadUser) {
   auto updated_roadUser = findRoadUser(roadUser->getUuid());
   if(updated_roadUser != nullptr){
     updated_roadUser->setTimestamp(roadUser->getTimestamp());
@@ -40,7 +40,7 @@ void Database::upsert(shared_ptr<RoadUser> roadUser) {
 *   @description Erases a RoadUser pointer from the database.
 *   @param roadUser is a RoadUser pointer.
 */
-void Database::deleteRoadUser(string uuid) {
+void Database::deleteRoadUser(std::string uuid) {
   const auto &iterator{database.find(uuid)}; // iterator still a pointer tho.
   if (iterator != database.end()) {
 //    delete &iterator->second; // So you need to dereference it.
@@ -54,7 +54,7 @@ void Database::deleteRoadUser(string uuid) {
 *   @return RoadUser pointer or NULL if no match found
 */
 
-shared_ptr<RoadUser> Database::findRoadUser(string uuid) {
+std::shared_ptr<RoadUser> Database::findRoadUser(std::string uuid) {
   const auto &iterator{database.find(uuid)};
   if (iterator != database.end()) {
     //MAYBE FIXME: huge memory leak. Need to find how to delete a pointer in a map
@@ -81,8 +81,8 @@ int Database::getSize() {
   return database.size();
 }
 
-vector<shared_ptr<RoadUser>> Database::findAll() {
-  auto values{vector<shared_ptr<RoadUser>>()};
+std::vector<std::shared_ptr<RoadUser>> Database::findAll() {
+  auto values{std::vector<std::shared_ptr<RoadUser>>()};
   for(auto& elem : database) {
     values.push_back(elem.second);
   }
@@ -90,10 +90,10 @@ vector<shared_ptr<RoadUser>> Database::findAll() {
 }
 
 std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> Database::dump() {
-    auto values{std::make_unique<std::list<shared_ptr<RoadUser>>>()};
+    auto values{std::make_unique<std::list<std::shared_ptr<RoadUser>>>()};
     for(auto& elem : database) {
         values->push_back(elem.second);
     }
-    return std::move(values);
+    return values;
 }
 

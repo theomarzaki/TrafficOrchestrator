@@ -30,10 +30,6 @@
 #include "mapper.h"
 #include "database.h"
 
-using namespace rapidjson;
-using namespace std::chrono;
-using namespace std;
-
 bool inRange(int low, int high, int x);
 
 at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,const at::Tensor& state);

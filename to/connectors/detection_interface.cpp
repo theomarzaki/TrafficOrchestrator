@@ -8,19 +8,19 @@
 #include "include/detection_interface.h"
 #include "logger.h"
 
-string incomplete_message = string();
-list<string> incomplete_messages;
+std::string incomplete_message = std::string();
+std::list<std::string> incomplete_messages;
 
-Document parse(string readFromServer) {
-  Document document;
-  Document::AllocatorType& allocator = document.GetAllocator();
+rapidjson::Document    parse(std::string readFromServer) {
+  rapidjson::Document document;
+  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
   if(readFromServer == "RECONNECT"){
     document.SetObject();
-    document.AddMember("type",Value().SetString(string("RECONNECT").c_str(),allocator),allocator);
+    document.AddMember("type",rapidjson::Value() .SetString(std::string("RECONNECT").c_str(),allocator),allocator);
   }
   else if(readFromServer == "\n"){
     document.SetObject();
-    document.AddMember("type",Value().SetString(string("heart_beat").c_str(),allocator),allocator);
+    document.AddMember("type",rapidjson::Value() .SetString(std::string("heart_beat").c_str(),allocator),allocator);
   }
   else{
     document.Parse(readFromServer.c_str());
@@ -28,7 +28,7 @@ Document parse(string readFromServer) {
   return document;
 }
 
-Detected_Road_User assignRoadUserVals(Document &document) {
+Detected_Road_User assignRoadUserVals(rapidjson::Document &document) {
 	Detected_Road_User values;
   // if(!(document.IsObject())){
   //   return values;
@@ -79,8 +79,8 @@ Detected_Road_User assignRoadUserVals(Document &document) {
 
 }
 
-std::vector<string> assignNotificationDeleteVals(Document &document) {
-  std::vector<string> values;
+std::vector<std::string> assignNotificationDeleteVals(rapidjson::Document    &document) {
+  std::vector<std::string> values;
   if (document["message"].HasMember("ru_uuid_list") && document["message"]["ru_uuid_list"].IsArray()) {
     const rapidjson::Value &array = document["message"]["ru_uuid_list"].GetArray();
     for (rapidjson::SizeType i = 0; i < array.Size(); i++) {
@@ -92,7 +92,7 @@ std::vector<string> assignNotificationDeleteVals(Document &document) {
   return values;
 }
 
-Detected_To_Notification assignNotificationVals(Document &document) {
+Detected_To_Notification assignNotificationVals(rapidjson::Document    &document) {
   Detected_To_Notification values;
   values.type = document["type"].GetString();
   document.HasMember("context") ? values.context = document["context"].GetString() : values.context = "placeholder";
@@ -103,12 +103,12 @@ Detected_To_Notification assignNotificationVals(Document &document) {
   (document.HasMember("signature")) ? (values.signature = document["signature"].GetString()) : (values.signature = "placeholder");
   (document.HasMember("source_uuid")) ? (values.source_uuid = document["source_uuid"].GetString()) : (values.source_uuid = "placeholder");
   (document.HasMember("message_id")) ? (values.message_id = document["message_id"].GetString()) : (values.message_id = "placeholder");
-  logger::write("received notification with timestamp=" + to_string(values.timestamp));
+  logger::write("received notification with timestamp=" + std::to_string(values.timestamp));
   for(auto& v : document["message"]["ru_description_list"].GetArray()) {
-    StringBuffer sb;
-    Writer<StringBuffer> writer(sb);
+    rapidjson::StringBuffer sb;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
     v.Accept(writer);
-    Document ruDocument = parse(sb.GetString());
+    rapidjson::Document ruDocument = parse(sb.GetString());
     const Detected_Road_User &ru = assignRoadUserVals(ruDocument);
     if (ru.timestamp == 0){
       logger::write("received invalid road user description in notify_add");
@@ -123,7 +123,7 @@ Detected_To_Notification assignNotificationVals(Document &document) {
   return values;
 }
 
-Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document &document) {
+Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(rapidjson::Document    &document) {
   Detected_Trajectory_Feedback values;
 
   document.HasMember("type") ? values.type = document["type"].GetString() : values.type = "placeholder";
@@ -144,7 +144,7 @@ Detected_Trajectory_Feedback assignTrajectoryFeedbackVals(Document &document) {
 }
 
 
-Detected_Subscription_Response assignSubResponseVals(Document &document) {
+Detected_Subscription_Response assignSubResponseVals(rapidjson::Document    &document) {
 
   Detected_Subscription_Response values;
 
@@ -164,7 +164,7 @@ Detected_Subscription_Response assignSubResponseVals(Document &document) {
 
 }
 
-Detected_Unsubscription_Response assignUnsubResponseVals(Document &document) {
+Detected_Unsubscription_Response assignUnsubResponseVals(rapidjson::Document    &document) {
 
   Detected_Unsubscription_Response values;
 
@@ -183,7 +183,7 @@ Detected_Unsubscription_Response assignUnsubResponseVals(Document &document) {
 
 }
 
-message_type filterInput(Document &document) {
+message_type filterInput(rapidjson::Document    &document) {
   if(!(document.IsObject())){
     return message_type::unknown;
   }
@@ -215,7 +215,7 @@ message_type filterInput(Document &document) {
       return message_type::notify_delete;
   }
   else {
-    logger::write("error: received message with unknown type: " + string(document["type"].GetString()));
+    logger::write("error: received message with unknown type: " + std::string(document["type"].GetString()));
     return message_type::unknown;
   }
 
@@ -225,8 +225,8 @@ std::vector<std::string> listenDataTCP(int socket_c) {
 
   char dataReceived[MAXIMUM_TRANSFER];
   memset(dataReceived, 0, sizeof(dataReceived));
-  string to_return;
-  std::vector<string> returning;
+  std::string to_return;
+  std::vector<std::string> returning;
 
   while (returning.empty()) {
     int i = read(socket_c, dataReceived, sizeof(dataReceived));
@@ -248,7 +248,7 @@ std::vector<std::string> listenDataTCP(int socket_c) {
         if (chrc == '\n') {
           to_return = incomplete_message;
           incomplete_messages.push_back(to_return);
-          incomplete_message = string();
+          incomplete_message = std::string();
         } else {
           incomplete_message += chrc;
         }
@@ -257,7 +257,7 @@ std::vector<std::string> listenDataTCP(int socket_c) {
 
     while(!incomplete_messages.empty()) {
       auto message_packet = incomplete_messages.front();
-      if(message_packet != "\n" && message_packet != string()) logger::write(message_packet + "\n");
+      if(message_packet != "\n" && message_packet != std::string()) logger::write(message_packet + "\n");
       returning.emplace_back(incomplete_messages.front());
       incomplete_messages.pop_front();
     }

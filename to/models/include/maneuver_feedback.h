@@ -25,28 +25,26 @@
 #include <string>
 #include <tuple>
 
-using namespace std;
-
 class ManeuverFeedback {
 private:
 
-	string type;
-	string context;
-	string origin;
-	string version = "1.1.0";
+	std::string type;
+	std::string context;
+	std::string origin;
+	std::string version = "1.1.0";
 	uint64_t timestamp;
-	string uuid_vehicle;
-	string uuid_to;
-	string uuid_maneuver;
+	std::string uuid_vehicle;
+	std::string uuid_to;
+	std::string uuid_maneuver;
 	uint64_t timestamp_message;
-	string feedback;
-	string reason;
-	string signature;
+	std::string feedback;
+	std::string reason;
+	std::string signature;
 
 public:
 
-	ManeuverFeedback(string type, string context, string origin, string version, uint64_t timestamp,
-	string uuid_vehicle, string uuid_to, string uuid_maneuver, uint64_t timestamp_message, string feedback, string reason, string signature):
+	ManeuverFeedback(std::string type, std::string context, std::string origin, std::string version, uint64_t timestamp,
+	std::string uuid_vehicle, std::string uuid_to, std::string uuid_maneuver, uint64_t timestamp_message, std::string feedback, std::string reason, std::string signature):
 	type(type),
 	context(context),
 	origin(origin),
@@ -71,31 +69,31 @@ public:
 		origin = "vehicle";
 	}
 
-	string getType();
-	string getContext();
-	string getOrigin();
-	string getVersion();
+	std::string getType();
+	std::string getContext();
+	std::string getOrigin();
+	std::string getVersion();
 	uint64_t getTimestamp();
-	string getUuidVehicle();
-	string getUuidTo();
-	string getUuidManeuver();
+	std::string getUuidVehicle();
+	std::string getUuidTo();
+	std::string getUuidManeuver();
 	uint64_t getTimestampMessage();
-	string getFeedback();
-	string getReason();
-	string getSignature();
+	std::string getFeedback();
+	std::string getReason();
+	std::string getSignature();
 
-	void setType(string);
-	void setContext(string);
-	void setOrigin(string);
-	void setVersion(string);
+	void setType(std::string);
+	void setContext(std::string);
+	void setOrigin(std::string);
+	void setVersion(std::string);
 	void setTimestamp(uint64_t);
-	void setUuidVehicle(string);
-	void setUuidTo(string);
-	void setUuidManeuver(string);
+	void setUuidVehicle(std::string);
+	void setUuidTo(std::string);
+	void setUuidManeuver(std::string);
 	void setTimestampMessage(uint64_t);
-	void setFeedback(string);
-	void setReason(string);
-	void setSignature(string);
+	void setFeedback(std::string);
+	void setReason(std::string);
+	void setSignature(std::string);
 
 
 	friend std::ostream & operator<<(std::ostream& os, ManeuverFeedback * maneuverFeed);

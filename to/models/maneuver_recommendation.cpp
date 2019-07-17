@@ -12,23 +12,23 @@
 #include <utility>
 #include "include/maneuver_recommendation.h"
 
-string ManeuverRecommendation::getType() { return type; }
+std::string ManeuverRecommendation::getType() { return type; }
 
-string ManeuverRecommendation::getContext() { return context; }
+std::string ManeuverRecommendation::getContext() { return context; }
 
-string ManeuverRecommendation::getOrigin() { return origin; }
+std::string ManeuverRecommendation::getOrigin() { return origin; }
 
-string ManeuverRecommendation::getVersion() { return version; }
+std::string ManeuverRecommendation::getVersion() { return version; }
 
 uint64_t ManeuverRecommendation::getTimestamp() { return timestamp; }
 
-string ManeuverRecommendation::getUuidVehicle() { return uuid_vehicle; }
+std::string ManeuverRecommendation::getUuidVehicle() { return uuid_vehicle; }
 
-string ManeuverRecommendation::getUuidTo() { return uuid_to; }
+std::string ManeuverRecommendation::getUuidTo() { return uuid_to; }
 
-string ManeuverRecommendation::getUuidManeuver() { return uuid_maneuver; }
+std::string ManeuverRecommendation::getUuidManeuver() { return uuid_maneuver; }
 
-vector<std::shared_ptr<Waypoint>> ManeuverRecommendation::getWaypoints() { return waypoints; }
+std::vector<std::shared_ptr<Waypoint>> ManeuverRecommendation::getWaypoints() { return waypoints; }
 
 uint64_t ManeuverRecommendation::getTimestampAction() { return timestamp_action; }
 
@@ -40,31 +40,31 @@ uint16_t ManeuverRecommendation::getSpeedAction() { return speed_action; }
 
 uint4 ManeuverRecommendation::getLanePositionAction() { return lane_position; }
 
-string ManeuverRecommendation::getSignature() { return signature; }
+std::string ManeuverRecommendation::getSignature() { return signature; }
 
-string ManeuverRecommendation::getUUID() { return uuid; }
+std::string ManeuverRecommendation::getUUID() { return uuid; }
 
-string ManeuverRecommendation::getSourceUUID() { return source_uuid; }
+std::string ManeuverRecommendation::getSourceUUID() { return source_uuid; }
 
-string ManeuverRecommendation::getMessageID() { return message_id; }
+std::string ManeuverRecommendation::getMessageID() { return message_id; }
 
-void ManeuverRecommendation::setType(string parameter) { type = parameter; }
+void ManeuverRecommendation::setType(std::string parameter) { type = parameter; }
 
-void ManeuverRecommendation::setContext(string parameter) { context = parameter; }
+void ManeuverRecommendation::setContext(std::string parameter) { context = parameter; }
 
-void ManeuverRecommendation::setOrigin(string parameter) { origin = parameter; }
+void ManeuverRecommendation::setOrigin(std::string parameter) { origin = parameter; }
 
-void ManeuverRecommendation::setVersion(string parameter) { version = parameter; }
+void ManeuverRecommendation::setVersion(std::string parameter) { version = parameter; }
 
 void ManeuverRecommendation::setTimestamp(uint64_t parameter) { timestamp = parameter; }
 
-void ManeuverRecommendation::setUuidVehicle(string parameter) { uuid_vehicle = parameter; }
+void ManeuverRecommendation::setUuidVehicle(std::string parameter) { uuid_vehicle = parameter; }
 
-void ManeuverRecommendation::setUuidTo(string parameter) { uuid_to = parameter; }
+void ManeuverRecommendation::setUuidTo(std::string parameter) { uuid_to = parameter; }
 
-void ManeuverRecommendation::setUuidManeuver(string parameter) { uuid_maneuver = parameter; }
+void ManeuverRecommendation::setUuidManeuver(std::string parameter) { uuid_maneuver = parameter; }
 
-void ManeuverRecommendation::setWaypoints(vector<std::shared_ptr<Waypoint>> waypointVector) { waypoints = std::move(waypointVector); }
+void ManeuverRecommendation::setWaypoints(std::vector<std::shared_ptr<Waypoint>> waypointVector) { waypoints = std::move(waypointVector); }
 
 void ManeuverRecommendation::setTimestampAction(uint64_t parameter) { timestamp_action = parameter; }
 
@@ -76,13 +76,13 @@ void ManeuverRecommendation::setSpeedAction(uint16_t parameter) { speed_action =
 
 void ManeuverRecommendation::setLanePositionAction(uint4 parameter) { lane_position = parameter; }
 
-void ManeuverRecommendation::setSignature(string parameter) { signature = parameter; }
+void ManeuverRecommendation::setSignature(std::string parameter) { signature = parameter; }
 
-void ManeuverRecommendation::setUUID(string parameter) { uuid = parameter; }
+void ManeuverRecommendation::setUUID(std::string parameter) { uuid = parameter; }
 
-void ManeuverRecommendation::setSourceUUID(string parameter) { source_uuid = parameter; }
+void ManeuverRecommendation::setSourceUUID(std::string parameter) { source_uuid = parameter; }
 
-void ManeuverRecommendation::setMessageID(string parameter) { message_id = parameter; }
+void ManeuverRecommendation::setMessageID(std::string parameter) { message_id = parameter; }
 
 void ManeuverRecommendation::addWaypoint(const std::shared_ptr<Waypoint> &waypoint) { waypoints.push_back(waypoint); }
 

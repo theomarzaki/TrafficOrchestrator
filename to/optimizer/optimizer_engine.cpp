@@ -144,7 +144,7 @@ std::shared_ptr<ManeuverRecommendation> OptimizerEngine::telemetryStructToManeuv
     mergingManeuver->setSpeedAction(speed);
     mergingManeuver->setLanePositionAction(car.laneId);
     mergingManeuver->setMessageID(std::string(mergingManeuver->getOrigin()) + "/" + std::string(mergingManeuver->getUuidManeuver()) + "/" +
-                                  std::string(to_string(mergingManeuver->getTimestamp())));
+                                  std::string(std::to_string(mergingManeuver->getTimestamp())));
 
     auto waypoint{std::make_shared<Waypoint>()};
     waypoint->setTimestamp(car.timestamp);
