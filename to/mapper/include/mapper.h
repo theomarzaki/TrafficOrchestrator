@@ -122,6 +122,9 @@ public:
 
     static Gps_Point getGpsPointWith2DPointAndBaseGpsPoint(Gps_Point baseGps, double x, double y);
 
+
+    Gps_View followTheLaneWithDistance(Gps_Point pt, double distance, int forcedRoad=-1);
+
     int numberOfLaneInCurrentGpsPoint(Gps_Point car);
 
     std::optional<bool> isItBehindAGpsOnSameRoadPath(Gps_Point carBase, Gps_Point carCompared);

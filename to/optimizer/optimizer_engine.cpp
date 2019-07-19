@@ -172,30 +172,21 @@ std::shared_ptr<ManeuverRecommendation> OptimizerEngine::telemetryStructToManeuv
 
 Timebase_Telemetry_Waypoint OptimizerEngine::getPositionOnRoadInInterval(Timebase_Telemetry_Waypoint car, int64_t interval, int64_t timenow) {
     int64_t deltaTime = timenow - car.timestamp;//time - car.second.timestamp
-    Gps_Point gps {
-            car.coordinates.latitude,
-            car.coordinates.longitude,
-    };
 
     double distance{Mapper::getDistance(car.speed,car.accelleration, (deltaTime + interval)/1000.0)};
 
-    auto descriptor = Mapper::getMapper()->getPositionDescriptor(car.coordinates.latitude,car.coordinates.longitude);
+    auto descriptor = Mapper::getMapper()->getPositionDescriptor(car.coordinates.latitude,car.coordinates.longitude,1);
 
     car.laneId = descriptor->laneId;
 
-    auto angle{descriptor->heading};
-    auto nextAngle{descriptor->next_heading};
-
-    auto sign{nextAngle-angle < 0 ? -1 : 1 };
-
-    auto heading{mergeHeading(car.heading,safeHeadingValue(angle+std::pow(std::sqrt(2)*(nextAngle-angle),2)*sign))};
-
-    std::cout << car.heading << " " << nextAngle << " " << angle << " " << heading << " " << std::pow(std::sqrt(2)*(nextAngle-angle),2) << " " << sign << std::endl;
-
-    car.heading = heading;
+    auto coord{Mapper::getMapper()->followTheLaneWithDistance(car.coordinates,distance,1)};
 
     car.timestamp = timenow + HUMAN_LATENCY_FACTOR;
-    car.coordinates = Mapper::projectGpsPoint(gps, distance,heading);
+    car.heading = coord.heading;
+    car.coordinates = {
+            coord.latitude,
+            coord.longitude
+    };
 
     return car;
 }
@@ -210,7 +201,7 @@ Timebase_Telemetry_Waypoint OptimizerEngine::forceCarMerging(Timebase_Telemetry_
 
     double deltaV{car.max_speed - car.speed};
     double needTime{(deltaV / MAX_ACCELERATION)};
-    if (car.speed < car.max_speed) {
+    if (car.speed < car.max_speed) { // TODO Need to go in Physx
         if (needTime < deltaT) {
             distance = (deltaT-needTime)*car.max_speed+(deltaT-(deltaT-needTime))*car.speed+0.5*MAX_ACCELERATION*needTime*needTime;
             car.speed = car.max_speed;
@@ -354,7 +345,6 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
 
     std::cout << std::endl;
 
-    // TODO Inter frame game updater ... Soon
     for (auto& uuid : erase) game.erase(uuid);
     return recos;
 }

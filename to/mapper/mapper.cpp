@@ -350,6 +350,44 @@ std::shared_ptr<Gps_View> Mapper::getCoordinatesBydistanceAndRoadPath(double lat
     return std::make_shared<Gps_View>();
 }
 
+Gps_View Mapper::followTheLaneWithDistance(Gps_Point car, double distance, int forcedRoad) {
+    std::shared_ptr<Gps_Descriptor> gps;
+    if (forcedRoad > 0) {
+        gps = getPositionDescriptor(car.latitude, car.longitude, forcedRoad);
+    } else {
+        gps = getPositionDescriptor(car.latitude, car.longitude);
+    }
+
+    auto lane{m_roads.at(gps->roadId).lanes.find(gps->laneId)->second};
+    auto node{lane.nodes.at(gps->nodeId)};
+    auto nextNode{lane.nodes.at(gps->nodeId+1)};
+
+    for (unsigned long i = 2; i < lane.nodes.size()-2; i++) {
+        auto nextDistance{distanceBetween2GPSCoordinates(car.latitude,car.longitude, nextNode->latitude, nextNode->longitude)};
+        if (nextDistance < distance) {
+            distance -= nextDistance;
+            car.latitude = nextNode->latitude;
+            car.longitude = nextNode->longitude;
+            nextNode = lane.nodes.at(gps->nodeId + i);
+        } else {
+            auto transform{transformCoordinatesFromGPSTo2DGrid(car.latitude,car.longitude, nextNode->latitude, nextNode->longitude)};
+            auto guideline{getHeading(0, 0, transform.x, transform.y)};
+            auto coord{projectGpsPoint({car.latitude,car.longitude}, distance, guideline)};
+            return {
+                coord.latitude,
+                coord.longitude,
+                guideline
+            };
+        }
+    }
+    auto coord{projectGpsPoint({car.latitude, car.longitude}, distance, gps->heading)};
+    return {
+            coord.latitude,
+            coord.longitude,
+            gps->heading
+    };
+}
+
 Gps_Point Mapper::getGpsPointWith2DPointAndBaseGpsPoint(Gps_Point baseGps, double x, double y) {
     return projectGpsPoint( baseGps,
                             getLengthOfASegment(0, 0, x, y),
