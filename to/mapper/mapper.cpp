@@ -133,6 +133,19 @@ Gps_Point Mapper::projectGpsPoint(  Gps_Point coord,
     };
 }
 
+double Mapper::getLengthOfASegment(double x1, double y1, double x2, double y2) {
+    if (x1 > x2) {
+        auto buff{x2};
+        x2 = x1;
+        x1 = buff;
+    } else if (y1 > y2) {
+        auto buff{y2};
+        y2 = y1;
+        y1 = buff;
+    }
+    return std::sqrt(std::pow(x2-x1,2) + std::pow(y2-y1,2));
+}
+
 double Mapper::getHeading(   double xP, double yP,
                                 double xH, double yH ) {
     auto degree{toDegree(std::atan2(yH - yP, xH - xP))};
@@ -325,7 +338,9 @@ std::shared_ptr<Gps_View> Mapper::getCoordinatesBydistanceAndRoadPath(double lat
             }
         }
     } else {
+        std::cout << std::setprecision(7) << std::fixed << latitude << "," << longitude << " " << heading << std::endl;
         auto coord{findCrossingPointBetweenLaneAndGpsVector(1,1,{latitude,longitude}, heading, distance, maxHeading)};
+        std::cout << std::setprecision(7) << std::fixed << coord->latitude << "," << coord->longitude << " " << coord->heading << std::endl;
         Gps_View buff;
         buff.latitude = coord->latitude;
         buff.longitude = coord->longitude;
@@ -336,9 +351,9 @@ std::shared_ptr<Gps_View> Mapper::getCoordinatesBydistanceAndRoadPath(double lat
 }
 
 Gps_Point Mapper::getGpsPointWith2DPointAndBaseGpsPoint(Gps_Point baseGps, double x, double y) {
-    auto heading{getHeading(0,0,x,y)};
-    auto distance{distanceBetweenAPointAndAStraightLine(0, 0, 0, 0, x, y)};
-    return projectGpsPoint(baseGps,distance,heading);
+    return projectGpsPoint( baseGps,
+                            getLengthOfASegment(0, 0, x, y),
+                            getHeading(0,0,x,y));
 }
 
 std::optional<bool> Mapper::isItBehindAGpsOnSameRoadPath(Gps_Point carBase, Gps_Point carCompared) {
@@ -393,8 +408,8 @@ std::shared_ptr<Gps_View> Mapper::findCrossingPointBetweenLaneAndGpsVector(int r
         auto mergingCarGps{projectGpsPoint({car.latitude,car.longitude},maxDistance,angle)};
         auto distantMergingPoints{transformCoordinatesFromGPSTo2DGrid(car.latitude, car.longitude, mergingCarGps.latitude, mergingCarGps.longitude)};
 
+        // Paul Bourke's method
         double Ua{((distantRoad.x-baseRoad.x)*(-baseRoad.y)-(distantRoad.y-baseRoad.y)*(-baseRoad.x))/((distantRoad.y-baseRoad.y)*(distantMergingPoints.x)-(distantRoad.x-baseRoad.x)*(distantMergingPoints.y))};
-
         double Ub{((distantMergingPoints.x)*(-baseRoad.y)-(distantMergingPoints.y)*(-baseRoad.x))/((distantRoad.y-baseRoad.y)*(distantMergingPoints.x)-(distantRoad.x-baseRoad.x)*(distantMergingPoints.y))};
 
         if (Ua > 0.0 and Ua < 1.0 and Ub > 0.0 and Ub < 1.) {
@@ -405,7 +420,7 @@ std::shared_ptr<Gps_View> Mapper::findCrossingPointBetweenLaneAndGpsVector(int r
             gpsSolution = {
                 coord.latitude,
                 coord.longitude,
-                getHeading(baseRoad.x,baseRoad.y,distantRoad.x,distantRoad.y)
+                gps->heading
             };
         }
     }

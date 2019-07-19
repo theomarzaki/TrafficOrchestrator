@@ -100,7 +100,7 @@ public:
     static double toDegree(double value);
 
     static double getHeading(   double xP, double yP,
-                                    double xH, double yH );
+                                double xH, double yH );
 
     static double distanceBetween2GPSCoordinates(double latitude, double longitude,
                                                  double latitude2, double longitude2);
@@ -109,13 +109,12 @@ public:
                                                         double xL, double yL,
                                                         double xH, double yH);
 
-    static double getSpeed(  double speed,
-                              double acceleration,
-                              double time );
+    static double getSpeed(double speed, double acceleration, double time);
 
-    static double getDistance(  double speed,
-                               double accelleration,
-                               double time);
+    static double getDistance(double speed, double accelleration, double time);
+
+    static double getLengthOfASegment( double x1, double y1,
+                                double x2, double y2);
 
     static Gps_Point projectGpsPoint(  Gps_Point coord,
                                         double distance,

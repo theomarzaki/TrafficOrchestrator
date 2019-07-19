@@ -12,6 +12,7 @@
 namespace logger {
     auto write(const std::string& text) -> void;
     auto dumpToFile(const std::string& text) -> void;
+    auto wipeOutDumpFile() -> void;
 }
 
 #endif //TO_LOGGER_H

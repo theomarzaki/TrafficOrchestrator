@@ -20,7 +20,7 @@ add_executable(${PROJECT_NAME} exchange.cpp
         models/unsubscription_response.cpp
         models/road_user.cpp
         models/database.cpp
-        connectors/detection_interface.cpp
+        connectors/protocol.cpp
         connectors/network_interface.cpp
         optimizer/optimizer_engine.cpp
         logger/logger.cpp) #cmake is a stupid shit

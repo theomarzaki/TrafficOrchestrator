@@ -16,6 +16,11 @@
 #include <netinet/in.h>
 #include <iostream>
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <errno.h>
+#include <unistd.h>
+#include <netdb.h>
 
 #include <logger.h>
 
@@ -26,21 +31,14 @@
 
 #define MAXIMUM_TRANSFER 100000
 
-namespace SendInterface {
+namespace NetworkInterface {
 
+    extern bool connected;
     extern int m_socket;
-    extern std::string connectionAddress;
-    extern int port;
-    extern std::string receiveAddress;
-    extern int receivePort;
 
-    std::string createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq);
-    std::string createUnsubscriptionRequestJSON(std::shared_ptr<UnsubscriptionRequest> unsubscriptionReq);
-    std::string createManeuverJSON(std::shared_ptr<ManeuverRecommendation> maneuverRec);
-
-    std::string createRUDDescription(std::shared_ptr<ManeuverRecommendation> maneuverRec);
-
-    int sendTCP(std::string jsonString, bool newSocket=false);
+    bool connectTCP(std::string targetAddress, int targetPort, std::string receiveAddress, int receivePort);
+    bool sendTCP(std::string jsonString);
+    std::vector<std::string> listenDataTCP();
 }
 
 #endif

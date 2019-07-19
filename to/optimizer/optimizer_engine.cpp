@@ -6,6 +6,7 @@
 
 #include <mapper.h>
 #include <network_interface.h>
+#include <protocol.h>
 #include <physx.h>
 #include <stack>
 #include <algorithm>
@@ -34,12 +35,12 @@ void OptimizerEngine::killOptimizer() {
 }
 
 void OptimizerEngine::startManeuverFeedback() {
-    pause.unlock();
+    fence=true;
     cv.notify_all();
 }
 
 void OptimizerEngine::pauseManeuverFeedback() {
-    pause.lock();
+    fence=false;
     cv.notify_all();
 }
 
@@ -51,12 +52,12 @@ void OptimizerEngine::setBatch(size_t interval) {
     optimizerT = std::make_shared<std::thread>([=]() mutable {
         while (!kill) {
             std::unique_lock<std::mutex> lock(pause);
-            cv.wait(lock);
+            cv.wait(lock,[=]{return fence;});
             locker.lock();
             auto cars{this->getSimulationResult()};
             for (auto &car : cars) {
-                logger::dumpToFile(SendInterface::createRUDDescription(telemetryStructToManeuverRecommendation(*car)));
-                SendInterface::sendTCP(SendInterface::createManeuverJSON(telemetryStructToManeuverRecommendation(*car)));
+                logger::dumpToFile(Protocol::createRUDDescription(telemetryStructToManeuverRecommendation(*car)));
+                NetworkInterface::sendTCP(Protocol::createManeuverJSON(telemetryStructToManeuverRecommendation(*car)));
             }
             logger::write("[INFOS] Maneuver send -> "+std::to_string(cars.size())+" cars reached\n");
             locker.unlock();
@@ -99,15 +100,15 @@ Timebase_Telemetry_Waypoint OptimizerEngine::createTelemetryElementFromRoadUser(
 double OptimizerEngine::mergeHeading(double h0, double h1) {
     if (h0 < h1) {
         auto buff{h0};
-        h0 = h1;
-        h1 = buff;
+        h0 = safeHeadingValue(h1);
+        h1 = safeHeadingValue(buff);
     }
     auto delta{getHeadingDelta(h0,h1)};
+    auto adjust{delta/2};
     if (std::fabs(h0 - h1) > 180) {
-        auto adjust{delta/(1+HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE)};
-        return h1 - adjust > 0 ? h1 - adjust : h0 + (delta - adjust);
+        return h1 - adjust > 0 ? h1 - adjust : h0 + adjust;
     } else {
-        return h1 + delta/(1+HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE);
+        return h0 - adjust;
     }
 }
 
@@ -123,11 +124,7 @@ double OptimizerEngine::getHeadingDelta(double h0, double h1) {
 
 double OptimizerEngine::safeHeadingValue(double heading) {
     auto value{std::fmod(heading,360)};
-    if (value < 0) {
-        return 360+value;
-    } else {
-        return value;
-    }
+    return value < 0 ? 360+value : value;
 }
 
 void OptimizerEngine::updateSimulationState(std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> cars) {
@@ -189,9 +186,11 @@ Timebase_Telemetry_Waypoint OptimizerEngine::getPositionOnRoadInInterval(Timebas
     auto angle{descriptor->heading};
     auto nextAngle{descriptor->next_heading};
 
-    auto heading{mergeHeading(car.heading,safeHeadingValue(angle+getHeadingDelta(nextAngle,angle)*2))};
+    auto sign{nextAngle-angle < 0 ? -1 : 1 };
 
-//    std::cout << car.heading << " " << nextAngle << " " << angle << " " << heading << std::endl;
+    auto heading{mergeHeading(car.heading,safeHeadingValue(angle+std::pow(std::sqrt(2)*(nextAngle-angle),2)*sign))};
+
+    std::cout << car.heading << " " << nextAngle << " " << angle << " " << heading << " " << std::pow(std::sqrt(2)*(nextAngle-angle),2) << " " << sign << std::endl;
 
     car.heading = heading;
 
@@ -215,12 +214,10 @@ Timebase_Telemetry_Waypoint OptimizerEngine::forceCarMerging(Timebase_Telemetry_
         if (needTime < deltaT) {
             distance = (deltaT-needTime)*car.max_speed+(deltaT-(deltaT-needTime))*car.speed+0.5*MAX_ACCELERATION*needTime*needTime;
             car.speed = car.max_speed;
-            std::cout << "Short " << distance << std::endl;
         } else {
             auto speed{MAX_ACCELERATION*deltaT+car.speed};
             distance = (speed + 0.5*MAX_ACCELERATION*deltaT)*deltaT;
             car.speed = speed;
-            std::cout << "Long " << distance << " " << car.speed << std::endl;
         }
     } else {
         needTime *= -1;
@@ -348,8 +345,8 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
 
     //TODO Optimise graph only with connected
 
-    for(auto& car: graphList) {
-        if(car->telemetry->connected and car->telemetry->laneId == 0) {
+    for (auto& car: graphList) {
+        if (car->telemetry->connected) {
             std::cout << std::setprecision(GPS_SIGNIFCAND) << std::fixed << car->telemetry->uuid << " " << car->telemetry->laneId << " " << car->telemetry->coordinates.latitude << "," << car->telemetry->coordinates.longitude << "\n";
             recos.push_back(car->telemetry);
         }

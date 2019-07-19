@@ -34,7 +34,7 @@
 #include <unsubscription_response.h>
 #include <subscription_response.h>
 #include <optimizer_engine.h>
-#include <detection_interface.h>
+#include <protocol.h>
 #include <create_trajectory.h>
 #include <network_interface.h>
 
@@ -44,13 +44,15 @@ std::shared_ptr<SubscriptionResponse> subscriptionResponse;
 pair<int,int> northeast;
 pair<int,int> southwest;
 int request_id;
-int socket_c;
 bool filter = true;
 std::shared_ptr<torch::jit::script::Module> lstm_model;
 std::shared_ptr<torch::jit::script::Module> rl_model;
 
+std::string targetAddress, receiveAddress;
+int targetPort, receivePort;
 
-vector<std::shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Detected_Road_User> &v) {
+
+vector<std::shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Protocol::Detected_Road_User> &v) {
 
 	logger::write("Detected number of RoadUsers: " + std::string(std::to_string(v.size())));
 
@@ -101,7 +103,7 @@ vector<std::shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Detected_R
 
 }
 
-auto detectedToFeedback(const Detected_Trajectory_Feedback& d) {
+auto detectedToFeedback(const Protocol::Detected_Trajectory_Feedback& d) {
 
 	auto maneuverFeed{std::make_shared<ManeuverFeedback>()};
 	maneuverFeed->setType(d.type);
@@ -121,7 +123,7 @@ auto detectedToFeedback(const Detected_Trajectory_Feedback& d) {
 
 }
 
-auto detectedToSubscription(const Detected_Subscription_Response& d) {
+auto detectedToSubscription(const Protocol::Detected_Subscription_Response& d) {
 	auto subscriptionResp{std::make_shared<SubscriptionResponse>()};
 	subscriptionResp->setType(d.type);
 	subscriptionResp->setContext(d.context);
@@ -139,7 +141,7 @@ auto detectedToSubscription(const Detected_Subscription_Response& d) {
 }
 
 
-auto detectedToUnsubscription(const Detected_Unsubscription_Response& d) {
+auto detectedToUnsubscription(const Protocol::Detected_Unsubscription_Response& d) {
 	auto unsubscriptionResp{std::make_shared<UnsubscriptionResponse>()};
 	unsubscriptionResp->setType(d.type);
 	unsubscriptionResp->setContext(d.context);
@@ -164,7 +166,7 @@ void generateReqID(){
 void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommendation>> &v) {
 	for(const auto &m : v) {
 		m->setSourceUUID("traffic_orchestrator_" + std::to_string(request_id));
-        auto maneuverJson{SendInterface::createManeuverJSON(m)};
+        auto maneuverJson{Protocol::createManeuverJSON(m)};
         logger::write(maneuverJson);
         // we trace the emission as far as possible
         std::stringstream log;
@@ -178,7 +180,7 @@ void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommen
         std::cout << log.str();
         std::cout.flush();
         // FIXME when we use socket_c, we've go an error
-        SendInterface::sendTCP(maneuverJson);
+        NetworkInterface::sendTCP(maneuverJson);
 	}
 }
 
@@ -197,19 +199,28 @@ void initiateSubscription() {
 	// FIXME do not cast an unsigned int 64 from a long
 	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
 	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(std::to_string(subscriptionReq->getRequestId())) + "/" + std::string(std::to_string(subscriptionReq->getTimestamp())));
-    socket_c = SendInterface::sendTCP(SendInterface::createSubscriptionRequestJSON(subscriptionReq),true);
-	logger::write("Sent subscription request to " + SendInterface::connectionAddress + ":"+ std::to_string(SendInterface::port));
+
+	if (NetworkInterface::connectTCP(targetAddress,targetPort,receiveAddress,receivePort)) {
+        if (NetworkInterface::sendTCP(Protocol::createSubscriptionRequestJSON(subscriptionReq))) {
+            logger::write("Sent subscription request to " + targetAddress + ":"+ std::to_string(targetPort));
+        } else {
+            logger::write("[ERROR] Subscription send process failed");
+        }
+    } else {
+        logger::write("[ERROR] Connection to target failed");
+	}
 }
 
 void initiateUnsubscription() {
-
     std::chrono::milliseconds timeUnsub = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 	auto unsubscriptionReq{std::make_shared<UnsubscriptionRequest>()};
 	unsubscriptionReq->setSourceUUID("traffic_orchestrator_" + std::to_string(request_id));
 	unsubscriptionReq->setSubscriptionId(request_id);
 	// FIXME do not cast an unsigned int 64 from a long
 	unsubscriptionReq->setTimestamp(static_cast<uint64_t>(timeUnsub.count()));
-    SendInterface::sendTCP(SendInterface::createUnsubscriptionRequestJSON(unsubscriptionReq));
+    if (NetworkInterface::sendTCP(Protocol::createUnsubscriptionRequestJSON(unsubscriptionReq))) {
+        NetworkInterface::connected = false;
+    }
 }
 
 void handleSubscriptionResponse(/*rapidjson::Document &document*/) {
@@ -230,7 +241,7 @@ void handleNotifyAdd(rapidjson::Document &document) {
     logger::dumpToFile(buffer.GetString());
 
 	logger::write("Notify Add Received.");
-	const vector<Detected_Road_User> &roadUsers = assignNotificationVals(document).ru_description_list;
+	const vector<Protocol::Detected_Road_User> &roadUsers = Protocol::assignNotificationVals(document).ru_description_list;
     // we trace the reception as soon as possible and when the message_id stays available
     std::for_each(roadUsers.begin(),
                   roadUsers.end(),
@@ -256,7 +267,7 @@ void handleNotifyAdd(rapidjson::Document &document) {
 }
 
 bool handleTrajectoryFeedback(rapidjson::Document &document) {
-    auto maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
+    auto maneuverFeed = detectedToFeedback(Protocol::assignTrajectoryFeedbackVals(document));
     // we trace the reception as soon as possible
     std::stringstream log;
     // we may have v2x_gateway into the source_uuid, bu we receive the original one
@@ -296,7 +307,7 @@ bool handleTrajectoryFeedback(rapidjson::Document &document) {
 
 void handleNotifyDelete(rapidjson::Document &document) {
 	logger::write("Notify delete Received.");
-	auto uuidsVector{assignNotificationDeleteVals(document)};
+	auto uuidsVector{Protocol::assignNotificationDeleteVals(document)};
 	for_each(uuidsVector.begin(), uuidsVector.end(), [](std::string uuid) {
          database->deleteRoadUser(uuid);
          logger::write("Deleted road user " + uuid);
@@ -334,42 +345,42 @@ void terminate_to(int signum ){
 	logger::write("Sending unsubscription request.\n");
     initiateUnsubscription();
 	std::this_thread::sleep_for(std::chrono::milliseconds(15000));
-	close(socket_c);
+	close(NetworkInterface::m_socket);
 	lstm_model.reset();
 	rl_model.reset();
 	exit(signum);
 }
 
 void handleAIMessage(const std::string &captured_data){
-	rapidjson::Document document = parse(captured_data);
-	message_type messageType = filterInput(document);
+	rapidjson::Document document = Protocol::parse(captured_data);
+	Protocol::message_type messageType = Protocol::filterInput(document);
 	if (captured_data == "\n" || captured_data.empty()) {
-			messageType = message_type::heart_beat;
+			messageType = Protocol::message_type::heart_beat;
 	}
 
 	switch (messageType) {
-			case message_type::notify_add:
+			case Protocol::message_type::notify_add:
 				handleNotifyAdd(document);
 				computeManeuvers();
 				// computeSafetyActions();
 				break;
-			case message_type::notify_delete:
+			case Protocol::message_type::notify_delete:
 					handleNotifyDelete(document);
 					break;
-			case message_type::subscription_response:
+			case Protocol::message_type::subscription_response:
 					handleSubscriptionResponse();
 					break;
-			case message_type::unsubscription_response:
+			case Protocol::message_type::unsubscription_response:
 					handleUnSubscriptionResponse();
 					break;
-			case message_type::trajectory_feedback:
+			case Protocol::message_type::trajectory_feedback:
 					if (!handleTrajectoryFeedback(document)) {
 							computeManeuvers();
 					}
 					break;
-			case message_type::heart_beat:
+			case Protocol::message_type::heart_beat:
 					break;
-			case message_type::reconnect:
+			case Protocol::message_type::reconnect:
 					logger::write("Reconnecting");
 					break;
 			default:
@@ -379,46 +390,46 @@ void handleAIMessage(const std::string &captured_data){
 }
 
 void handleGraphMessage(const std::string &captured_data){
-    rapidjson::Document document = parse(captured_data);
-    message_type messageType = filterInput(document);
+    rapidjson::Document document = Protocol::parse(captured_data);
+    Protocol::message_type messageType = Protocol::filterInput(document);
     if (captured_data == "\n" || captured_data.empty()) {
-        messageType = message_type::heart_beat;
+        messageType = Protocol::message_type::heart_beat;
     }
 
     OptimizerEngine::getEngine()->startManeuverFeedback();
     switch (messageType) {
-        case message_type::notify_add:
+        case Protocol::message_type::notify_add:
             handleNotifyAdd(document);
             OptimizerEngine::getEngine()->locker.lock();
             OptimizerEngine::getEngine()->updateSimulationState(database->dump());
             OptimizerEngine::getEngine()->locker.unlock();
             break;
-        case message_type::notify_delete:
+        case Protocol::message_type::notify_delete:
             handleNotifyDelete(document);
             OptimizerEngine::getEngine()->locker.lock();
-            for (auto& uuid : assignNotificationDeleteVals(document)) {
+            for (auto& uuid : Protocol::assignNotificationDeleteVals(document)) {
                 std::cout << uuid << std::endl;
                 OptimizerEngine::getEngine()->removeFromSimulation(uuid);
             }
             OptimizerEngine::getEngine()->locker.unlock();
             break;
-        case message_type::subscription_response:
+        case Protocol::message_type::subscription_response:
             handleSubscriptionResponse();
             break;
-        case message_type::unsubscription_response:
+        case Protocol::message_type::unsubscription_response:
             OptimizerEngine::getEngine()->pauseManeuverFeedback();
             handleUnSubscriptionResponse();
             break;
-        case message_type::trajectory_feedback:
+        case Protocol::message_type::trajectory_feedback:
             if (!handleTrajectoryFeedback(document)) {
                 OptimizerEngine::getEngine()->locker.lock();
                 OptimizerEngine::getEngine()->updateSimulationState(database->dump());
                 OptimizerEngine::getEngine()->locker.unlock();
             }
             break;
-        case message_type::heart_beat:
+        case Protocol::message_type::heart_beat:
             break;
-        case message_type::reconnect:
+        case Protocol::message_type::reconnect:
             logger::write("Reconnecting");
             break;
         default:
@@ -461,24 +472,25 @@ int main() {
     args.ParseStream(is);
     fclose(file);
 
-    SendInterface::connectionAddress = args["sendAddress"].GetString();
-    SendInterface::port = args["sendPort"].GetInt();
-    SendInterface::receivePort = args["receivePort"].GetInt();
-    SendInterface::receiveAddress = args["receiveAddress"].GetString();
+    targetAddress = args["sendAddress"].GetString();
+    targetPort = args["sendPort"].GetInt();
+    receivePort = args["receivePort"].GetInt();
+    receiveAddress = args["receiveAddress"].GetString();
 
     inputNorthEast(args["northeast"]["longitude"].GetInt(), args["northeast"]["latitude"].GetInt());
     inputSouthWest(args["southwest"]["longitude"].GetInt(), args["southwest"]["latitude"].GetInt());
 
     initiateSubscription();
 
+    logger::wipeOutDumpFile();
+
     // terminate TO on abortion/interruption
     signal(SIGINT, terminate_to);
 
     std::thread mainT([=, &args]() {
         while(true) {
-            std::string captured_data_end;
-            do {
-                for (const auto& captured_data : listenDataTCP(socket_c)) {
+            if (NetworkInterface::connected) {
+                for (const auto& captured_data : NetworkInterface::listenDataTCP()) {
                     try {
                         if (args["computation_with_ai"].GetBool()) {
                             handleAIMessage(captured_data);
@@ -488,12 +500,13 @@ int main() {
                     } catch (const std::exception &e) {
                         logger::write("[ERROR] Malformed JSON");
                     }
-                    captured_data_end = captured_data;
                 }
-            } while (captured_data_end != "RECONNECT");
-            std::cout << "Target seems disconnected -> next attempt in 10 sec." << std::endl;
-            OptimizerEngine::getEngine()->pauseManeuverFeedback();
-            std::this_thread::sleep_for(std::chrono::seconds(10));
+            } else {
+                std::cout << "Target seems disconnected -> next attempt in 10 sec." << std::endl;
+                OptimizerEngine::getEngine()->pauseManeuverFeedback();
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                initiateSubscription();
+            }
         }
     });
 

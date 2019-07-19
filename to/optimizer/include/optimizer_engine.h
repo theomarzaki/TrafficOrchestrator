@@ -13,10 +13,8 @@
 #include <future>
 #include <condition_variable>
 
-#include <network_interface.h>
 #include <maneuver_recommendation.h>
 #include <road_user.h>
-#include <mapper.h>
 #include <gpstools.h>
 
 
@@ -30,6 +28,7 @@ private:
     std::condition_variable cv;
 
     std::mutex pause;
+    bool fence;
 
     OptimizerEngine();
 
@@ -61,7 +60,7 @@ public:
     static OptimizerEngine* getEngine();
     static double mergeHeading(double h0, double h1);
     static double getHeadingDelta(double h0, double h1);
-    static double safeHeadingValue(double heading)
+    static double safeHeadingValue(double heading);
 
     std::shared_ptr<std::thread> getThread();
     void killOptimizer();

@@ -7,9 +7,11 @@ project(connectors
 include(GNUInstallDirs)
 
 set(LIB_SRC
+        protocol.cpp
         network_interface.cpp)
 
 set(LIB_H
+        include/protocol.h
         include/network_interface.h)
 
 
