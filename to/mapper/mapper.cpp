@@ -172,7 +172,7 @@ double Mapper::distanceBetweenAPointAndAStraightLine(   double xP, double yP,
     return std::fabs(- coef*xP + yP - offset) / std::sqrt( std::pow(coef,2) + 1 );
 }
 
-std::shared_ptr<Mapper::Gps_Descriptor> Mapper::getPositionDescriptor(double latitude, double longitude, int forcedRoadID, int forcedLaneID) {
+std::shared_ptr<Mapper::Gps_Descriptor> Mapper::getPositionDescriptor(double latitude, double longitude, int forcedRoadID, int forcedLaneID) { //TODO Need serious improvment
 
     Gps_Descriptor nearestDescription;
     nearestDescription.roadId = -1;
@@ -295,6 +295,7 @@ std::shared_ptr<Mapper::Gps_Descriptor> Mapper::getPositionDescriptor(double lat
             nearestDescription.next_heading = getHeading(0, 0, nextHeadingNodeTransform.x, nextHeadingNodeTransform.y);
 
             auto distanceToMiddle{distanceBetweenAPointAndAStraightLine(xP, yP, 0, 0, xH, yH)};
+
             nearestDescription.distance_to_middle = distanceToMiddle;
 
             if (distanceToMiddle <= lane.size/2) { // TODO implement Square B-Spline distance check
@@ -338,9 +339,7 @@ std::shared_ptr<Gps_View> Mapper::getCoordinatesBydistanceAndRoadPath(double lat
             }
         }
     } else {
-        std::cout << std::setprecision(7) << std::fixed << latitude << "," << longitude << " " << heading << std::endl;
         auto coord{findCrossingPointBetweenLaneAndGpsVector(1,1,{latitude,longitude}, heading, distance, maxHeading)};
-        std::cout << std::setprecision(7) << std::fixed << coord->latitude << "," << coord->longitude << " " << coord->heading << std::endl;
         Gps_View buff;
         buff.latitude = coord->latitude;
         buff.longitude = coord->longitude;
@@ -465,11 +464,12 @@ std::shared_ptr<Gps_View> Mapper::findCrossingPointBetweenLaneAndGpsVector(int r
     if (pathFound) {
         return std::make_shared<Gps_View>(gpsSolution);
     } else {
-        auto coord{projectGpsPoint({car.latitude, car.longitude}, maxDistance, gps->heading)};
+        auto roadHeading{getPositionDescriptor(car.latitude,car.longitude)->heading};
+        auto coord{projectGpsPoint({car.latitude, car.longitude}, maxDistance/3, roadHeading)};
         Gps_View buff {
             coord.latitude,
             coord.longitude,
-            gps->heading
+            roadHeading
         };
         return std::make_shared<Gps_View>(buff); // Continue on the road
     }
