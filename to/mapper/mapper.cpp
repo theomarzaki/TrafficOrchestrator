@@ -358,8 +358,9 @@ Gps_View Mapper::followTheLaneWithDistance(Gps_Point car, double distance, int f
     }
 
     auto lane{m_roads.at(gps->roadId).lanes.find(gps->laneId)->second};
+
     auto node{lane.nodes.at(gps->nodeId)};
-    auto nextNode{lane.nodes.at(gps->nodeId+1)};
+    auto nextNode{static_cast<unsigned long>(gps->nodeId) == lane.nodes.size()-1 ? lane.nodes.at(0) : lane.nodes.at(gps->nodeId+1)};
 
     for (unsigned long i = 2; i < lane.nodes.size()-2; i++) {
         auto nextDistance{distanceBetween2GPSCoordinates(car.latitude,car.longitude, nextNode->latitude, nextNode->longitude)};
