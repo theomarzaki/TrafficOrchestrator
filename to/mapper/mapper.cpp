@@ -3,7 +3,7 @@
 // Copyright (c) Orange Labs all rights reserved.
 //
 
-#include "include/mapper.h"
+#include "mapper.h"
 
 Mapper::Mapper() {
     pathToMap = pathToMap.empty() ? MONTLHERY_MAP : pathToMap; // By default
@@ -28,7 +28,6 @@ Mapper::Mapper() {
 
 void Mapper::createMapContainer(std::unique_ptr<rapidjson::Document> json) { // TODO Change array topography
     if (json->IsObject()) {
-        numberOfRoad = json->HasMember("numberOfRoad") ? json->FindMember("numberOfRoad")->value.GetInt() : 0;
         for (auto& road : json->FindMember("roads")->value.GetArray()) {
             Road_Descriptor roadStruct;
             roadStruct.id = road.HasMember("_id") ? road["_id"].GetInt() : -1;

@@ -1,7 +1,7 @@
 // this file stores the road user information presented by the v2x gateway
 
 // Created by : KCL
-#include "include/database.h"
+#include "database.h"
 #include "logger.h"
 
 /**
@@ -20,7 +20,7 @@ void Database::displayDatabase() {
 *   @param roadUser is a RoadUser pointer.
 */
 
-void Database::upsert(std::shared_ptr<RoadUser> roadUser) {
+void Database::upsert(const std::shared_ptr<RoadUser>& roadUser) {
   auto updated_roadUser = findRoadUser(roadUser->getUuid());
   if(updated_roadUser != nullptr){
     updated_roadUser->setTimestamp(roadUser->getTimestamp());
@@ -40,7 +40,7 @@ void Database::upsert(std::shared_ptr<RoadUser> roadUser) {
 *   @description Erases a RoadUser pointer from the database.
 *   @param roadUser is a RoadUser pointer.
 */
-void Database::deleteRoadUser(std::string uuid) {
+void Database::deleteRoadUser(const std::string& uuid) {
   const auto &iterator{database.find(uuid)}; // iterator still a pointer tho.
   if (iterator != database.end()) {
 //    delete &iterator->second; // So you need to dereference it.
@@ -54,7 +54,7 @@ void Database::deleteRoadUser(std::string uuid) {
 *   @return RoadUser pointer or NULL if no match found
 */
 
-std::shared_ptr<RoadUser> Database::findRoadUser(std::string uuid) {
+std::shared_ptr<RoadUser> Database::findRoadUser(const std::string& uuid) {
   const auto &iterator{database.find(uuid)};
   if (iterator != database.end()) {
     //MAYBE FIXME: huge memory leak. Need to find how to delete a pointer in a map

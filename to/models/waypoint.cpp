@@ -3,7 +3,7 @@
 // Created by: KCL
 
 // Modified by: Omar Nassef (KCL)
-#include "include/waypoint.h"
+#include "waypoint.h"
 
 Waypoint::~Waypoint() = default;
 

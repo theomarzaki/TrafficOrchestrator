@@ -1,17 +1,3 @@
-#include <utility>
-
-#include <utility>
-
-#include <utility>
-
-#include <utility>
-
-#include <utility>
-
-#include <utility>
-
-#include <utility>
-
 // This script is a class for the manuever feedback parsing the information from the v2x Gateway
 
 // Created by: KCL
@@ -24,50 +10,31 @@
 #include <ostream>
 #include <string>
 #include <tuple>
+#include <utility>
 
 class ManeuverFeedback {
 private:
 
-	std::string type;
-	std::string context;
-	std::string origin;
-	std::string version = "1.1.0";
-	uint64_t timestamp;
-	std::string uuid_vehicle;
-	std::string uuid_to;
-	std::string uuid_maneuver;
-	uint64_t timestamp_message;
-	std::string feedback;
-	std::string reason;
-	std::string signature;
+	std::string type{"maneuver_feedback"};
+	std::string context{"lane_merge"};
+	std::string origin{"vehicle"};
+	std::string version{"1.1.0"};
+	uint64_t timestamp{0};
+	std::string uuid_vehicle{""};
+	std::string uuid_to{""};
+	std::string uuid_maneuver{""};
+	uint64_t timestamp_message{0};
+	std::string feedback{""};
+	std::string reason{""};
+	std::string signature{""};
 
 public:
 
 	ManeuverFeedback(std::string type, std::string context, std::string origin, std::string version, uint64_t timestamp,
-	std::string uuid_vehicle, std::string uuid_to, std::string uuid_maneuver, uint64_t timestamp_message, std::string feedback, std::string reason, std::string signature):
-	type(type),
-	context(context),
-	origin(origin),
-	version(std::move(version)),
-	timestamp(timestamp),
-	uuid_vehicle(std::move(uuid_vehicle)),
-	uuid_to(std::move(uuid_to)),
-	uuid_maneuver(std::move(uuid_maneuver)),
-	timestamp_message(timestamp_message),
-	feedback(std::move(feedback)),
-	reason(std::move(reason)),
-	signature(std::move(signature))
-	{
-		type = "maneuver_feedback";
-		context = "lane_merge";
-		origin = "vehicle";
-	}
+	std::string uuid_vehicle, std::string uuid_to, std::string uuid_maneuver, uint64_t timestamp_message, std::string feedback, std::string reason, std::string signature);
+    ManeuverFeedback() = default;
 
-	ManeuverFeedback() {
-		type = "maneuver_feedback";
-		context = "lane_merge";
-		origin = "vehicle";
-	}
+    ~ManeuverFeedback() = default;
 
 	std::string getType();
 	std::string getContext();
@@ -97,8 +64,6 @@ public:
 
 
 	friend std::ostream & operator<<(std::ostream& os, ManeuverFeedback * maneuverFeed);
-
-	~ManeuverFeedback();
 
 };
 

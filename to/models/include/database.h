@@ -26,10 +26,10 @@ public:
 
     /* General access and display functions. */
     void displayDatabase();
-    void upsert(std::shared_ptr<RoadUser> roadUser);
-    void deleteRoadUser(std::string uuid);
+    void upsert(const std::shared_ptr<RoadUser>& roadUser);
+    void deleteRoadUser(const std::string& uuid);
     void deleteAll();
-    std::shared_ptr<RoadUser> findRoadUser(std::string uuid);
+    std::shared_ptr<RoadUser> findRoadUser(const std::string& uuid);
     int getSize();
     std::vector<std::shared_ptr<RoadUser>> findAll();
     std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> dump();

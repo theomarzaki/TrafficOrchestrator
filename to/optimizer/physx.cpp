@@ -3,7 +3,7 @@
 //
 
 #include <cmath>
-#include "include/physx.h"
+#include "physx.h"
 
 #define AVERAGE_CAR_MASS 1200 // kg
 #define AVERAGE_CAR_DENSITY 110 // Average mass per square meter in kg
@@ -28,17 +28,3 @@ double Physx::getCarMass(double height, double length, double width) {
         return height*length*width*AVERAGE_CAR_DENSITY;
     }
 }
-
-//double Physx::getDistanceWithSpeedLimitAndjustAndLinearAcceleration(double deltaT,
-//                                                                    double acceleration,
-//                                                                    double speed,
-//                                                                    double speedLimit) {
-//    auto deltaV{speedLimit - speed};
-//    auto needTime{std::fabs(deltaV/acceleration)};
-//
-//    if (needTime < deltaT) {
-//        (deltaT-needTime)*speedLimit+(deltaT-(deltaT-needTime))*speed+0.5*acceleration*needTime*needTime;
-//    } else {
-//
-//    }
-//}

@@ -9,12 +9,8 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <utility>
 #include "road_user.h"
-
-using std::string;
-using std::vector;
-using std::ostream;
-using std::tuple;
 
 typedef uint32_t uint4;
 
@@ -22,85 +18,61 @@ class CollisionAlert {
 
 private:
 
-	string type;
-	string context;
-	string origin;
-	tuple<uint8_t, uint8_t, uint8_t> version;
-	uint64_t timestamp;
-	string uuid_vehicle; // Digital Identifier of RU that shall execute the maneuver.
-	string uuid_to; // Digital Identifier of the traffic orchestrator.
-
-  string station_type_ru;// Road User station type
-  uint32_t latitude_ru;
-  uint32_t longitude_ru;
-  uint16_t speed_ru;
-
-	uint32_t latitude_collision;
-	uint32_t longitude_collision;
-
-	string signature;
+    std::string type{"maneuver"};
+    std::string context{"lane_merge"};
+    std::string origin{"traffic_orchestrator"};
+    std::tuple<uint8_t, uint8_t, uint8_t> version{0,0,0};
+    uint64_t timestamp{0};
+    std::string uuid_vehicle{""}; // Digital Identifier of RU that shall execute the maneuver.
+    std::string uuid_to{""}; // Digital Identifier of the traffic orchestrator.
+    std::string station_type_ru{""};// Road User station type
+    uint32_t latitude_ru{0};
+    uint32_t longitude_ru{0};
+    uint16_t speed_ru{0};
+    uint32_t latitude_collision{0};
+    uint32_t longitude_collision{0};
+    std::string signature{""};
 
 public:
 
-	CollisionAlert(tuple<uint8_t, uint8_t, uint8_t> version, uint64_t timestamp, string uuid_vehicle, string uuid_to,
-	uint32_t latitude_collision, uint32_t longitude_collision,string station_type_ru,
-  uint32_t latitude_ru,uint32_t longitude_ru,uint32_t speed_ru,string signature) :
-	version(version),
-	timestamp(timestamp),
-	uuid_vehicle(uuid_vehicle),
-	uuid_to(uuid_to),
-  station_type_ru(station_type_ru),
-  latitude_ru(latitude_ru),
-  longitude_ru(longitude_ru),
-  speed_ru(speed_ru),
-	latitude_collision(latitude_collision),
-	longitude_collision(longitude_collision),
-	signature(signature)
-	{
-		type = "collision alert";
-		context = "lane_merge";
-		origin = "traffic_orchestrator";
-	}
+	CollisionAlert( std::tuple<uint8_t, uint8_t, uint8_t> version, uint64_t timestamp, std::string uuid_vehicle, std::string uuid_to,
+                    uint32_t latitude_collision, uint32_t longitude_collision,std::string station_type_ru,
+                    uint32_t latitude_ru,uint32_t longitude_ru,uint32_t speed_ru,std::string signature);
+    CollisionAlert() = default;
 
-	CollisionAlert() {
-		type = "maneuver";
-		context = "lane_merge";
-		origin = "traffic_orchestrator";
-	}
+    ~CollisionAlert() = default;
 
     friend std::ostream& operator<< (ostream& os, CollisionAlert * collisionRec); // Overload << to print a recommendation.
 
-    string getType();
-    string getContext();
-    string getOrigin();
-    tuple<uint8_t, uint8_t, uint8_t> getVersion();
+    std::string getType();
+    std::string getContext();
+    std::string getOrigin();
+    std::tuple<uint8_t, uint8_t, uint8_t> getVersion();
     uint64_t getTimestamp();
-    string getUuidVehicle();
-    string getUuidTo();
-    string getStationType();
+    std::string getUuidVehicle();
+    std::string getUuidTo();
+    std::string getStationType();
     uint32_t getLatitudeRU();
     uint32_t getLongitudeRU();
     uint16_t getSpeedRU();
     uint32_t getLatitudeCollision();
     uint32_t getLongitudeCollision();
-    string getSignature();
+    std::string getSignature();
 
-    void setType(string);
-    void setContext(string);
-    void setOrigin(string);
-    void setVersion(tuple<uint8_t, uint8_t, uint8_t>);
+    void setType(std::string);
+    void setContext(std::string);
+    void setOrigin(std::string);
+    void setVersion(std::tuple<uint8_t, uint8_t, uint8_t>);
     void setTimestamp(uint64_t);
-    void setUuidVehicle(string);
-    void setUuidTo(string);
-    void setStationType(string);
+    void setUuidVehicle(std::string);
+    void setUuidTo(std::string);
+    void setStationType(std::string);
     void setLatitudeRU(uint32_t);
     void setLongitudeRU(uint32_t);
     void setSpeedRU(uint32_t);
     void getLatitudeCollision(uint32_t);
     void getLongitudeCollision(uint32_t);
-    void setSignature(string);
-
-    ~CollisionAlert();
+    void setSignature(std::string);
 
 };
 

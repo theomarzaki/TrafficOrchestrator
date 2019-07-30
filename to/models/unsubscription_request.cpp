@@ -1,9 +1,23 @@
+#include <utility>
+
+#include <utility>
+
+#include <utility>
+
+#include <utility>
+
+#include <utility>
+
+#include <utility>
+
+#include <utility>
+
 // this script models the unsubscription response sent by the TO presented in class structure
 
 // Created by: KCL
 
 // Modified by: Omar Nassef (KCL)
-#include "include/unsubscription_request.h"
+#include "unsubscription_request.h"
 
 std::string UnsubscriptionRequest::getType(){return type;}
 std::string UnsubscriptionRequest::getContext(){return context;}
@@ -16,16 +30,16 @@ int UnsubscriptionRequest::getRequestId(){return request_id;}
 std::string UnsubscriptionRequest::getSourceUUID(){return source_uuid;}
 std::string UnsubscriptionRequest::getDestinationUUID(){return destination_uuid;}
 
-void UnsubscriptionRequest::setType(std::string parameter){type = parameter;}
-void UnsubscriptionRequest::setContext(std::string parameter){context = parameter;}
-void UnsubscriptionRequest::setOrigin(std::string parameter){origin = parameter;}
-void UnsubscriptionRequest::setVersion(std::string parameter){version = parameter;}
+void UnsubscriptionRequest::setType(std::string parameter){type = std::move(parameter);}
+void UnsubscriptionRequest::setContext(std::string parameter){context = std::move(parameter);}
+void UnsubscriptionRequest::setOrigin(std::string parameter){origin = std::move(parameter);}
+void UnsubscriptionRequest::setVersion(std::string parameter){version = std::move(parameter);}
 void UnsubscriptionRequest::setTimestamp(uint64_t parameter){timestamp = parameter;}
 void UnsubscriptionRequest::setSubscriptionId(int parameter){subscriptionId = parameter;}
-void UnsubscriptionRequest::setSignature(std::string parameter){signature = parameter;}
+void UnsubscriptionRequest::setSignature(std::string parameter){signature = std::move(parameter);}
 void UnsubscriptionRequest::setRequestId(int parameter){request_id=parameter;}
-void UnsubscriptionRequest::setSourceUUID(std::string parameter){source_uuid = parameter;}
-void UnsubscriptionRequest::setDestinationUUID(std::string parameter){destination_uuid = parameter;}
+void UnsubscriptionRequest::setSourceUUID(std::string parameter){source_uuid = std::move(parameter);}
+void UnsubscriptionRequest::setDestinationUUID(std::string parameter){destination_uuid = std::move(parameter);}
 
 std::ostream& operator<<(std::ostream& os, UnsubscriptionRequest * unsubscriptionReq) {
 

@@ -4,9 +4,10 @@
 // Created by: KCL
 
 // Modified by: Omar Nassef (KCL)
-#include "include/subscription_request.h"
+#include "subscription_request.h"
+#include <utility>
 
-SubscriptionRequest::~SubscriptionRequest() {}
+SubscriptionRequest::~SubscriptionRequest() = default;
 
 std::string SubscriptionRequest::getType(){return type;}
 std::string SubscriptionRequest::getContext(){return context;}
@@ -23,18 +24,18 @@ std::string SubscriptionRequest::getMessageID(){return message_id;}
 std::pair<int,int> SubscriptionRequest::getNorthEast(){return northeast;}
 std::pair<int,int> SubscriptionRequest::getSouthWest(){return southwest;}
 
-void SubscriptionRequest::setType(std::string parameter){type = parameter;}
-void SubscriptionRequest::setContext(std::string parameter){context = parameter;}
-void SubscriptionRequest::setOrigin(std::string parameter){origin = parameter;}
-void SubscriptionRequest::setVersion(std::string parameter){version = parameter;}
+void SubscriptionRequest::setType(std::string parameter){type = std::move(parameter);}
+void SubscriptionRequest::setContext(std::string parameter){context = std::move(parameter);}
+void SubscriptionRequest::setOrigin(std::string parameter){origin = std::move(parameter);}
+void SubscriptionRequest::setVersion(std::string parameter){version = std::move(parameter);}
 void SubscriptionRequest::setTimestamp(uint64_t parameter){timestamp = parameter;}
 void SubscriptionRequest::setFilter(bool parameter){filter = parameter;}
-void SubscriptionRequest::setShape(std::string parameter){shape = parameter;}
-void SubscriptionRequest::setSignature(std::string parameter){signature = parameter;}
+void SubscriptionRequest::setShape(std::string parameter){shape = std::move(parameter);}
+void SubscriptionRequest::setSignature(std::string parameter){signature = std::move(parameter);}
 void SubscriptionRequest::setRequestId(int parameter){request_id = parameter;}
-void SubscriptionRequest::setSourceUUID(std::string parameter){source_uuid = parameter;}
-void SubscriptionRequest::setDestinationUUID(std::string parameter){destination_uuid = parameter;}
-void SubscriptionRequest::setMessageID(std::string parameter){message_id = parameter;}
+void SubscriptionRequest::setSourceUUID(std::string parameter){source_uuid = std::move(parameter);}
+void SubscriptionRequest::setDestinationUUID(std::string parameter){destination_uuid = std::move(parameter);}
+void SubscriptionRequest::setMessageID(std::string parameter){message_id = std::move(parameter);}
 void SubscriptionRequest::setNorthEast(std::pair<int,int> parameter){northeast = std::make_pair(parameter.first,parameter.second);}
 void SubscriptionRequest::setSouthWest(std::pair<int,int> parameter){southwest = std::make_pair(parameter.first,parameter.second);}
 

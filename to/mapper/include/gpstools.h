@@ -27,7 +27,7 @@ struct Timebase_Telemetry_Waypoint {
     int64_t timestamp;
     double heading;
     double speed;
-    double accelleration;
+    double acceleration;
     double yaw_rate;
     double max_speed;
     double mass;

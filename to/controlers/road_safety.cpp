@@ -4,7 +4,7 @@
 
 // minimal changes applied to other cars as not to 'disturb' road equilibrium
 
-#include "include/road_safety.h"
+#include "road_safety.h"
 
 #include <math.h>
 #include <time.h>
@@ -20,7 +20,7 @@ double distanceRoadUser(const std::shared_ptr<RoadUser>& first, const std::share
 }
 
 
-std::vector<std::shared_ptr<ManeuverRecommendation>> calculateSafetyAction( vector<pair<std::shared_ptr<RoadUser>, vector<std::shared_ptr<RoadUser>>>> neighbours) {
+std::vector<std::shared_ptr<ManeuverRecommendation>> calculateSafetyAction( const vector<pair<std::shared_ptr<RoadUser>, vector<std::shared_ptr<RoadUser>>>>& neighbours) {
   auto safetyManeuver{std::vector<std::shared_ptr<ManeuverRecommendation>>()};
 
   for(const auto & neighbour : neighbours){
@@ -40,7 +40,7 @@ std::vector<std::shared_ptr<ManeuverRecommendation>> calculateSafetyAction( vect
 }
 
 
-std::vector<std::shared_ptr<ManeuverRecommendation>> stabiliseRoad(std::shared_ptr<Database> database) {
+std::vector<std::shared_ptr<ManeuverRecommendation>> stabiliseRoad(const std::shared_ptr<Database>& database) {
     auto recommendations{vector<std::shared_ptr<ManeuverRecommendation>>()};
     const auto road_users{database->findAll()};
     for (const auto &r : road_users) {

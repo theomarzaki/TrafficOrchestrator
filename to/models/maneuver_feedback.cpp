@@ -1,5 +1,7 @@
 #include <utility>
 
+#include <utility>
+
 // This script is a class for the manuever feedback parsing the information from the v2x Gateway
 
 // Created by: KCL
@@ -7,9 +9,25 @@
 // Modified by: Omar Nassef(KCL)
 
 
-#include "include/maneuver_feedback.h"
+#include "maneuver_feedback.h"
 
-ManeuverFeedback::~ManeuverFeedback() = default;
+ManeuverFeedback::ManeuverFeedback(std::string type, std::string context, std::string origin, std::string version,
+                                   uint64_t timestamp, std::string uuid_vehicle, std::string uuid_to,
+                                   std::string uuid_maneuver, uint64_t timestamp_message, std::string feedback,
+                                   std::string reason, std::string signature) :
+    type(std::move(type)),
+    context(std::move(context)),
+    origin(std::move(origin)),
+    version(std::move(version)),
+    timestamp(timestamp),
+    uuid_vehicle(std::move(uuid_vehicle)),
+    uuid_to(std::move(uuid_to)),
+    uuid_maneuver(std::move(uuid_maneuver)),
+    timestamp_message(timestamp_message),
+    feedback(std::move(feedback)),
+    reason(std::move(reason)),
+    signature(std::move(signature))
+{}
 
 std::string ManeuverFeedback::getType(){return type;}
 std::string ManeuverFeedback::getContext(){return context;}

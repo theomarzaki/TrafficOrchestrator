@@ -23,35 +23,33 @@ int32_t toGPSMantissa(double point);
 float RoadUserHeadingtoProcessedHeading(float point);
 float ProcessedHeadingtoRoadUserHeading(float point);
 
-bool inRange(int low, int high, int x);
-
-std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states);
+std::pair<at::Tensor,bool> CheckActionValidity(const at::Tensor& states);
 
 // Represents the actions that are taken by the non merging vehicle to facilitate an easier merge
 namespace RoadUser_action {
 
-    const float TIME_VARIANT = 0.035;
-    const int BIAS = 1;
+    const float TIME_VARIANT{0.035};
+    const int BIAS{1};
 
-    auto left(std::shared_ptr<RoadUser> vehicle);
-    auto right(std::shared_ptr<RoadUser> vehicle);
-    auto accelerate(std::shared_ptr<RoadUser> vehicle);
-    auto deccelerate(std::shared_ptr<RoadUser> vehicle);
-    auto nothing(std::shared_ptr<RoadUser> vehicle);
+    auto left(const std::shared_ptr<RoadUser>& vehicle);
+    auto right(const std::shared_ptr<RoadUser>& vehicle);
+    auto accelerate(const std::shared_ptr<RoadUser>& vehicle);
+    auto deccelerate(const std::shared_ptr<RoadUser>& vehicle);
+    auto nothing(const std::shared_ptr<RoadUser>& vehicle);
 
 }
 
 // Represents the actions that is taken by the merging car -> used by RL
 namespace Autonomous_action {
 
-    const float TIME_VARIANT = 0.035;
-    const int BIAS = 3;
+    const float TIME_VARIANT{0.035};
+    const int BIAS{3};
 
-    at::Tensor left(at::Tensor state);
-    at::Tensor right(at::Tensor state);
-    at::Tensor accelerate(at::Tensor state);
-    at::Tensor deccelerate(at::Tensor state);
-    at::Tensor nothing(at::Tensor state);
+    at::Tensor left(const at::Tensor& state);
+    at::Tensor right(const at::Tensor& state);
+    at::Tensor accelerate(const at::Tensor& state);
+    at::Tensor deccelerate(const at::Tensor& state);
+    at::Tensor nothing(const at::Tensor& state);
 
 }
 

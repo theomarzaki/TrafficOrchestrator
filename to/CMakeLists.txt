@@ -27,7 +27,7 @@ add_executable(${PROJECT_NAME} exchange.cpp
 
 target_link_libraries(${PROJECT_NAME}
                         stdc++fs
-                        controlers
+                        controllers
                         models
                         optimizer
                         mapper

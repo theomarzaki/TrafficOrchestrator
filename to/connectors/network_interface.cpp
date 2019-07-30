@@ -4,7 +4,7 @@
 
 // Modified by: Omar Nassef (KCL)
 #include <logger.h>
-#include "include/network_interface.h"
+#include "network_interface.h"
 #include "protocol.h"
 
 #include <list>

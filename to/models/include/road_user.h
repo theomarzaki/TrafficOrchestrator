@@ -20,128 +20,89 @@ typedef uint32_t uint4;
 class RoadUser {
 private:
 
-    std::string type;
-    std::string context; // Used to distinguish different messages i.e. lane_merge
-    std::string origin; // Indicates the creator of the RU description i.e. "self" or "roadside_camera".
-    std::string version; // Indicates the version of the message format specification.
-    uint64_t timestamp; // Indicates when the message information was assembled.
+    std::string type{"ru_description"};
+    std::string context{"lane_merge"}; // Used to distinguish different messages i.e. lane_merge
+    std::string origin{"self"}; // Indicates the creator of the RU description i.e. "self" or "roadside_camera".
+    std::string version{"1.0.0"}; // Indicates the version of the message format specification.
+    uint64_t timestamp{0}; // Indicates when the message information was assembled.
 
-    std::string uuid; // Digital identifier for the RU.
-    std::string its_station_type; // Description of DE_StationType from [ETSI14-1028942]. i.e. "bus".
+    std::string uuid{""}; // Digital identifier for the RU.
+    std::string its_station_type{""}; // Description of DE_StationType from [ETSI14-1028942]. i.e. "bus".
 
     /* Can take value TRUE or FALSE. */
-    bool connected; // Whether the vehicle can communicate with the V2X gateway.
+    bool connected{false}; // Whether the vehicle can communicate with the V2X gateway.
 
-    std::string position_type;
+    std::string position_type{""};
 
     /* Position with precision to 0.1 microdegrees. */
-    int32_t latitude; // Specifies the north-south position on the Earth's surface.
-    int32_t longitude; // Specifies the east-west position on the Earth's surface.
+    int32_t latitude{0}; // Specifies the north-south position on the Earth's surface.
+    int32_t longitude{0}; // Specifies the east-west position on the Earth's surface.
 
     // std::string position_type TODO
 
     /* Heading with precision to 0.1 degrees from North. */
-    uint16_t heading; // Driving direction, clockwise measurement.
+    uint16_t heading{0}; // Driving direction, clockwise measurement.
 
     /* Speed with precision to 0.01 m/s. */
-    uint16_t speed; // Speed of the RU in direction specified in "heading" field.
+    uint16_t speed{0}; // Speed of the RU in direction specified in "heading" field.
 
     /* Acceleration with precision to 0.1 m/(s^2). */
-    int16_t acceleration; // Acceleration of the RU in the direction specified in "heading" field.
+    int16_t acceleration{0}; // Acceleration of the RU in the direction specified in "heading" field.
 
     /* Yaw rate with precision 0.1 degrees/s. */
-    int16_t yaw_rate; // Heading change of the RU, where the sign indicates direction. i.e. + or -
+    int16_t yaw_rate{0}; // Heading change of the RU, where the sign indicates direction. i.e. + or -
 
     /* Size with precision to 0.1m. */
-    float length; // Length of the RU.
-    float width; // Width of the RU.
-    float height; // Height of the RU.
+    float length{0}; // Length of the RU.
+    float width{0}; // Width of the RU.
+    float height{0}; // Height of the RU.
 
     /* Color represented as a hexadecimal RGB value. */
-    std::string color; // Color of the vehicle.
+    std::string color{""}; // Color of the vehicle.
 
-    uint4 lane_position; // Counted from rightmost lane in driving direction (starting at index 0).
+    uint4 lane_position{0}; // Counted from rightmost lane in driving direction (starting at index 0).
 
     /* Measured in percentage - captures possible object detection issues. */
-    uint8_t existence_probability; // Indicates the likelihood that the RU exists.
+    uint8_t existence_probability{0}; // Indicates the likelihood that the RU exists.
 
-    uint16_t position_semi_major_confidence; // Larger eigenvalue of position covariance matrix.
-    uint16_t position_semi_minor_confidence; // Smaller eigenvalue of position covariance matrix.
-    uint16_t position_semi_major_orientation; // Direction of eigenvector of position covariance matrix.
+    uint16_t position_semi_major_confidence{0}; // Larger eigenvalue of position covariance matrix.
+    uint16_t position_semi_minor_confidence{0}; // Smaller eigenvalue of position covariance matrix.
+    uint16_t position_semi_major_orientation{0}; // Direction of eigenvector of position covariance matrix.
 
     /* Heading confidence with precision 0.1 degrees from North. */
-    uint16_t heading_c; // Variance of heading measurements.
+    uint16_t heading_c{0}; // Variance of heading measurements.
 
     /* Speed confidence with precision 0.01 m/s. */
-    uint16_t speed_c; // Variance of speed measurements.
+    uint16_t speed_c{0}; // Variance of speed measurements.
 
     /* Acceleration confidence with precision 0.1 m/(s^2). */
-    uint16_t acceleration_c; // Variance of acceleration measurements.
+    uint16_t acceleration_c{0}; // Variance of acceleration measurements.
 
     /* Yaw rate confidence with precision 0.1 degrees/s. */
-    uint16_t yaw_rate_c; // Variance of yaw rate measurements.
+    uint16_t yaw_rate_c{0}; // Variance of yaw rate measurements.
 
     /* Size confidence with precision 0.1m. */
-    float length_c; // Variance of RU length measurements.
-    float width_c; // Variance of RU width measurements.
-    float height_c; // Variance of RU height measurements.
+    float length_c{0}; // Variance of RU length measurements.
+    float width_c{0}; // Variance of RU width measurements.
+    float height_c{0}; // Variance of RU height measurements.
 
-    std::string signature; // Used for signing the message content.
-    std::string source_uuid;
+    std::string signature{""}; // Used for signing the message content.
+    std::string source_uuid{""};
 
     /* flag indicating availability of road user to receive waypoint */
-    bool processing_waypoint;
-    time_t waypoint_timestamp;
+    bool processing_waypoint{false};
+    time_t waypoint_timestamp{0};
 
 public:
 
-    RoadUser(std::string type,std::string context,std::string origin,std::string version,uint64_t timestamp,std::string uuid,std::string its_station_type,
-        bool connected,int32_t latitude,int32_t longitude,std::string position_type,
-        uint16_t heading,uint16_t speed,uint16_t acceleration,uint16_t yaw_rate,float length,float width,
-        float height,std::string color,uint4 lane_position,uint8_t existence_probability,uint16_t position_semi_major_confidence,
-        uint16_t position_semi_minor_confidence,uint16_t position_semi_major_orientation,uint16_t heading_c,
-        uint16_t speed_c,int16_t acceleration_c,int16_t yaw_rate_c,float length_c,float width_c,float height_c,
-        std::string signature, std::string source_uuid) :
-    type(std::move(type)),
-    context(std::move(context)),
-    origin(std::move(origin)),
-    version(std::move(version)),
-    timestamp(timestamp),
-    uuid(std::move(uuid)),
-    its_station_type(std::move(its_station_type)),
-    connected(connected),
-    position_type(std::move(position_type)),
-    latitude(latitude),
-    longitude(longitude),
-    heading(heading),
-    speed(speed),
-    acceleration(acceleration),
-    yaw_rate(yaw_rate),
-    length(length),
-    width(width),
-    height(height),
-    color(std::move(color)),
-    lane_position(lane_position),
-    existence_probability(existence_probability),
-    position_semi_major_confidence(position_semi_major_confidence),
-    position_semi_minor_confidence(position_semi_minor_confidence),
-    position_semi_major_orientation(position_semi_major_orientation),
-    heading_c(heading_c),
-    speed_c(speed_c),
-    acceleration_c(acceleration_c),
-    yaw_rate_c(yaw_rate_c),
-    length_c(length_c),
-    width_c(width_c),
-    height_c(height_c),
-    signature(std::move(signature)),
-    source_uuid(std::move(source_uuid)),
-    processing_waypoint{false},
-    waypoint_timestamp{0}
-    {};
-
-    /* Default constructor assigns relevant fields to 'No Value Assigned' if not all values are handed to the above constructor. */
-
-    RoadUser();
+    RoadUser(   std::string type,std::string context,std::string origin,std::string version,uint64_t timestamp,std::string uuid,std::string its_station_type,
+                bool connected,int32_t latitude,int32_t longitude,std::string position_type,
+                uint16_t heading,uint16_t speed,uint16_t acceleration,uint16_t yaw_rate,float length,float width,
+                float height,std::string color,uint4 lane_position,uint8_t existence_probability,uint16_t position_semi_major_confidence,
+                uint16_t position_semi_minor_confidence,uint16_t position_semi_major_orientation,uint16_t heading_c,
+                uint16_t speed_c,int16_t acceleration_c,int16_t yaw_rate_c,float length_c,float width_c,float height_c,
+                std::string signature, std::string source_uuid );
+    RoadUser() = default;
 
     ~RoadUser() = default; // Destructor declaration.
 

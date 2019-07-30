@@ -2,7 +2,7 @@
 // Created by jab on 27/05/19.
 //
 
-#include "include/optimizer_engine.h"
+#include "optimizer_engine.h"
 
 #include <mapper.h>
 #include <network_interface.h>
@@ -14,7 +14,6 @@
 #define ROAD_DEFAULT_SPEED 20
 #define MAX_ACCELERATION 2.0
 
-#define HEADING_CONFIDENCE_AGAINST_ROAD_ANGLE 0.4
 #define HUMAN_LATENCY_FACTOR 2000
 #define LATENCY_DROP_FACTOR 2000
 #define HEADING_REAJUST_UNIT 10.0
@@ -28,10 +27,6 @@
 OptimizerEngine::OptimizerEngine() {
     kill.store(false);
     setBatch(INTERVAL_TIME);
-}
-
-void OptimizerEngine::killOptimizer() {
-    kill.store(true);
 }
 
 void OptimizerEngine::startManeuverFeedback() {
@@ -55,9 +50,9 @@ void OptimizerEngine::setBatch(size_t interval) {
             cv.wait(lock,[=]{return fence;});
             locker.lock();
             auto cars{this->getSimulationResult()};
-            for (auto &car : cars) {
-                logger::dumpToFile(Protocol::createRUDDescription(telemetryStructToManeuverRecommendation(*car)));
-                NetworkInterface::sendTCP(Protocol::createManeuverJSON(telemetryStructToManeuverRecommendation(*car)));
+            for (const auto &car : cars) {
+                logger::dumpToFile(Protocol::createRUDDescription(telemetryStructToManeuverRecommendation(car)));
+                NetworkInterface::sendTCP(Protocol::createManeuverJSON(telemetryStructToManeuverRecommendation(car)));
             }
             logger::write("[INFOS] Maneuver send -> "+std::to_string(cars.size())+" cars reached\n");
             locker.unlock();
@@ -97,21 +92,6 @@ Timebase_Telemetry_Waypoint OptimizerEngine::createTelemetryElementFromRoadUser(
     };
 }
 
-double OptimizerEngine::mergeHeading(double h0, double h1) {
-    if (h0 < h1) {
-        auto buff{h0};
-        h0 = safeHeadingValue(h1);
-        h1 = safeHeadingValue(buff);
-    }
-    auto delta{getHeadingDelta(h0,h1)};
-    auto adjust{delta/2};
-    if (std::fabs(h0 - h1) > 180) {
-        return h1 - adjust > 0 ? h1 - adjust : h0 + adjust;
-    } else {
-        return h0 - adjust;
-    }
-}
-
 double OptimizerEngine::getHeadingDelta(double h0, double h1) {
     if (h0 < h1) {
         auto buff{h0};
@@ -128,7 +108,7 @@ double OptimizerEngine::safeHeadingValue(double heading) {
 }
 
 void OptimizerEngine::updateSimulationState(std::unique_ptr<std::list<std::shared_ptr<RoadUser>>> cars) {
-    for (auto& car : *cars ) {
+    for (const auto& car : *cars ) {
         auto buff{createTelemetryElementFromRoadUser(car)};
         if (game.find(car->getUuid()) != game.end()) {
             game.erase(car->getUuid());
@@ -141,30 +121,30 @@ void OptimizerEngine::removeFromSimulation(const std::string& uuid) {
     game.erase(uuid);
 }
 
-std::shared_ptr<ManeuverRecommendation> OptimizerEngine::telemetryStructToManeuverRecommendation(const Timebase_Telemetry_Waypoint& car) {
+std::shared_ptr<ManeuverRecommendation> OptimizerEngine::telemetryStructToManeuverRecommendation(const std::shared_ptr<Timebase_Telemetry_Waypoint>& car) {
     auto mergingManeuver{std::make_shared<ManeuverRecommendation>()};
-    auto speed{static_cast<uint16_t>(car.speed * SPEED_REAJUST_UNIT)};
-    auto latitude{static_cast<int32_t>(car.coordinates.latitude * std::pow(10,GPS_SIGNIFCAND))};
-    auto longitude{static_cast<int32_t>(car.coordinates.longitude * std::pow(10,GPS_SIGNIFCAND))};
+    auto speed{static_cast<uint16_t>(car->speed * SPEED_REAJUST_UNIT)};
+    auto latitude{static_cast<int32_t>(car->coordinates.latitude * std::pow(10,GPS_SIGNIFCAND))};
+    auto longitude{static_cast<int32_t>(car->coordinates.longitude * std::pow(10,GPS_SIGNIFCAND))};
 
-    mergingManeuver->setTimestamp(car.timestamp);
-    mergingManeuver->setUuidVehicle(car.uuid);
-    mergingManeuver->setUuidTo(car.uuid);
-    mergingManeuver->setTimestampAction(car.timestamp);
+    mergingManeuver->setTimestamp(car->timestamp);
+    mergingManeuver->setUuidVehicle(car->uuid);
+    mergingManeuver->setUuidTo(car->uuid);
+    mergingManeuver->setTimestampAction(car->timestamp);
     mergingManeuver->setLongitudeAction(longitude);
     mergingManeuver->setLatitudeAction(latitude);
     mergingManeuver->setSpeedAction(speed);
-    mergingManeuver->setLanePositionAction(car.laneId);
+    mergingManeuver->setLanePositionAction(car->laneId);
     mergingManeuver->setMessageID(std::string(mergingManeuver->getOrigin()) + "/" + std::string(mergingManeuver->getUuidManeuver()) + "/" +
                                   std::string(std::to_string(mergingManeuver->getTimestamp())));
 
     auto waypoint{std::make_shared<Waypoint>()};
-    waypoint->setTimestamp(car.timestamp);
+    waypoint->setTimestamp(car->timestamp);
     waypoint->setLongitude(longitude);
     waypoint->setLatitude(latitude);
     waypoint->setSpeed(speed);
-    waypoint->setLanePosition(car.laneId);
-    waypoint->setHeading(static_cast<uint16_t>(car.heading*HEADING_REAJUST_UNIT));
+    waypoint->setLanePosition(car->laneId);
+    waypoint->setHeading(static_cast<uint16_t>(car->heading*HEADING_REAJUST_UNIT));
     mergingManeuver->addWaypoint(waypoint);
 
     return mergingManeuver;
@@ -173,7 +153,7 @@ std::shared_ptr<ManeuverRecommendation> OptimizerEngine::telemetryStructToManeuv
 Timebase_Telemetry_Waypoint OptimizerEngine::getPositionOnRoadInInterval(Timebase_Telemetry_Waypoint car, int64_t interval, int64_t timenow) {
     int64_t deltaTime = timenow - car.timestamp;//time - car.second.timestamp
 
-    double distance{Mapper::getDistance(car.speed,car.accelleration, (deltaTime + interval)/1000.0)};
+    double distance{Mapper::getDistance(car.speed,car.acceleration, (deltaTime + interval)/1000.0)};
 
     auto descriptor = Mapper::getMapper()->getPositionDescriptor(car.coordinates.latitude,car.coordinates.longitude,1);
 
@@ -196,8 +176,6 @@ Timebase_Telemetry_Waypoint OptimizerEngine::forceCarMerging(Timebase_Telemetry_
 
     double distance;
     double deltaT{(deltaTime + interval)/1000.0};
-
-    std::cout << "L " << car.speed << std::endl;
 
     double deltaV{car.max_speed - car.speed};
     double needTime{(deltaV / MAX_ACCELERATION)};
@@ -222,7 +200,7 @@ Timebase_Telemetry_Waypoint OptimizerEngine::forceCarMerging(Timebase_Telemetry_
         }
     }
 
-    car.accelleration = 0;
+    car.acceleration = 0;
 
     std::shared_ptr<Gps_View> gps{Mapper::getMapper()->getCoordinatesBydistanceAndRoadPath(car.coordinates.latitude,car.coordinates.longitude,distance,car.heading,15.0)};
 
@@ -322,28 +300,11 @@ std::list<std::shared_ptr<Timebase_Telemetry_Waypoint>> OptimizerEngine::getSimu
         }
     }
 
-//    head = graphHead;
-//    std::vector<std::shared_ptr<Graph_Element>> mutableGraphList(graphList);
-//    while(!mutableGraphList.empty()) { // Where the magic happen, not so Magic tho'.
-//        if (head->telemetry->connected) {
-//            if (head->telemetry->laneId == 0) {
-//
-//            } else {
-//
-//            }
-//        }
-//    }
-
-    //TODO Optimise graph only with connected
-
     for (auto& car: graphList) {
         if (car->telemetry->connected) {
-            std::cout << std::setprecision(GPS_SIGNIFCAND) << std::fixed << car->telemetry->uuid << " " << car->telemetry->laneId << " " << car->telemetry->coordinates.latitude << "," << car->telemetry->coordinates.longitude << "\n";
             recos.push_back(car->telemetry);
         }
     }
-
-    std::cout << std::endl;
 
     for (auto& uuid : erase) game.erase(uuid);
     return recos;

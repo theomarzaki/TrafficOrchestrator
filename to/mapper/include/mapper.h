@@ -58,7 +58,6 @@ private:
     };
 
     std::vector<Road_Descriptor> m_roads;
-    int numberOfRoad = 0;
 
     Mapper();
 
@@ -111,7 +110,7 @@ public:
 
     static double getSpeed(double speed, double acceleration, double time);
 
-    static double getDistance(double speed, double accelleration, double time);
+    static double getDistance(double speed, double acceleration, double time);
 
     static double getLengthOfASegment( double x1, double y1,
                                 double x2, double y2);

@@ -3,16 +3,49 @@
 // Created by: KCL
 
 // Modified by: Omar Nassef (KCL)
-#include "include/road_user.h"
+#include "road_user.h"
 
-RoadUser::RoadUser()  {
-    type = "ru_description";
-    context = "lane_merge";
-    origin = "self";
-    version = "1.0.0";
-    processing_waypoint = false;
-    waypoint_timestamp = 0;
-}
+RoadUser::RoadUser( std::string type,std::string context,std::string origin,std::string version,uint64_t timestamp,std::string uuid,std::string its_station_type,
+                    bool connected,int32_t latitude,int32_t longitude,std::string position_type,
+                    uint16_t heading,uint16_t speed,uint16_t acceleration,uint16_t yaw_rate,float length,float width,
+                    float height,std::string color,uint4 lane_position,uint8_t existence_probability,uint16_t position_semi_major_confidence,
+                    uint16_t position_semi_minor_confidence,uint16_t position_semi_major_orientation,uint16_t heading_c,
+                    uint16_t speed_c,int16_t acceleration_c,int16_t yaw_rate_c,float length_c,float width_c,float height_c,
+                    std::string signature, std::string source_uuid) :
+    type(std::move(type)),
+    context(std::move(context)),
+    origin(std::move(origin)),
+    version(std::move(version)),
+    timestamp(timestamp),
+    uuid(std::move(uuid)),
+    its_station_type(std::move(its_station_type)),
+    connected(connected),
+    position_type(std::move(position_type)),
+    latitude(latitude),
+    longitude(longitude),
+    heading(heading),
+    speed(speed),
+    acceleration(acceleration),
+    yaw_rate(yaw_rate),
+    length(length),
+    width(width),
+    height(height),
+    color(std::move(color)),
+    lane_position(lane_position),
+    existence_probability(existence_probability),
+    position_semi_major_confidence(position_semi_major_confidence),
+    position_semi_minor_confidence(position_semi_minor_confidence),
+    position_semi_major_orientation(position_semi_major_orientation),
+    heading_c(heading_c),
+    speed_c(speed_c),
+    acceleration_c(acceleration_c),
+    yaw_rate_c(yaw_rate_c),
+    length_c(length_c),
+    width_c(width_c),
+    height_c(height_c),
+    signature(std::move(signature)),
+    source_uuid(std::move(source_uuid))
+{}
 
 std::string RoadUser::getType(){return type;}
 std::string RoadUser::getContext(){return context;}

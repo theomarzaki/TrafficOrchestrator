@@ -30,8 +30,6 @@
 #include "mapper.h"
 #include "database.h"
 
-bool inRange(int low, int high, int x);
-
 at::Tensor GetStateFromActions(const at::Tensor &action_Tensor,const at::Tensor& state);
 
 std::optional<std::pair<std::shared_ptr<RoadUser>,std::shared_ptr<RoadUser>>> getClosestFollowingandPreceedingCars(const std::shared_ptr<RoadUser>& merging_car, const std::vector<std::shared_ptr<RoadUser>>& close_by, int number_lanes_offset);

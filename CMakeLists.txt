@@ -16,7 +16,7 @@ add_subdirectory(thirdparty)
 include_directories(${CMAKE_SOURCE_DIR}/rapidjson
         ${CMAKE_SOURCE_DIR}
         ${communication_layer}
-        ..)
+        ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/libtorch)
 find_package(Torch REQUIRED)

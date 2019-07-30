@@ -1,7 +1,7 @@
 // This script provides the closest cars in terms of longitude and latitude
 
 // Created by: KCL
-#include "include/nearest_neighbour.h"
+#include "nearest_neighbour.h"
 
 double rad2deg(double rad) {
   return (rad * 180 / M_PI);

@@ -5,7 +5,7 @@
 
 // Modified by: Omar Nassef (KCL)
 
-#include "include/protocol.h"
+#include "protocol.h"
 #include "logger.h"
 
 std::string Protocol::createSubscriptionRequestJSON(std::shared_ptr<SubscriptionRequest> subscriptionReq) {

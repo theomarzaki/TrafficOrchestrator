@@ -12,7 +12,6 @@ set(LIB_SRC
 set(LIB_H
         include/optimizer_engine.h include/physx.h)
 
-
 add_library(${PROJECT_NAME} SHARED ${LIB_SRC} ${LIB_H})
 
 target_include_directories(includes INTERFACE include)

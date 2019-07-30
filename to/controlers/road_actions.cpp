@@ -1,13 +1,12 @@
 // This file represents the actions that can be taken by the *connected* vehicles on the road
 
-#include "include/road_actions.h"
+#include "road_actions.h"
 
 #include <chrono>
 #include <logger.h>
 #include <memory>
 #include <time.h>
 #include <nearest_neighbour.h>
-
 
 int RoadUserSpeedtoProcessedSpeed(int speed){
 	return speed / 100;
@@ -41,12 +40,7 @@ float ProcessedHeadingtoRoadUserHeading(float point){
 	return float(int((point * 100) - 265) % 360);
 }
 
-
-bool inRange(int low, int high, int x){
-    return ((x-high)*(x-low) <= 0);
-}
-
-std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
+std::pair<at::Tensor,bool> CheckActionValidity(const at::Tensor& states){
 	float THRESHOLD = 1400;
 
 	auto x = states[0][0].item<float>();
@@ -71,7 +65,7 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
 }
 
 
-  auto RoadUser_action::left(std::shared_ptr<RoadUser> vehicle) {
+  auto RoadUser_action::left(const std::shared_ptr<RoadUser>& vehicle) {
     auto timestamp{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
@@ -81,18 +75,18 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
     auto new_x = RoadUserGPStoProcessedGPS(vehicle->getLongitude()) + RoadUser_action::BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
     auto new_y = RoadUserGPStoProcessedGPS(vehicle->getLatitude())  + RoadUser_action::BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 
-    waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
-                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100);
-    waypoint->setLongitude(ProcessedGPStoRoadUserGPS(new_x));
-    waypoint->setLatitude(ProcessedGPStoRoadUserGPS(new_y));
+    waypoint->setTimestamp(static_cast<uint64_t>(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
+                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100));
+    waypoint->setLongitude(static_cast<uint32_t>(ProcessedGPStoRoadUserGPS(new_x)));
+    waypoint->setLatitude(static_cast<uint32_t>(ProcessedGPStoRoadUserGPS(new_y)));
     waypoint->setSpeed(vehicle->getSpeed());
     waypoint->setLanePosition(vehicle->getLanePosition());
-		waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(angle));
+		waypoint->setHeading(static_cast<uint16_t>(ProcessedHeadingtoRoadUserHeading(angle)));
 
     return waypoint;
   }
 
-  auto RoadUser_action::right(std::shared_ptr<RoadUser> vehicle) {
+  auto RoadUser_action::right(const std::shared_ptr<RoadUser>& vehicle) {
     auto timestamp{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
@@ -102,18 +96,18 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
     auto new_x = RoadUserGPStoProcessedGPS(vehicle->getLongitude()) + RoadUser_action::BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
     auto new_y = RoadUserGPStoProcessedGPS(vehicle->getLatitude())  + RoadUser_action::BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 
-    waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
-                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100);
-    waypoint->setLongitude(ProcessedGPStoRoadUserGPS(new_x));
-    waypoint->setLatitude(ProcessedGPStoRoadUserGPS(new_y));
+    waypoint->setTimestamp(static_cast<uint64_t>(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
+                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100));
+    waypoint->setLongitude(static_cast<uint32_t>(ProcessedGPStoRoadUserGPS(new_x)));
+    waypoint->setLatitude(static_cast<uint32_t>(ProcessedGPStoRoadUserGPS(new_y)));
     waypoint->setSpeed(vehicle->getSpeed());
     waypoint->setLanePosition(vehicle->getLanePosition());
-    waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(angle));
+    waypoint->setHeading(static_cast<uint16_t>(ProcessedHeadingtoRoadUserHeading(angle)));
 
     return waypoint;
   }
 
-  auto RoadUser_action::accelerate(std::shared_ptr<RoadUser> vehicle) {
+  auto RoadUser_action::accelerate(const std::shared_ptr<RoadUser>& vehicle) {
     auto timestamp{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
@@ -123,18 +117,18 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
     auto new_x = RoadUserGPStoProcessedGPS(vehicle->getLongitude()) + RoadUser_action::BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
     auto new_y = RoadUserGPStoProcessedGPS(vehicle->getLatitude())  + RoadUser_action::BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 
-    waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
-                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100);
-    waypoint->setLongitude(ProcessedGPStoRoadUserGPS(new_x));
-    waypoint->setLatitude(ProcessedGPStoRoadUserGPS(new_y));
+    waypoint->setTimestamp(static_cast<uint64_t>(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
+                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100));
+    waypoint->setLongitude(static_cast<uint32_t>(ProcessedGPStoRoadUserGPS(new_x)));
+    waypoint->setLatitude(static_cast<uint32_t>(ProcessedGPStoRoadUserGPS(new_y)));
     waypoint->setSpeed(vehicle->getSpeed());
     waypoint->setLanePosition(vehicle->getLanePosition());
-    waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(angle));
+    waypoint->setHeading(static_cast<uint16_t>(ProcessedHeadingtoRoadUserHeading(angle)));
 
     return waypoint;
   }
 
-  auto RoadUser_action::deccelerate(std::shared_ptr<RoadUser> vehicle) {
+  auto RoadUser_action::deccelerate(const std::shared_ptr<RoadUser>& vehicle) {
     auto timestamp{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
@@ -144,18 +138,18 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
     auto new_x = RoadUserGPStoProcessedGPS(vehicle->getLongitude()) + RoadUser_action::BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
     auto new_y = RoadUserGPStoProcessedGPS(vehicle->getLatitude())  + RoadUser_action::BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 
-    waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
-                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100);
-    waypoint->setLongitude(ProcessedGPStoRoadUserGPS(new_x));
-    waypoint->setLatitude(ProcessedGPStoRoadUserGPS(new_y));
+    waypoint->setTimestamp(static_cast<uint64_t>(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
+                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100));
+    waypoint->setLongitude(static_cast<uint32_t>(ProcessedGPStoRoadUserGPS(new_x)));
+    waypoint->setLatitude(static_cast<uint32_t>(ProcessedGPStoRoadUserGPS(new_y)));
     waypoint->setSpeed(vehicle->getSpeed());
     waypoint->setLanePosition(vehicle->getLanePosition());
-    waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(angle));
+    waypoint->setHeading(static_cast<uint16_t>(ProcessedHeadingtoRoadUserHeading(angle)));
 
     return waypoint;
   }
 
-  auto RoadUser_action::nothing(std::shared_ptr<RoadUser> vehicle) {
+  auto RoadUser_action::nothing(const std::shared_ptr<RoadUser>& vehicle) {
     auto timestamp{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()};
     auto waypoint{std::make_shared<Waypoint>()};
 
@@ -165,19 +159,19 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
     auto new_x = RoadUserGPStoProcessedGPS(vehicle->getLongitude()) + RoadUser_action::BIAS * (displacement/1000) * cos((angle * M_PI)/ 180);
     auto new_y = RoadUserGPStoProcessedGPS(vehicle->getLatitude())  + RoadUser_action::BIAS * (displacement/1000) * sin((angle * M_PI)/ 180);
 
-    waypoint->setTimestamp(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
-                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100);
-    waypoint->setLongitude(ProcessedGPStoRoadUserGPS(new_x));
-    waypoint->setLatitude(ProcessedGPStoRoadUserGPS(new_y));
+    waypoint->setTimestamp(static_cast<uint64_t>(timestamp + (distanceEarth(RoadUserGPStoProcessedGPS(vehicle->getLatitude()), RoadUserGPStoProcessedGPS(vehicle->getLongitude()),
+                  new_x,new_y) / RoadUserSpeedtoProcessedSpeed(vehicle->getSpeed())) * 100));
+    waypoint->setLongitude(static_cast<uint32_t>(ProcessedGPStoRoadUserGPS(new_x)));
+    waypoint->setLatitude(static_cast<uint32_t>(ProcessedGPStoRoadUserGPS(new_y)));
     waypoint->setSpeed(vehicle->getSpeed());
     waypoint->setLanePosition(vehicle->getLanePosition());
-    waypoint->setHeading(ProcessedHeadingtoRoadUserHeading(angle));
+    waypoint->setHeading(static_cast<uint16_t>(ProcessedHeadingtoRoadUserHeading(angle)));
 
     return waypoint;
 }
 
 
-  at::Tensor Autonomous_action::left(at::Tensor state) {
+  at::Tensor Autonomous_action::left(const at::Tensor& state) {
     at::Tensor stateTensor = state;
     float displacement = fmax(state[0][4].item<float>(),float(10)) * Autonomous_action::TIME_VARIANT + 0.5 * fmax(state[0][5].item<float>(),float(1)) * Autonomous_action::TIME_VARIANT * Autonomous_action::TIME_VARIANT;
     auto angle = (state[0][19].item<int>() + 2) % 360;
@@ -189,7 +183,7 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
     return stateTensor;
   }
 
-  at::Tensor Autonomous_action::right(at::Tensor state) {
+  at::Tensor Autonomous_action::right(const at::Tensor& state) {
     at::Tensor stateTensor = state;
     float displacement = fmax(state[0][4].item<float>(),float(10)) * Autonomous_action::TIME_VARIANT + 0.5 * fmax(state[0][5].item<float>(),float(1)) * Autonomous_action::TIME_VARIANT * Autonomous_action::TIME_VARIANT;
     auto angle = (state[0][19].item<int>() - 2) % 360;
@@ -201,7 +195,7 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
     return stateTensor;
   }
 
-  at::Tensor Autonomous_action::accelerate(at::Tensor state) {
+  at::Tensor Autonomous_action::accelerate(const at::Tensor& state) {
     at::Tensor stateTensor = state;
     auto angle = state[0][19].item<int>();
     auto final_velocity = fmax(state[0][4].item<float>(),float(10)) + Autonomous_action::TIME_VARIANT * (fmax(state[0][4].item<float>(),float(10)) + fmax(state[0][5].item<float>(),float(1)) * Autonomous_action::TIME_VARIANT);
@@ -217,7 +211,7 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
     return stateTensor;
   }
 
-  at::Tensor Autonomous_action::deccelerate(at::Tensor state) { //TODO check deccelerate Tensor
+  at::Tensor Autonomous_action::deccelerate(const at::Tensor& state) { //TODO check deccelerate Tensor
     at::Tensor stateTensor = state;
     auto angle = state[0][19].item<int>();
     auto final_velocity = fmax(state[0][4].item<float>(),float(10)) - Autonomous_action::TIME_VARIANT * (fmax(state[0][4].item<float>(),float(10)) + fmax(state[0][5].item<float>(),float(1)) * Autonomous_action::TIME_VARIANT);
@@ -233,7 +227,7 @@ std::pair<at::Tensor,bool> CheckActionValidity(at::Tensor states){
 	  return stateTensor;
   }
 
-  at::Tensor Autonomous_action::nothing(at::Tensor state) {
+  at::Tensor Autonomous_action::nothing(const at::Tensor& state) {
     at::Tensor stateTensor = state;
     auto angle = state[0][19].item<int>();
     auto displacement = fmax(state[0][4].item<float>(),float(10)) * Autonomous_action::TIME_VARIANT + 0.5 * (fmax(state[0][5].item<float>(),float(1)) * Autonomous_action::TIME_VARIANT * Autonomous_action::TIME_VARIANT);

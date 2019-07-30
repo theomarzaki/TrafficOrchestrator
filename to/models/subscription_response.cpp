@@ -1,9 +1,10 @@
- // this script models the subscription response sent by the v2x gateway presented in class structure
+// this script models the subscription response sent by the v2x gateway presented in class structure
 
  // Created by: KCL
 
  // Modified by: Omar Nassef (KCL)
-#include "include/subscription_response.h"
+#include "subscription_response.h"
+#include <utility>
 
 std::string SubscriptionResponse::getType(){return type;}
 std::string SubscriptionResponse::getContext(){return context;}
@@ -17,17 +18,17 @@ int SubscriptionResponse::getRequestId(){return request_id;}
 std::string SubscriptionResponse::getSourceUUID(){return source_uuid;}
 std::string SubscriptionResponse::getDestinationUUID(){return destination_uuid;}
 
-void SubscriptionResponse::setType(std::string parameter){type = parameter;}
-void SubscriptionResponse::setContext(std::string parameter){context = parameter;}
-void SubscriptionResponse::setOrigin(std::string parameter){origin = parameter;}
-void SubscriptionResponse::setVersion(std::string parameter){version = parameter;}
+void SubscriptionResponse::setType(std::string parameter){type = std::move(parameter);}
+void SubscriptionResponse::setContext(std::string parameter){context = std::move(parameter);}
+void SubscriptionResponse::setOrigin(std::string parameter){origin = std::move(parameter);}
+void SubscriptionResponse::setVersion(std::string parameter){version = std::move(parameter);}
 void SubscriptionResponse::setTimestamp(uint64_t parameter){timestamp = parameter;}
-void SubscriptionResponse::setResult(std::string parameter){result = parameter;}
+void SubscriptionResponse::setResult(std::string parameter){result = std::move(parameter);}
 void SubscriptionResponse::setSubscriptionId(int parameter){subscriptionId = parameter;}
-void SubscriptionResponse::setSignature(std::string parameter){signature = parameter;}
+void SubscriptionResponse::setSignature(std::string parameter){signature = std::move(parameter);}
 void SubscriptionResponse::setRequestId(int parameter){request_id = parameter;}
-void SubscriptionResponse::setSourceUUID(std::string parameter){source_uuid = parameter;}
-void SubscriptionResponse::setDestinationUUID(std::string parameter){destination_uuid = parameter;}
+void SubscriptionResponse::setSourceUUID(std::string parameter){source_uuid = std::move(parameter);}
+void SubscriptionResponse::setDestinationUUID(std::string parameter){destination_uuid = std::move(parameter);}
 
 
 std::ostream& operator<<(std::ostream& os, SubscriptionResponse * subscriptionResp) {
