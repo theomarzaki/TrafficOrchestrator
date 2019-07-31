@@ -1,13 +1,8 @@
-#include <utility>
-
-#include <utility>
-
 // This script is a class for the manuever feedback parsing the information from the v2x Gateway
 
 // Created by: KCL
 
 // Modified by: Omar Nassef(KCL)
-
 
 #include "maneuver_feedback.h"
 
