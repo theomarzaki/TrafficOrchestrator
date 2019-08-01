@@ -1,5 +1,3 @@
-#include <utility>
-
 // This is the Main script that brings all the components together
 
 // Obtains TO connection data from configuration file and starts a connection and listens
@@ -8,6 +6,8 @@
 
 // Modified by : Omar Nassef(KCL)
 
+#include <utility>
+#include <cstdio>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -27,43 +27,36 @@
 #include <torch/torch.h>
 #include <torch/script.h>
 
-#include "detection_interface.cpp"
-#include "database.cpp"
-#include "maneuver_feedback.cpp"
-#include "network_interface.cpp"
-#include "subscription_response.cpp"
-#include "CreateTrajectory.cpp"
-#include "unsubscription_response.cpp"
-#include "logger.h"
-#include "road_safety.cpp"
-
-using namespace rapidjson;
-using namespace experimental;
-using namespace std::chrono;
+#include <road_safety.h>
+#include <logger.h>
+#include <database.h>
+#include <maneuver_feedback.h>
+#include <unsubscription_response.h>
+#include <subscription_response.h>
+#include <optimizer_engine.h>
+#include <protocol.h>
+#include <create_trajectory.h>
+#include <network_interface.h>
 
 auto database{std::make_shared<Database>()};
 std::shared_ptr<SubscriptionResponse> subscriptionResponse;
 
-string sendAddress;
-int sendPort;
-string receiveAddress;
-int receivePort;
-
-
 pair<int,int> northeast;
 pair<int,int> southwest;
 int request_id;
-int socket_c;
 bool filter = true;
 std::shared_ptr<torch::jit::script::Module> lstm_model;
 std::shared_ptr<torch::jit::script::Module> rl_model;
 
+std::string targetAddress, receiveAddress;
+int targetPort, receivePort;
 
-vector<shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Detected_Road_User> &v) {
 
-	logger::write("Detected number of RoadUsers: " + string(to_string(v.size())));
+vector<std::shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Protocol::Detected_Road_User> &v) {
 
-	vector<shared_ptr<RoadUser>> road_users;
+	logger::write("Detected number of RoadUsers: " + std::string(std::to_string(v.size())));
+
+	vector<std::shared_ptr<RoadUser>> road_users;
 
 	for(const auto& d : v) {
 
@@ -110,7 +103,7 @@ vector<shared_ptr<RoadUser>> detectedToRoadUserList(const vector<Detected_Road_U
 
 }
 
-auto detectedToFeedback(const Detected_Trajectory_Feedback& d) {
+auto detectedToFeedback(const Protocol::Detected_Trajectory_Feedback& d) {
 
 	auto maneuverFeed{std::make_shared<ManeuverFeedback>()};
 	maneuverFeed->setType(d.type);
@@ -130,7 +123,7 @@ auto detectedToFeedback(const Detected_Trajectory_Feedback& d) {
 
 }
 
-auto detectedToSubscription(const Detected_Subscription_Response& d) {
+auto detectedToSubscription(const Protocol::Detected_Subscription_Response& d) {
 	auto subscriptionResp{std::make_shared<SubscriptionResponse>()};
 	subscriptionResp->setType(d.type);
 	subscriptionResp->setContext(d.context);
@@ -148,7 +141,7 @@ auto detectedToSubscription(const Detected_Subscription_Response& d) {
 }
 
 
-auto detectedToUnsubscription(const Detected_Unsubscription_Response& d) {
+auto detectedToUnsubscription(const Protocol::Detected_Unsubscription_Response& d) {
 	auto unsubscriptionResp{std::make_shared<UnsubscriptionResponse>()};
 	unsubscriptionResp->setType(d.type);
 	unsubscriptionResp->setContext(d.context);
@@ -172,8 +165,8 @@ void generateReqID(){
 
 void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommendation>> &v) {
 	for(const auto &m : v) {
-		m->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
-        auto maneuverJson{createManeuverJSON(m)};
+		m->setSourceUUID("traffic_orchestrator_" + std::to_string(request_id));
+        auto maneuverJson{Protocol::createManeuverJSON(m)};
         logger::write(maneuverJson);
         // we trace the emission as far as possible
         std::stringstream log;
@@ -187,15 +180,15 @@ void sendTrajectoryRecommendations(const vector<std::shared_ptr<ManeuverRecommen
         std::cout << log.str();
         std::cout.flush();
         // FIXME when we use socket_c, we've go an error
-        sendDataTCP(socket_c, sendAddress, sendPort, receiveAddress, receivePort, maneuverJson);
+        NetworkInterface::sendTCP(maneuverJson);
 	}
 }
 
 void initiateSubscription() {
-	milliseconds timeSub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+	std::chrono::milliseconds timeSub = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 	auto subscriptionReq{std::make_shared<SubscriptionRequest>()};
 	generateReqID();
-	subscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
+	subscriptionReq->setSourceUUID("traffic_orchestrator_" + std::to_string(request_id));
 	subscriptionReq->setFilter(filter);
 
 	subscriptionReq->setShape("rectangle");
@@ -205,35 +198,50 @@ void initiateSubscription() {
 	subscriptionReq->setSouthWest(southwest);
 	// FIXME do not cast an unsigned int 64 from a long
 	subscriptionReq->setTimestamp(static_cast<uint64_t>(timeSub.count()));
-	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(to_string(subscriptionReq->getRequestId())) + "/" + std::string(to_string(subscriptionReq->getTimestamp())));
-    socket_c = sendDataTCP(-999, sendAddress, sendPort, receiveAddress, receivePort, createSubscriptionRequestJSON(subscriptionReq));
-	logger::write("Sent subscription request to " + sendAddress + ":"+ to_string(sendPort));
+	subscriptionReq->setMessageID(std::string(subscriptionReq->getOrigin()) + "/" + std::string(std::to_string(subscriptionReq->getRequestId())) + "/" + std::string(std::to_string(subscriptionReq->getTimestamp())));
+
+	if (NetworkInterface::connectTCP(targetAddress,targetPort,receiveAddress,receivePort)) {
+        if (NetworkInterface::sendTCP(Protocol::createSubscriptionRequestJSON(subscriptionReq))) {
+            logger::write("Sent subscription request to " + targetAddress + ":"+ std::to_string(targetPort));
+        } else {
+            logger::write("[ERROR] Subscription send process failed");
+        }
+    } else {
+        logger::write("[ERROR] Connection to target failed");
+	}
 }
 
 void initiateUnsubscription() {
-
-	milliseconds timeUnsub = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+    std::chrono::milliseconds timeUnsub = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
 	auto unsubscriptionReq{std::make_shared<UnsubscriptionRequest>()};
-	unsubscriptionReq->setSourceUUID("traffic_orchestrator_" + to_string(request_id));
+	unsubscriptionReq->setSourceUUID("traffic_orchestrator_" + std::to_string(request_id));
 	unsubscriptionReq->setSubscriptionId(request_id);
 	// FIXME do not cast an unsigned int 64 from a long
 	unsubscriptionReq->setTimestamp(static_cast<uint64_t>(timeUnsub.count()));
-	sendDataTCP(-999,sendAddress,sendPort,receiveAddress,receivePort,createUnsubscriptionRequestJSON(unsubscriptionReq));
+    if (NetworkInterface::sendTCP(Protocol::createUnsubscriptionRequestJSON(unsubscriptionReq))) {
+        NetworkInterface::connected = false;
+    }
 }
 
-void handleSubscriptionResponse(Document &document) {
+void handleSubscriptionResponse(/*rapidjson::Document &document*/) {
 	logger::write("Subscription Response Received.");
-	// return detectedToSubscription(assignSubResponseVals(document));
+//	return detectedToSubscription(assignSubResponseVals(document));
 }
 
-void handleUnSubscriptionResponse(Document &document) {
+void handleUnSubscriptionResponse(/*rapidjson::Document &document*/) {
 	logger::write("unsubscription response Received.");
 	// return detectedToUnsubscription(assignUnsubResponseVals(document));
 }
 
-void handleNotifyAdd(Document &document) {
+void handleNotifyAdd(rapidjson::Document &document) {
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document["message"]["ru_description_list"][0].Accept(writer);
+    logger::dumpToFile(buffer.GetString());
+
 	logger::write("Notify Add Received.");
-	const vector<Detected_Road_User> &roadUsers = assignNotificationVals(document).ru_description_list;
+	const vector<Protocol::Detected_Road_User> &roadUsers = Protocol::assignNotificationVals(document).ru_description_list;
     // we trace the reception as soon as possible and when the message_id stays available
     std::for_each(roadUsers.begin(),
                   roadUsers.end(),
@@ -242,12 +250,12 @@ void handleNotifyAdd(Document &document) {
                       if ("placeholder" != roadUser.message_id) {
                           std::stringstream log;
                           // we may have v2x_gateway into the source_uuid, bu we receive the original one
-                          log << "traffic_orchestrator ru_description received_from v2x_gateway "
+                          /*log << "traffic_orchestrator ru_description received_from v2x_gateway "
                               << roadUser.message_id
                               << " at "
                               << std::chrono::duration_cast<std::chrono::milliseconds>(
                                       std::chrono::system_clock::now().time_since_epoch()).count()
-                              << std::endl;
+                              << std::endl;*/
                           std::cout << log.str();
                           std::cout.flush();
                       }
@@ -258,12 +266,12 @@ void handleNotifyAdd(Document &document) {
 	}
 }
 
-bool handleTrajectoryFeedback(Document &document) {
-    auto maneuverFeed = detectedToFeedback(assignTrajectoryFeedbackVals(document));
+bool handleTrajectoryFeedback(rapidjson::Document &document) {
+    auto maneuverFeed = detectedToFeedback(Protocol::assignTrajectoryFeedbackVals(document));
     // we trace the reception as soon as possible
     std::stringstream log;
     // we may have v2x_gateway into the source_uuid, bu we receive the original one
-    log << "traffic_orchestrator maneuver_feedback received_from v2x_gateway "
+    /*log << "traffic_orchestrator maneuver_feedback received_from v2x_gateway "
         // TODO use std:optional instead of use a "placeholder" default value
         << ("placeholder" != maneuverFeed->getUuidManeuver() ? maneuverFeed->getUuidManeuver() : "")
         << "/"
@@ -275,7 +283,7 @@ bool handleTrajectoryFeedback(Document &document) {
         << " at "
         << std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::system_clock::now().time_since_epoch()).count()
-        << std::endl;
+        << std::endl; */
     std::cout << log.str();
     std::cout.flush();
 	auto roadUser = database->findRoadUser(maneuverFeed->getUuidVehicle());
@@ -297,40 +305,21 @@ bool handleTrajectoryFeedback(Document &document) {
 	return true;
 }
 
-void handleNotifyDelete(Document &document) {
+void handleNotifyDelete(rapidjson::Document &document) {
 	logger::write("Notify delete Received.");
-	auto uuidsVector{assignNotificationDeleteVals(document)};
-	for_each(uuidsVector.begin(), uuidsVector.end(),
-					 [](string uuid)
-					 {
-							 database->deleteRoadUser(uuid);
-							 logger::write("Deleted road user " + uuid);
-					 });
-
-}
-
-void inputSendAddress(string address) {
-	sendAddress = std::move(address);
-}
-
-void inputSendPort(int port) {
-	sendPort = port;
-}
-
-void inputReceivePort(int port) {
-	receivePort = port;
-}
-
-void inputReceiveAddress(string address) {
-	receiveAddress = std::move(address);
+	auto uuidsVector{Protocol::assignNotificationDeleteVals(document)};
+	for_each(uuidsVector.begin(), uuidsVector.end(), [](std::string uuid) {
+         database->deleteRoadUser(uuid);
+         logger::write("Deleted road user " + uuid);
+	});
 }
 
 void inputNorthEast(int longt, int lat){
-	northeast = make_pair(longt,lat);
+	northeast = {longt,lat};
 }
 
 void inputSouthWest(int longt, int lat){
-	southwest = make_pair(longt,lat);
+	southwest = {longt,lat};
 }
 
 void computeManeuvers() {
@@ -356,42 +345,42 @@ void terminate_to(int signum ){
 	logger::write("Sending unsubscription request.\n");
     initiateUnsubscription();
 	std::this_thread::sleep_for(std::chrono::milliseconds(15000));
-	close(socket_c);
+	close(NetworkInterface::m_socket);
 	lstm_model.reset();
 	rl_model.reset();
 	exit(signum);
 }
 
-void handleMessage(const string &captured_data){
-	Document document = parse(captured_data);
-	message_type messageType = filterInput(document);
-	if (captured_data == "\n" || captured_data == string()) {
-			messageType = message_type::heart_beat;
+void handleAIMessage(const std::string &captured_data){
+	rapidjson::Document document = Protocol::parse(captured_data);
+	Protocol::message_type messageType = Protocol::filterInput(document);
+	if (captured_data == "\n" || captured_data.empty()) {
+			messageType = Protocol::message_type::heart_beat;
 	}
 
 	switch (messageType) {
-			case message_type::notify_add:
+			case Protocol::message_type::notify_add:
 				handleNotifyAdd(document);
 				computeManeuvers();
 				// computeSafetyActions();
 				break;
-			case message_type::notify_delete:
+			case Protocol::message_type::notify_delete:
 					handleNotifyDelete(document);
 					break;
-			case message_type::subscription_response:
-					handleSubscriptionResponse(document);
+			case Protocol::message_type::subscription_response:
+					handleSubscriptionResponse();
 					break;
-			case message_type::unsubscription_response:
-					handleUnSubscriptionResponse(document);
+			case Protocol::message_type::unsubscription_response:
+					handleUnSubscriptionResponse();
 					break;
-			case message_type::trajectory_feedback:
+			case Protocol::message_type::trajectory_feedback:
 					if (!handleTrajectoryFeedback(document)) {
 							computeManeuvers();
 					}
 					break;
-			case message_type::heart_beat:
+			case Protocol::message_type::heart_beat:
 					break;
-			case message_type::reconnect:
+			case Protocol::message_type::reconnect:
 					logger::write("Reconnecting");
 					break;
 			default:
@@ -400,63 +389,129 @@ void handleMessage(const string &captured_data){
 	}
 }
 
+void handleGraphMessage(const std::string &captured_data){
+    rapidjson::Document document = Protocol::parse(captured_data);
+    Protocol::message_type messageType = Protocol::filterInput(document);
+    if (captured_data == "\n" || captured_data.empty()) {
+        messageType = Protocol::message_type::heart_beat;
+    }
+
+    OptimizerEngine::getEngine()->startManeuverFeedback();
+    switch (messageType) {
+        case Protocol::message_type::notify_add:
+            handleNotifyAdd(document);
+            OptimizerEngine::getEngine()->locker.lock();
+            OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+            OptimizerEngine::getEngine()->locker.unlock();
+            break;
+        case Protocol::message_type::notify_delete:
+            handleNotifyDelete(document);
+            OptimizerEngine::getEngine()->locker.lock();
+            for (auto& uuid : Protocol::assignNotificationDeleteVals(document)) {
+                std::cout << uuid << std::endl;
+                OptimizerEngine::getEngine()->removeFromSimulation(uuid);
+            }
+            OptimizerEngine::getEngine()->locker.unlock();
+            break;
+        case Protocol::message_type::subscription_response:
+            handleSubscriptionResponse();
+            break;
+        case Protocol::message_type::unsubscription_response:
+            OptimizerEngine::getEngine()->pauseManeuverFeedback();
+            handleUnSubscriptionResponse();
+            break;
+        case Protocol::message_type::trajectory_feedback:
+            if (!handleTrajectoryFeedback(document)) {
+                OptimizerEngine::getEngine()->locker.lock();
+                OptimizerEngine::getEngine()->updateSimulationState(database->dump());
+                OptimizerEngine::getEngine()->locker.unlock();
+            }
+            break;
+        case Protocol::message_type::heart_beat:
+            break;
+        case Protocol::message_type::reconnect:
+            logger::write("Reconnecting");
+            break;
+        default:
+            logger::write("error: couldn't handle message " + captured_data);
+            break;
+    }
+}
+
 
 int main() {
 
-    auto returnCode{0};
+    char readBuffer[65536];
+    rapidjson::Document args;
 
-    FILE *file = fopen("include/TO_config.json", "r");
+    auto file{fopen("include/TO_config.json", "r")};
     if (file == nullptr) {
-        logger::write("Config File failed to load.");
-        returnCode = 1;
-    } else if (!filesystem::create_directory("logs") && !filesystem::exists("logs")) {
-        logger::write("Unable to create the logs directory, we stop");
-        returnCode = 2;
-    } else {
-        lstm_model = torch::jit::load("include/lstm_model.pt");
-
-        if (lstm_model != nullptr) logger::write("import of lstm model successful\n");
-
-        rl_model = torch::jit::load("include/rl_model_deuling.pt");
-
-        if (rl_model != nullptr) logger::write("import of rl model successful\n");
-
-
-        char readBuffer[65536];
-        FileReadStream is(file, readBuffer, sizeof(readBuffer));
-        Document document;
-        document.ParseStream(is);
-        fclose(file);
-
-        inputSendAddress(document["sendAddress"].GetString());
-        inputSendPort(document["sendPort"].GetInt());
-        inputNorthEast(document["northeast"]["longitude"].GetInt(), document["northeast"]["latitude"].GetInt());
-				inputSouthWest(document["southwest"]["longitude"].GetInt(), document["southwest"]["latitude"].GetInt());
-        inputReceivePort(document["receivePort"].GetInt());
-        inputReceiveAddress(document["receiveAddress"].GetString());
-
-        initiateSubscription();
-        bool listening = false;
-        string reconnect_flag;
-
-				// terminate TO on abortion/interruption
-				signal(SIGINT,terminate_to);
-
-        do {
-            auto datapacket = listenDataTCP(socket_c);
-						listening = true;
-						for(const string & captured_data : datapacket){
-							if(captured_data == "RECONNECT") listening = false;
-							handleMessage(captured_data);
-        		}
-        } while (listening);
-			}
-
-    while (true) {
-        std::this_thread::sleep_for(std::chrono::seconds(10));
-				close(socket_c);
-				lstm_model.reset();
-				rl_model.reset();
-        main();
+        logger::write("[ERROR] Config File failed to load -> Abort");
+        return 1;
     }
+    if (!std::experimental::filesystem::create_directory("logs") && !std::experimental::filesystem::exists("logs")) {
+        logger::write("[ERROR] Unable to create the logs directory -> Abort");
+        return 2;
+    }
+
+    lstm_model = torch::jit::load("include/lstm_model.pt");
+    if (lstm_model == nullptr) {
+        logger::write("[ERROR] import of lstm model unsuccessful -> Abort\n");
+        return 3;
+    }
+    logger::write("[INFO] import of lstm model successful\n");
+
+    rl_model = torch::jit::load("include/rl_model_deuling.pt");
+    if (rl_model == nullptr) {
+        logger::write("[ERROR] import of rl model unsuccessful -> Abort\n");
+        return 4;
+    }
+    logger::write("[INFO] import of rl model successful\n");
+
+    rapidjson::FileReadStream is(file, readBuffer, sizeof(readBuffer));
+    args.ParseStream(is);
+    fclose(file);
+
+    targetAddress = args["sendAddress"].GetString();
+    targetPort = args["sendPort"].GetInt();
+    receivePort = args["receivePort"].GetInt();
+    receiveAddress = args["receiveAddress"].GetString();
+
+    inputNorthEast(args["northeast"]["longitude"].GetInt(), args["northeast"]["latitude"].GetInt());
+    inputSouthWest(args["southwest"]["longitude"].GetInt(), args["southwest"]["latitude"].GetInt());
+
+    initiateSubscription();
+
+    logger::wipeOutDumpFile();
+
+    // terminate TO on abortion/interruption
+    signal(SIGINT, terminate_to);
+
+    std::thread mainT([=, &args]() {
+        while(true) {
+            if (NetworkInterface::connected) {
+                for (const auto& captured_data : NetworkInterface::listenDataTCP()) {
+                    try {
+                        if (args["computation_with_ai"].GetBool()) {
+                            handleAIMessage(captured_data);
+                        } else {
+                            handleGraphMessage(captured_data);
+                        }
+                    } catch (const std::exception &e) {
+                        logger::write("[ERROR] Malformed JSON");
+                    }
+                }
+            } else {
+                std::cout << "Target seems disconnected -> next attempt in 10 sec." << std::endl;
+                OptimizerEngine::getEngine()->pauseManeuverFeedback();
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                initiateSubscription();
+            }
+        }
+    });
+
+    OptimizerEngine::getEngine()->getThread()->join();
+    mainT.join();
+
+    return 0;
 }
